@@ -108,7 +108,6 @@ function ConfirmModal({ title, message, onConfirm, onClose, confirmColor }) {
     </Modal>
   );
 }
-/* تم تعديل حقل الـ Input لمنع تكرار الـ Box العلوى بشكل خاطئ */
 function Input({ label, ...props }) {
   return (
     <div style={{ marginBottom:14 }}>
@@ -251,7 +250,6 @@ export default function App() {
       {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} bankBalance={bankBalance} currency={currency}/>}
       {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} onExport={handleExport} onImport={handleImport} lastBackup={lastBackup} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")}/>}
       
-      {/* شريط التنقل السفلي المعدل (5 أيقونات بالترتيب والتنسيق الجديد) */}
       <nav style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:C.surface,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-around",padding:"10px 0 14px",zIndex:10}}>
         {[
           {id:"dashboard",icon:ICONS.dashboard,label:"Home"},
@@ -278,7 +276,6 @@ function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, 
   const totalIncome = txns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
   const totalExp = txns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
 
-  // حسابات الفواتير الشهرية للكارت الجديد (للقراءة فقط)
   const currentMonthStr = new Date().toISOString().slice(0,7);
   const currentMonthName = MONTHS[new Date().getMonth()];
   const totalBillsCount = bills.length;
@@ -366,371 +363,6 @@ function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, 
 
       {/* كارت وأهداف السيفنج (Savings Goals) - عاد للظهور والمتابعة بنجاح داخل الداش بورد */}
       {savings.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div><div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>{savings.map(s=>{const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;return(<Card key={s.id} style={{padding:"14px 14px 12px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span><Pill color={C.yellow}>{pct}%</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:15,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div><ProgressBar value={saved} max={s.goal} color={C.yellow}/></Card>);})}</div></>)}
-
-      {/* Recent Transactions */}
-      {txns.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Recent Transactions</div><div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>{txns.slice(0,5).map(t=><TxnRow key={t.id} txn={t} hideTotal={hideTotal}/>)}</div></>)}
-    </div>
-  );
-}
-
-function TxnRow({ txn, hideTotal }) {
-  const isExp=txn.type==="expense", isInc=txn.type==="income";
-  return (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:C.card,borderRadius:12,border:`1px solid ${C.border}`}}>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}>
-        <div style={{width:36,height:36,borderRadius:10,background:isExp?C.redDim:isInc?C.accentDim:C.yellowDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{txn.type==="saving"?ICONS.saving:ICONS[txn.catIcon]||"📌"}</div>
-        <div><div style={{color:C.text,fontWeight:600,fontSize:14}}>{txn.catName||txn.type}</div><div style={{color:C.muted,fontSize:11}}>{txn.bankName} · {fmtDate(txn.date)}</div></div>
-      </div>
-      <div style={{color:isExp?C.red:isInc?C.accent:C.yellow,fontWeight:800,fontSize:15}}>{isExp?"−":"+"}{hideTotal?"••••":fmt(txn.amount)}</div>
-    </div>
-  );
-}
-
-// ─── Add Transaction ──────────────────────────────────────────────────────────
-function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone }) {
-  const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(today());
-  const [bankId, setBankId] = useState(banks[0]?.id||"");
-  const [catId, setCatId] = useState(expCats[0]?.id||"");
-  const [note, setNote] = useState("");
-  const [savingId, setSavingId] = useState(savings[0]?.id||"");
-  const cats=type==="expense"?expCats:type==="income"?incCats:[];
-  useEffect(()=>{if(type==="expense"&&expCats.length)setCatId(expCats[0].id);if(type==="income"&&incCats.length)setCatId(incCats[0].id);if(type==="saving"&&savings.length)setSavingId(savings[0].id);},[type]);
-  const handleSubmit=async()=>{
-    if(!amount||isNaN(+amount)||+amount<=0) return;
-    const bank=banks.find(b=>b.id===bankId);
-    if(type==="saving"){if(!savingId)return;const sv=savings.find(s=>s.id===savingId);if(!sv)return;const c={id:Date.now().toString(),amount:+amount,date,bankId,bankName:bank?.name};await onSaveSavings(savings.map(s=>s.id===savingId?{...s,contributions:  salary:"💼", freelance:"💡", gift:"🎁", investment:"📈", other_income:"💰",
-  bank:"🏦", cash:"💵", goal:"🎯", trash:"🗑", edit:"✎", close:"✕", check:"✓",
-};
-
-const DEFAULT_BANKS = [
-  { id:"b1", name:"CIB", color:C.blue },
-  { id:"b2", name:"NBE", color:C.accent },
-  { id:"b3", name:"Alex Bank", color:C.purple },
-  { id:"b4", name:"Cash", color:C.yellow },
-];
-const DEFAULT_EXP_CATS = [
-  { id:"food", name:"Food & Dining", icon:"food", group:"daily" },
-  { id:"coffee", name:"Coffee & Drinks", icon:"coffee", group:"daily" },
-  { id:"transport", name:"Transport", icon:"transport", group:"daily" },
-  { id:"bills", name:"Bills & Utilities", icon:"bills", group:"fixed" },
-  { id:"rent", name:"Rent", icon:"rent", group:"fixed" },
-  { id:"health", name:"Health & Medical", icon:"health", group:"lifestyle" },
-  { id:"shopping", name:"Shopping", icon:"shopping", group:"lifestyle" },
-  { id:"entertainment", name:"Entertainment", icon:"entertainment", group:"lifestyle" },
-  { id:"personal", name:"Personal Care", icon:"personal", group:"lifestyle" },
-  { id:"education", name:"Education", icon:"education", group:"growth" },
-  { id:"tech", name:"Tech & Subscriptions", icon:"tech", group:"growth" },
-  { id:"others", name:"Others", icon:"others", group:"daily" },
-];
-const DEFAULT_INC_CATS = [
-  { id:"salary", name:"Salary", icon:"salary" },
-  { id:"freelance", name:"Freelance", icon:"freelance" },
-  { id:"gift", name:"Gift", icon:"gift" },
-  { id:"investment", name:"Investment", icon:"investment" },
-  { id:"other_income", name:"Other Income", icon:"other_income" },
-];
-const DEFAULT_GROUPS = [
-  { id:"daily", name:"Daily Life", color:C.accent, cats:["food","coffee","transport","others"] },
-  { id:"fixed", name:"Fixed Costs", color:C.red, cats:["bills","rent"] },
-  { id:"lifestyle", name:"Lifestyle", color:C.purple, cats:["health","shopping","entertainment","personal"] },
-  { id:"growth", name:"Growth", color:C.blue, cats:["education","tech"] },
-];
-
-// ─── Storage ──────────────────────────────────────────────────────────────────
-const KEYS = { txns:"et_txns", banks:"et_banks", expCats:"et_expCats", incCats:"et_incCats", groups:"et_groups", savings:"et_savings", currency:"et_currency", username:"et_username", lastBackup:"et_lastBackup", bills:"et_bills" };
-async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
-async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
-
-// ─── Shared UI ────────────────────────────────────────────────────────────────
-function Pill({ color, children, style }) {
-  return <span style={{ background:color+"22", color, border:`1px solid ${color}44`, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:700, letterSpacing:0.5, ...style }}>{children}</span>;
-}
-function Card({ children, style }) {
-  return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>{children}</div>;
-}
-function Modal({ title, onClose, children }) {
-  return (
-    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"20px 20px 0 0", width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-          <span style={{ color:C.text, fontWeight:700, fontSize:17 }}>{title}</span>
-          <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:30, height:30, borderRadius:99, cursor:"pointer", fontSize:14 }}>✕</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-function ConfirmModal({ title, message, onConfirm, onClose, confirmColor }) {
-  return (
-    <Modal title={title} onClose={onClose}>
-      <p style={{ color:C.muted, marginBottom:20, lineHeight:1.6 }}>{message}</p>
-      <div style={{ display:"flex", gap:10 }}>
-        <Btn outline color={C.muted} full onClick={onClose}>Cancel</Btn>
-        <Btn color={confirmColor||C.red} full onClick={onConfirm}>Confirm</Btn>
-      </div>
-    </Modal>
-  );
-}
-function Input({ label, ...props }) {
-  return (
-    <div style={{ marginBottom:14 }}>
-      {label && <div style={{ color:C.muted, fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:6, textTransform:"uppercase" }}>{label}</div>}
-      <input {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", ...props.style }} />
-    </div>
-  );
-}
-function Select({ label, children, ...props }) {
-  return (
-    <div style={{ marginBottom:14 }}>
-      {label && <div style={{ color:C.muted, fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:6, textTransform:"uppercase" }}>{label}</div>}
-      <select {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", ...props.style }}>{children}</select>
-    </div>
-  );
-}
-function Btn({ children, color=C.accent, outline, full, small, ...props }) {
-  return (
-    <button {...props} style={{ background:outline?"transparent":color, border:`1.5px solid ${color}`, color:outline?color:C.bg, borderRadius:10, padding:small?"7px 14px":"11px 20px", fontWeight:700, fontSize:small?13:15, cursor:"pointer", width:full?"100%":"auto", transition:"opacity .15s", ...props.style }}
-      onMouseOver={e=>e.currentTarget.style.opacity=".8"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
-      {children}
-    </button>
-  );
-}
-function ProgressBar({ value, max, color }) {
-  const pct = max ? Math.min(100,(value/max)*100) : 0;
-  return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
-}
-
-// ─── Main App ────────────────────────────────────────────────────────────────
-export default function App() {
-  const [tab, setTab] = useState("dashboard");
-  const [txns, setTxns] = useState([]);
-  const [banks, setBanks] = useState(DEFAULT_BANKS);
-  const [expCats, setExpCats] = useState(DEFAULT_EXP_CATS);
-  const [incCats, setIncCats] = useState(DEFAULT_INC_CATS);
-  const [groups, setGroups] = useState(DEFAULT_GROUPS);
-  const [savings, setSavings] = useState([]);
-  const [bills, setBills] = useState([]);
-  const [ready, setReady] = useState(false);
-  const [filterMonth, setFilterMonth] = useState("all");
-  const [currency, setCurrencyState] = useState("EGP");
-  const [username, setUsernameState] = useState("");
-  const [lastBackup, setLastBackup] = useState(null);
-  const [showBackupBanner, setShowBackupBanner] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const [t,b,ec,ic,g,s,cur,uname,lb,bl] = await Promise.all([
-        load(KEYS.txns,[]), load(KEYS.banks,DEFAULT_BANKS), load(KEYS.expCats,DEFAULT_EXP_CATS),
-        load(KEYS.incCats,DEFAULT_INC_CATS), load(KEYS.groups,DEFAULT_GROUPS), load(KEYS.savings,[]),
-        load(KEYS.currency,"EGP"), load(KEYS.username,""), load(KEYS.lastBackup,null), load(KEYS.bills,[]),
-      ]);
-      setTxns(t); setBanks(b); setExpCats(ec); setIncCats(ic); setGroups(g); setSavings(s);
-      setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setLastBackup(lb); setBills(bl);
-      if (t.length > 0) {
-        if (!lb) setShowBackupBanner(true);
-        else { const d=(Date.now()-new Date(lb).getTime())/(1000*60*60*24); if(d>=3) setShowBackupBanner(true); }
-      }
-      setReady(true);
-    })();
-  }, []);
-
-  const persist = useCallback(async (key,val) => { await save(key,val); }, []);
-  const addTxn = async (t) => { const next=[{...t,id:Date.now().toString()},...txns]; setTxns(next); await persist(KEYS.txns,next); };
-  const delTxn = async (id) => { const next=txns.filter(t=>t.id!==id); setTxns(next); await persist(KEYS.txns,next); };
-  const updateTxn = async (id,data) => { const next=txns.map(t=>t.id===id?{...t,...data}:t); setTxns(next); await persist(KEYS.txns,next); };
-  const saveBanks = async (b) => { setBanks(b); await persist(KEYS.banks,b); };
-  const saveExpCats = async (c) => { setExpCats(c); await persist(KEYS.expCats,c); };
-  const saveIncCats = async (c) => { setIncCats(c); await persist(KEYS.incCats,c); };
-  const saveGroups = async (g) => { setGroups(g); await persist(KEYS.groups,g); };
-  const saveSavings = async (s) => { setSavings(s); await persist(KEYS.savings,s); };
-  const saveBills = async (b) => { setBills(b); await persist(KEYS.bills,b); };
-  const saveCurrencyHandler = async (c) => { setCurrencyState(c); setCurrency(c); await persist(KEYS.currency,c); };
-  const saveUsernameHandler = async (n) => { setUsernameState(n); await persist(KEYS.username,n); };
-
-  const bankBalance = useCallback((bankId) => {
-    const inc=txns.filter(t=>t.bankId===bankId&&t.type==="income").reduce((a,t)=>a+t.amount,0);
-    const exp=txns.filter(t=>t.bankId===bankId&&t.type==="expense").reduce((a,t)=>a+t.amount,0);
-    const sav=txns.filter(t=>t.bankId===bankId&&t.type==="saving").reduce((a,t)=>a+t.amount,0);
-    return inc-exp-sav;
-  }, [txns]);
-
-  const handleExport = async () => {
-    const data={txns,banks,expCats,incCats,groups,savings,bills,currency,username,exportedAt:new Date().toISOString()};
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url; a.download=`saver-backup-${new Date().toISOString().split("T")[0]}.json`; a.click();
-    URL.revokeObjectURL(url);
-    const now=new Date().toISOString();
-    setLastBackup(now); setShowBackupBanner(false); await persist(KEYS.lastBackup,now);
-  };
-  const handleImport = (e) => {
-    const file=e.target.files?.[0]; if(!file) return;
-    const reader=new FileReader();
-    reader.onload=async(ev)=>{
-      try {
-        const data=JSON.parse(ev.target.result);
-        if(data.txns){setTxns(data.txns);await persist(KEYS.txns,data.txns);}
-        if(data.banks){setBanks(data.banks);await persist(KEYS.banks,data.banks);}
-        if(data.expCats){setExpCats(data.expCats);await persist(KEYS.expCats,data.expCats);}
-        if(data.incCats){setIncCats(data.incCats);await persist(KEYS.incCats,data.incCats);}
-        if(data.groups){setGroups(data.groups);await persist(KEYS.groups,data.groups);}
-        if(data.savings){setSavings(data.savings);await persist(KEYS.savings,data.savings);}
-        if(data.bills){setBills(data.bills);await persist(KEYS.bills,data.bills);}
-        if(data.currency){setCurrencyState(data.currency);setCurrency(data.currency);await persist(KEYS.currency,data.currency);}
-        if(data.username){setUsernameState(data.username);await persist(KEYS.username,data.username);}
-        alert("✅ Backup restored successfully!");
-      } catch { alert("❌ Invalid backup file."); }
-    };
-    reader.readAsText(file); e.target.value="";
-  };
-
-  if (!ready) return <div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:C.accent,fontSize:28}}>◈</div></div>;
-
-  const allCats=[...expCats,...incCats];
-  const filteredTxns=filterMonth==="all"?txns:txns.filter(t=>t.date.startsWith(filterMonth));
-  const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
-
-  return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:80}}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
-      {showBackupBanner && (
-        <div style={{background:"#2a1f0a",borderBottom:`1px solid ${C.yellow}44`,padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:18}}>⚠️</span>
-            <span style={{color:C.yellow,fontSize:13,fontWeight:600}}>{lastBackup?"It's been 3+ days since your last backup":"You haven't backed up your data yet"}</span>
-          </div>
-          <div style={{display:"flex",gap:8,flexShrink:0}}>
-            <button onClick={handleExport} style={{background:C.yellow,border:"none",color:C.bg,borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Backup Now</button>
-            <button onClick={()=>setShowBackupBanner(false)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>✕</button>
-          </div>
-        </div>
-      )}
-      {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance}/>}
-      {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")}/>}
-      {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency}/>}
-      {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
-      {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} bankBalance={bankBalance} currency={currency}/>}
-      {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} onExport={handleExport} onImport={handleImport} lastBackup={lastBackup} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")}/>}
-      
-      {/* شريط التنقل السفلي المعدل (5 أيقونات بالترتيب والتنسيق الجديد) */}
-      <nav style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:C.surface,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-around",padding:"10px 0 14px",zIndex:10}}>
-        {[
-          {id:"dashboard",icon:ICONS.dashboard,label:"Home"},
-          {id:"add",icon:ICONS.add,label:"Add"},
-          {id:"monthly",icon:ICONS.bills_nav,label:"Bills"}, // الفواتير بأيقونة خطية في المركز الثالث
-          {id:"history",icon:"☰",label:"History"}, // السجل في المركز الرابع قبل الإعدادات
-          {id:"settings",icon:ICONS.settings,label:"Settings"}
-        ].map(n=>(
-          <button key={n.id} onClick={()=>setTab(n.id)} style={{background:n.id==="add"?C.accent:"none",border:"none",color:n.id==="add"?C.bg:tab===n.id?C.accent:C.muted,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:n.id==="add"?"6px 12px":"4px 8px",borderRadius:n.id==="add"?12:8,cursor:"pointer",fontSize:n.id==="add"?18:16,fontWeight:700,transition:"color .2s"}}>
-            {n.icon}
-            <span style={{fontSize:9,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{n.label}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
-}
-
-// ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance }) {
-  const [hiddenBanks, setHiddenBanks] = useState({});
-  const [hideTotal, setHideTotal] = useState(false);
-  const toggleHide = (id) => setHiddenBanks(p=>({...p,[id]:!p[id]}));
-
-  const totalBalance = banks.reduce((s,b)=>s+bankBalance(b.id),0);
-  const totalIncome = txns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
-  const totalExp = txns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
-
-  // حسابات الفواتير الشهرية للكارت الجديد (للقراءة فقط)
-  const currentMonthStr = new Date().toISOString().slice(0,7);
-  const currentMonthName = MONTHS[new Date().getMonth()];
-  const totalBillsCount = bills.length;
-  const paidBillsCount = bills.filter(b=>b.payments?.some(p=>p.month===currentMonthStr)).length;
-  const remainingBillsAmount = bills.filter(b=>!b.payments?.some(p=>p.month===currentMonthStr)).reduce((sum,b)=>sum+b.amount,0);
-  const billsProgress = totalBillsCount > 0 ? (paidBillsCount / totalBillsCount) * 100 : 0;
-
-  const now=new Date();
-  const monthOptions=[{value:"all",label:"All Time"},...Array.from({length:12},(_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-i,1);const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;return{value:val,label:`${MONTHS[d.getMonth()]} ${d.getFullYear()}`};})];
-
-  return (
-    <div style={{padding:"24px 16px 0"}}>
-      {username && (
-        <div style={{marginBottom:18}}>
-          <div style={{color:C.muted,fontSize:13,fontWeight:500}}>{(()=>{const h=new Date().getHours();const e=h<12?"☀️":h<18?"👋":"🌙";const g=h<12?"Good morning":h<18?"Good afternoon":"Good evening";return <>{e} {g},</>;})()}</div>
-          <div style={{color:C.text,fontSize:24,fontWeight:800,letterSpacing:-0.5}}>{username} 💰</div>
-        </div>
-      )}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div>
-        <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 12px",fontSize:13,outline:"none"}}>
-          {monthOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Accounts</div>
-      
-      {/* Net Balance مع ميزة الخصوصية الجديدة (القرد المفتح والمغمض) */}
-      <Card style={{padding:"16px 18px",marginBottom:10,background:"linear-gradient(135deg,#1e1e28 0%,#23232f 100%)",borderColor:C.faint}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>
-            <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Net Balance</div>
-            <div style={{color:C.text,fontSize:30,fontWeight:800,letterSpacing:-1}}>{hideTotal?"••••••":fmt(totalBalance)}</div>
-          </div>
-          <button onClick={()=>setHideTotal(v=>!v)} style={{background:C.border,border:"none",color:C.muted,width:36,height:36,borderRadius:99,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{hideTotal?"🙈":"🐵"}</button>
-        </div>
-      </Card>
-      
-      {/* Banks Grid مع ميزة الخصوصية (القرد المفتح والمغمض) */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-        {banks.map(b=>{
-          const bal=bankBalance(b.id); const hidden=hiddenBanks[b.id] || hideTotal;
-          return (
-            <Card key={b.id} style={{padding:"14px 14px 12px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:99,background:b.color,flexShrink:0}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{b.name}</span></div>
-                <button onClick={()=>toggleHide(b.id)} style={{background:"none",border:"none",color:C.faint,cursor:"pointer",fontSize:14,padding:0,lineHeight:1}}>{hidden?"🙈":"🐵"}</button>
-              </div>
-              <div style={{color:bal<0?C.red:C.text,fontSize:17,fontWeight:800}}>{hidden?"••••":fmt(bal)}</div>
-            </Card>
-          );
-        })}
-      </div>
-      
-      {/* Income / Expense مع الخصوصية الشاملة */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-        <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div><div style={{color:C.accent,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalIncome)}</div></Card>
-        <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalExp)}</div></Card>
-      </div>
-
-      {/* قسم وكارت الفواتير الشهرية الجديد (مكانه المثالي قبل الـ Breakdown وللأقراة فقط) */}
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Bills</div>
-      <Card style={{padding:"16px 16px 14px",marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <span style={{color:C.text,fontWeight:700,fontSize:14}}>📋 {currentMonthName} Bills</span>
-          <Pill color={C.yellow}>{paidBillsCount} of {totalBillsCount}</Pill>
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
-          <span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(remainingBillsAmount)}</span>
-          <span style={{color:C.muted,fontSize:13}}>of Total</span>
-        </div>
-        <ProgressBar value={paidBillsCount} max={totalBillsCount} color={C.yellow}/>
-      </Card>
-
-      {/* Expense Groups */}
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Expense Breakdown</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-        {groups.map(g=>{
-          const total=txns.filter(t=>t.type==="expense"&&g.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0);
-          if(!total) return null;
-          const pct=totalExp?Math.round((total/totalExp)*100):0;
-          return (<Card key={g.id} style={{padding:"14px 14px 12px"}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:g.color}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{g.name}</span></div><div style={{color:g.color,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div><ProgressBar value={total} max={totalExp} color={g.color}/><div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div></Card>);
-        })}
-        {/* Other Cats */}
-        {(()=>{const gc=groups.flatMap(g=>g.cats);const total=txns.filter(t=>t.type==="expense"&&!gc.includes(t.catId)).reduce((a,t)=>a+t.amount,0);const pct=totalExp?Math.round((total/totalExp)*100):0;return total>0?(<Card style={{padding:"14px 14px 12px"}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:C.faint}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>Other</span></div><div style={{color:C.text,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div><ProgressBar value={total} max={totalExp} color={C.faint}/><div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div></Card>):null;})()}
-      </div>
 
       {/* Recent Transactions */}
       {txns.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Recent Transactions</div><div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>{txns.slice(0,5).map(t=><TxnRow key={t.id} txn={t} hideTotal={hideTotal}/>)}</div></>)}
@@ -882,7 +514,7 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   };
   return (
     <Modal title="Edit Transaction" onClose={onClose}>
-      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div></div><input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
+      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div><input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
       <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
@@ -892,7 +524,7 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   );
 }
 
-// ─── Savings (تمت إضافة زر العودة للإعدادات) ───────────────────────────────────
+// ─── Savings ─────────────────────────────────────────────────────────────────
 function SavingsPage({ savings, onSave, txns, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -1105,9 +737,8 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
 
       {section==="profile"&&(
         <div>
-          {/* قسم السيفنج المنقول هنا كعنصر تصفح أساسي شيك جداً */}
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Features</div>
-          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20,transition:"background 0.2s"}} onMouseOver={e=>e.currentTarget.style.background="#22222f"} onMouseOut={e=>e.currentTarget.style.background={C}.card}>
+          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20,transition:"background 0.2s"}} onMouseOver={e=>e.currentTarget.style.background="#22222f"} onMouseOut={e=>e.currentTarget.style.background=C.card}>
             <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals</span></div>
             <span style={{color:C.muted,fontSize:14}}>❯</span>
           </div>
@@ -1132,7 +763,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
           {(modal.type==="bank"||modal.type==="group")&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>)}
           {(modal.type==="expCat"||modal.type==="incCat")&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
           {modal.type==="expCat"&&(<Select label="Group Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
-          {modal.type==="group"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Expense Categories</div><div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflow:"auto"}}>{expCats.map(c=>{const checked=groupCats.includes(c.id);return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 0"}}><div onClick={()=>setGroupCats(checked?groupCats.filter(x=>x!==c.id):[...groupCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div><span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span></label>);})}</div></div>)}
+          {modal.type==="group"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Expense Categories</div><div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflow:"auto"}}>{expCats.map(c=>{const checked=groupCats.includes(c.id);return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 0"}}><div onClick={()=>setGroupCats(checked?groupCats.filter(x=>x!==c.id):[...groupCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div><span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span></label>);})}</div></div>)}
           <Btn full onClick={handleSave} style={{marginTop:8}}>{modal.item?"Save Changes":"Add"}</Btn>
         </Modal>
       )}
