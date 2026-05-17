@@ -32,7 +32,7 @@ const fmt = (n) => {
 };
 
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-const fmtDate = (d) => { const dt = new Date(d + "T00:00:00"); return `${DAYS[dt.getDay()]}, ${dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`; };
+const fmtDate = (d) => { const dt = new Date(d + "T00:00:00"); return `${DAYS[dt.getDay()]}: ${dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`; };
 const today = () => new Date().toISOString().split("T")[0];
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -174,8 +174,8 @@ function SwipeRow({ onEdit, onDelete, children }) {
   return (
     <div style={{ position:"relative", overflow:"hidden", borderRadius:12, marginBottom:8 }}>
       <div style={{ position:"absolute", inset:0, display:"flex", justifyContent:"space-between", zIndex:0 }}>
-        <button onClick={()=>{setSlide(0); onEdit&&onEdit();}} style={{ width:85, background:C.blueDim, border:"none", color:C.blue, fontSize:18, fontWeight:700, cursor:"pointer" }}>✎ Edit</button>
-        <button onClick={()=>{setSlide(0); onDelete&&onDelete();}} style={{ width:85, background:C.redDim, border:"none", color:C.red, fontSize:18, fontWeight:700, cursor:"pointer" }}>🗑 Delete</button>
+        <button onClick={()=>{setSlide(0); onEdit&&onEdit();}} style={{ width:85, background:C.blueDim, border:"none", color:C.blue, fontSize:14, fontWeight:700, cursor:"pointer" }}>✎ Edit</button>
+        <button onClick={()=>{setSlide(0); onDelete&&onDelete();}} style={{ width:85, background:C.redDim, border:"none", color:C.red, fontSize:14, fontWeight:700, cursor:"pointer" }}>🗑 Delete</button>
       </div>
       <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
            style={{ transform:`translateX(${slide}px)`, transition:startX.current?"none":"transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1)", touchAction:"pan-y", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, position:"relative", zIndex:1 }}>
@@ -240,7 +240,7 @@ export default function App() {
     if (t.type === "expense" || t.type === "saving") {
       const currentBal = bankBalance(t.bankId);
       if (currentBal < t.amount) {
-        alert("⚠️ عفواً، رصيد هذا الحساب لا يكفي لإتمام عملية الدفع!");
+        alert("⚠️ Sorry, this account balance is insufficient for this transaction!");
         return false;
       }
     }
@@ -257,7 +257,7 @@ export default function App() {
     if(data.amount && (original.type === "expense" || original.type === "saving")) {
       const netBalWithoutThis = bankBalance(data.bankId) + original.amount;
       if (netBalWithoutThis < data.amount) {
-        alert("⚠️ عفواً، رصيد هذا الحساب لا يكفي لإتمام التعديل!");
+        alert("⚠️ Sorry, this account balance is insufficient for this modifications!");
         return false;
       }
     }
@@ -291,9 +291,9 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       
       {showBackupAlert && tab==="dashboard" && (
-        <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyBetween:"center", alignItems:"center"}}>
-          <span>⚠️ مر أكثر من 3 أيام منذ آخر نسخة احتياطية لك!</span>
-          <button onClick={()=>setTab("settings")} style={{background:"transparent", border:`1px solid ${C.yellow}`, color:C.yellow, borderRadius:8, padding:"4px 8px", fontSize:10}}>نسخ الآن</button>
+        <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <span>⚠️ It has been over 3 days since your last local backup!</span>
+          <button onClick={()=>setTab("settings")} style={{background:"transparent", border:`1px solid ${C.yellow}`, color:C.yellow, borderRadius:8, padding:"4px 8px", fontSize:10}}>Backup Now</button>
         </div>
       )}
 
@@ -480,7 +480,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalExp)}</div></Card>
       </div>
 
-      {/* Structured Native Monthly Bills Tracker Card */}
+      {/* Recurrent Month Bills Module View */}
       {bills.length > 0 && (
         <>
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Bills</div>
@@ -498,7 +498,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
-      {/* Symmetric Unified Budgeting Cluster Layout */}
+      {/* Envelopes Budgets View Components */}
       {budgets.length > 0 && (
         <>
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
@@ -538,9 +538,22 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         })()}
       </div>
 
-      {savings.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div><div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>{savings.map(s=>{const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;return(<Card key={s.id} style={{padding:"14px 14px 12px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span><Pill color={C.yellow}>{pct}%</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div><ProgressBar value={saved} max={s.goal} color={C.yellow}/></Card>);})}</div></>)}
+      {savings.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div><div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>{savings.map(s=>{const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;return(<Card key={s.id} style={{padding:"14px 14px 12px"}}><div style={{display:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span><Pill color={C.yellow}>{pct}%</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div><ProgressBar value={saved} max={s.goal} color={C.yellow}/></Card>);})}</div></>)}
 
       {txns.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Recent Transactions</div><div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>{txns.slice(0,5).map(t=><TxnRow key={t.id} txn={t} hideTotal={hideTotal}/>)}</div></>)}
+    </div>
+  );
+}
+
+function TxnRow({ txn, hideTotal }) {
+  const isExp=txn.type==="expense", isInc=txn.type==="income";
+  return (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px"}}>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{width:36,height:36,borderRadius:10,background:isExp?C.redDim:isInc?C.accentDim:C.yellowDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{txn.type==="saving"?ICONS.saving:ICONS[txn.catIcon]||"📌"}</div>
+        <div><div style={{color:C.text,fontWeight:600,fontSize:14}}>{txn.catName||txn.type}</div><div style={{color:C.muted,fontSize:11}}>{txn.bankName} · {fmtDate(txn.date)}</div></div>
+      </div>
+      <div style={{color:isExp?C.red:isInc?C.accent:C.yellow,fontWeight:800,fontSize:15}}>{isExp?"−":"+"}{hideTotal?"••••":fmt(txn.amount)}</div>
     </div>
   );
 }
@@ -640,6 +653,7 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
   );
 }
 
+// ─── Edit Transaction Modal (FIXED & FULLY SYNTAX SAFE) ───────────────────────
 function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose }) {
   const [amount, setAmount] = useState(String(txn.amount));
   const [date, setDate] = useState(txn.date);
@@ -650,7 +664,17 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   
   const handleSave=async()=>{
     const parsed = parseFloat(amount);
-    if(!amount||isNaN(parsed)||parsed style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
+    if(!amount||isNaN(parsed)||parsed<=0) return;
+    const bank=banks.find(b=>b.id===bankId); const cat=cats.find(c=>c.id===catId);
+    await onSave({amount:parsed,date,bankId,bankName:bank?.name,catId,catName:cat?.name||txn.catName,catIcon:cat?.icon||txn.catIcon,note});
+  };
+
+  return (
+    <Modal title="Edit Transaction" onClose={onClose}>
+      <div style={{marginBottom:14}}>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
+        <input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+      </div>
       <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
@@ -711,7 +735,7 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
   );
 }
 
-// ─── Budgets Screen (Multi-Budgets Standalone Module) ─────────────────────────
+// ─── Budgets Screen ───────────────────────────────────────────────────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -757,7 +781,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
       </div>
 
       {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}}>
-        <Input label="Budget / Envelope Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label="Budget Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
         <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
         <div style={{marginBottom:14}}>
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
@@ -815,7 +839,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
       type:"expense",amount:bill.amount,date:dateStr,
       bankId:bill.bankId,bankName:bank?.name,
       catId:bill.catId,catName:cat?.name||bill.name,catIcon:cat?.icon||"bills",
-      note:`Monthly Bill Settlement: ${bill.name}`
+      note: `Monthly Bill Settlement: ${bill.name}`
     });
 
     if (success !== false) {
