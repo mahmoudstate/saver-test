@@ -66,7 +66,6 @@ async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(v
 function Pill({ color, children, style }) { return <span style={{ background:color+"22", color, border:`1px solid ${color}44`, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:700, letterSpacing:0.5, ...style }}>{children}</span>; }
 function Card({ children, style }) { return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>{children}</div>; }
 
-// Dynamic Modal Component Supporting both Bottom Sheet and Centered pop-up placements
 function Modal({ title, onClose, children, center }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:center?"center":"flex-end", justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
@@ -85,7 +84,6 @@ function Modal({ title, onClose, children, center }) {
   );
 }
 
-// Bottom-aligned Confirm Modal (Consistent style matching native inputs)
 function ConfirmModal({ title, message, onConfirm, onClose, confirmColor }) {
   return (
     <Modal title={title} onClose={onClose} center={false}>
@@ -98,7 +96,6 @@ function ConfirmModal({ title, message, onConfirm, onClose, confirmColor }) {
   );
 }
 
-// Center-aligned System Alert Modal (Strict layout override for notifications)
 function AlertModal({ title, message, onClose, btnColor=C.accent }) {
   return (
     <Modal title={title} onClose={onClose} center={true}>
@@ -135,7 +132,7 @@ function MonthSelect({ value, onChange, availMonths }) {
 function Select({ label, children, ...props }) {
   return (
     <div style={{ marginBottom:14 }}>
-      {label && <div style={{ color:C.muted, fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:6, textTransform:"uppercase" }}>{label}</div>}
+      {label && <div style={{ color:C.muted, fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>{label}</div>}
       <select {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", ...props.style }}>{children}</select>
     </div>
   );
@@ -207,7 +204,7 @@ function EmptyState({ icon, message }) {
   );
 }
 
-// ─── Main Application Component ───────────────────────────────────────────────
+// ─── Main Application Logic ───────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [txns, setTxns] = useState([]);
@@ -224,7 +221,6 @@ export default function App() {
   const [username, setUsernameState] = useState("");
   const [lastBackup, setLastBackup] = useState(null);
   
-  // Custom Global Alert Modal State
   const [appAlert, setAppAlert] = useState(null);
 
   useEffect(() => {
@@ -291,7 +287,6 @@ export default function App() {
   const saveCurrencyHandler = async (c) => { setCurrencyState(c); setCurrency(c); await persist(KEYS.currency,c); };
   const saveUsernameHandler = async (n) => { setUsernameState(n); await persist(KEYS.username,n); };
 
-  // Core implementation of direct import engine
   const handleRestorePayload = async (importedData) => {
     try {
       if(importedData.txns) { setTxns(importedData.txns); await persist(KEYS.txns, importedData.txns); }
@@ -323,7 +318,7 @@ export default function App() {
   const showBackupAlert = lastBackup && (Date.now() - lastBackup > 3 * 24 * 60 * 60 * 1000);
 
   return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:110, position:"relative"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:120, position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       
       {showBackupAlert && tab==="dashboard" && (
@@ -343,13 +338,12 @@ export default function App() {
       
       <BottomNav tab={tab} setTab={setTab} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} bankBalance={bankBalance} setAppAlert={setAppAlert} />
       
-      {/* Centered Integrated Global System Alerts Modals */}
       {appAlert && <AlertModal title={appAlert.title} message={appAlert.message} btnColor={appAlert.color} onClose={()=>setAppAlert(null)} />}
     </div>
   );
 }
 
-// ─── Custom Curved Bottom Nav & Smart Defaults ────────────────────────────────
+// ─── Custom Responsive Bottom Nav Component (Vodafone Layout) ─────────────────
 function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, setAppAlert }) {
   const [showQuick, setShowQuick] = useState(false);
   const [quickForm, setQuickForm] = useState(null);
@@ -393,27 +387,29 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
   return (
     <>
       <nav style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:520, zIndex:50 }}>
-        <div style={{ position:"absolute", bottom:0, width:"100%", height:72, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", padding:"0 10px" }}>
-          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingRight:44 }}>
+        {/* Raised bar matching perfect heights and padding layouts with solid straight background */}
+        <div style={{ position:"absolute", bottom:0, width:"100%", height:85, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", padding:"0 12px" }}>
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingRight:48, marginBottom:10 }}>
              <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} setTab={setTab} />
              <NavBtn id="monthly" icon={ICONS.bills_nav} label="Bills" tab={tab} setTab={setTab} />
           </div>
-          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingLeft:44 }}>
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingLeft:48, marginBottom:10 }}>
              <NavBtn id="history" icon="☰" label="History" tab={tab} setTab={setTab} />
              <NavBtn id="settings" icon={ICONS.settings} label="Settings" tab={tab} setTab={setTab} />
           </div>
         </div>
 
-        <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", bottom:24, width:80, height:80, borderRadius:"50%", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {/* Clean drop element cleanly blending with background theme without bounding borders */}
+        <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", bottom:32, width:84, height:84, borderRadius:"50%", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <button onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={()=>clearTimeout(pressTimer.current)} onContextMenu={e=>e.preventDefault()}
-                  style={{ width:64, height:64, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:34, border:`none`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none", WebkitUserSelect:"none", WebkitTouchCallout:"none" }}
+                  style={{ width:68, height:68, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:36, border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none", WebkitUserSelect:"none" }}
                   onPointerDown={e=>e.currentTarget.style.transform="scale(0.9)"} onPointerUp={e=>e.currentTarget.style.transform="scale(1)"}>
             +
           </button>
         </div>
           
         {showQuick && (
-          <div style={{ position:"absolute", bottom:114, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:20, padding:12, display:"flex", gap:12, boxShadow:"0 12px 30px rgba(0,0,0,0.6)", animation:"popIn 0.2s" }}>
+          <div style={{ position:"absolute", bottom:126, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:20, padding:12, display:"flex", gap:12, boxShadow:"0 12px 30px rgba(0,0,0,0.6)", animation:"popIn 0.2s" }}>
             <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 12px) scale(0.95);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
             <button onClick={()=>handleQuickSelect("coffee")} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, width:74, height:74, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, cursor:"pointer" }}>
               <span style={{fontSize:26, display:"block", lineHeight:1}}>☕</span>
@@ -448,13 +444,13 @@ function NavBtn({ id, icon, label, tab, setTab }) {
   const active = tab === id;
   return (
     <button onClick={()=>setTab(id)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0", cursor:"pointer", transition:"color .2s", width:55 }}>
-      <span style={{fontSize:20}}>{icon}</span>
-      <span style={{fontSize:9, fontWeight:700, letterSpacing:.5, textTransform:"uppercase"}}>{label}</span>
+      <span style={{fontSize:22}}>{icon}</span>
+      <span style={{fontSize:10, fontWeight:700, letterSpacing:.5, textTransform:"uppercase"}}>{label}</span>
     </button>
   );
 }
 
-// ─── Dashboard Screen ─────────────────────────────────────────────────────────
+// ─── Dashboard Screen (With Savings Goals Lifted Upwards) ───────────────────
 function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll }) {
   const [hideTotal, setHideTotal] = useState(false);
 
@@ -558,6 +554,33 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
+      {/* Tweak 2: Savings Goals module lifted up precisely below Monthly Budgets */}
+      {savings.length > 0 && (
+        <>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+            {savings.map(s => {
+              const saved = s.contributions?.reduce((a,c)=>a+c.amount,0) || 0;
+              const pct = s.goal ? Math.min(100, Math.round((saved/s.goal)*100)) : 0;
+              return (
+                <Card key={s.id} style={{padding:"14px 14px 12px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span>
+                    <Pill color={C.yellow}>{pct}%</Pill>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                    <span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span>
+                    <span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span>
+                  </div>
+                  <ProgressBar value={saved} max={s.goal} color={C.yellow}/>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Expense Breakdown moved below Savings Goals */}
       <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Expense Breakdown</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         {groups.map(g=>{
@@ -570,8 +593,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
           const gc=groups.flatMap(g=>g.cats);const total=txns.filter(t=>t.type==="expense"&&!gc.includes(t.catId)).reduce((a,t)=>a+t.amount,0);const pct=totalExp?Math.round((total/totalExp)*100):0;return total>0?(<Card style={{padding:"14px 14px 12px"}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:C.faint}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>Other</span></div><div style={{color:C.text,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div><ProgressBar value={total} max={totalExp} color={C.faint}/><div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div></Card>):null;
         })()}
       </div>
-
-      {savings.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div><div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>{savings.map(s=>{const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;return(<Card key={s.id} style={{padding:"14px 14px 12px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span><Pill color={C.yellow}>{pct}%</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div><ProgressBar value={saved} max={s.goal} color={C.yellow}/></Card>);})}</div></>)}
 
       {txns.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Recent Transactions</div><div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>{txns.slice(0,5).map(t=><TxnRow key={t.id} txn={t} hideTotal={hideTotal}/>)}</div></>)}
     </div>
@@ -1006,7 +1027,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
       }
     };
     reader.readAsText(file);
-    e.target.value = ""; // Clear input node buffer
+    e.target.value = ""; 
   };
 
   const canDelBank=(b)=>bankBalance(b.id)===0;
