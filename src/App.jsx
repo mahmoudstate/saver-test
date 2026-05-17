@@ -19,14 +19,15 @@ const CURRENCIES = [
 
 let _currency = "EGP";
 const setCurrency = (c) => { _currency = c; };
-const fmt = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: _currency, maximumFractionDigits: 0 }).format(n || 0);
+// Fixed decimal rounding: up to 2 decimal places to keep fractions exact
+const fmt = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: _currency, maximumFractionDigits: 2 }).format(n || 0);
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const fmtDate = (d) => { const dt = new Date(d + "T00:00:00"); return `${DAYS[dt.getDay()]}, ${dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`; };
 const today = () => new Date().toISOString().split("T")[0];
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const ICONS = {
-  dashboard:"◈", add:"＋", settings:"⚙", saving:"◎", bills_nav:"☷",
+  dashboard:"◈", add:"＋", settings:"⚙", saving:"◎", bills_nav:"☷", budget:"📊",
   income:"↑", expense:"↓", transfer:"→",
   food:"🍽", coffee:"☕", transport:"🚗", bills:"⚡",
   personal:"👤", health:"💊", entertainment:"🎬", shopping:"🛍",
@@ -49,7 +50,7 @@ const DEFAULT_GROUPS = [
 ];
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
-const KEYS = { txns:"et_txns", banks:"et_banks", expCats:"et_expCats", incCats:"et_incCats", groups:"et_groups", savings:"et_savings", currency:"et_currency", username:"et_username", lastBackup:"et_lastBackup", bills:"et_bills", pocketBudget:"et_pocketBudget" };
+const KEYS = { txns:"et_txns", banks:"et_banks", expCats:"et_expCats", incCats:"et_incCats", groups:"et_groups", savings:"et_savings", currency:"et_currency", username:"et_username", lastBackup:"et_lastBackup", bills:"et_bills", budgets:"et_budgets" };
 async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
 async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
@@ -116,7 +117,7 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
-// ─── Swipeable Row (For Clean UI) ─────────────────────────────────────────────
+// ─── Swipeable Row (Separated Swipe Left/Right) ──────────────────────────────
 function SwipeRow({ onEdit, onDelete, children }) {
   const [slide, setSlide] = useState(0);
   const startX = useRef(null);
@@ -125,36 +126,53 @@ function SwipeRow({ onEdit, onDelete, children }) {
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
     const diff = e.touches[0].clientX - startX.current;
-    if (diff < 0) setSlide(Math.max(diff, -100)); // Max swipe left = 100px
-    if (diff > 0 && slide < 0) setSlide(Math.min(0, slide + diff));
+    // Limit slide to -80 (left for delete) and +80 (right for edit)
+    if (diff < 0) setSlide(Math.max(diff, -80));
+    else if (diff > 0) setSlide(Math.min(diff, 80));
   };
   const handleTouchEnd = () => {
-    if (slide < -40) setSlide(-100); else setSlide(0);
+    if (slide < -40) setSlide(-80); // Snap to Delete
+    else if (slide > 40) setSlide(80); // Snap to Edit
+    else setSlide(0); // Snap back to center
     startX.current = null;
   };
 
   return (
     <div style={{ position:"relative", overflow:"hidden", borderRadius:12, marginBottom:8 }}>
-      <div style={{ position:"absolute", right:0, top:0, bottom:0, width:100, display:"flex" }}>
-        <button onClick={()=>{setSlide(0); onEdit&&onEdit();}} style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRight:"none", color:C.muted, fontSize:18, cursor:"pointer" }}>✎</button>
-        <button onClick={()=>{setSlide(0); onDelete&&onDelete();}} style={{ flex:1, background:C.redDim, border:`1px solid ${C.red}33`, color:C.red, fontSize:18, cursor:"pointer" }}>🗑</button>
+      {/* Background Actions */}
+      <div style={{ position:"absolute", inset:0, display:"flex", justifyContent:"space-between" }}>
+        <button onClick={()=>{setSlide(0); onEdit&&onEdit();}} style={{ width:80, background:C.blueDim, border:`1px solid ${C.blue}33`, color:C.blue, fontSize:20, cursor:"pointer", borderRadius:"12px 0 0 12px" }}>✎</button>
+        <button onClick={()=>{setSlide(0); onDelete&&onDelete();}} style={{ width:80, background:C.redDim, border:`1px solid ${C.red}33`, color:C.red, fontSize:20, cursor:"pointer", borderRadius:"0 12px 12px 0" }}>🗑</button>
       </div>
+      
+      {/* Foreground Card */}
       <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
-           style={{ transform:`translateX(${slide}px)`, transition:startX.current?"none":"transform 0.2s ease", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, position:"relative", zIndex:1 }}>
+           style={{ transform:`translateX(${slide}px)`, transition:startX.current?"none":"transform 0.2s ease", touchAction:"pan-y", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, position:"relative", zIndex:1 }}>
         {children}
       </div>
     </div>
   );
 }
 
-// ─── Empty State (Easy Come, Easy Go) ─────────────────────────────────────────
+// ─── Empty State (Simple & Clean iOS Style) ──────────────────────────────────
 function EmptyState({ icon, message }) {
   return (
-    <div style={{ textAlign:"center", padding:"60px 20px", opacity:0.8 }}>
-      <div style={{ fontSize:60, marginBottom:16, filter:"grayscale(100%) opacity(50%)" }}>{icon}</div>
-      <div style={{ color:C.text, fontSize:18, fontWeight:700, fontStyle:"italic", letterSpacing:0.5, marginBottom:8 }}>"Easy come, easy go."</div>
-      <div style={{ color:C.muted, fontSize:14, lineHeight:1.6 }}>{message}</div>
+    <div style={{ textAlign:"center", padding:"60px 20px", opacity:0.6 }}>
+      <div style={{ fontSize:36, marginBottom:12, filter:"grayscale(100%) opacity(40%)" }}>{icon}</div>
+      <div style={{ color:C.text, fontSize:16, fontWeight:600, letterSpacing:0.5, marginBottom:6, fontStyle:"italic" }}>Easy come, easy go.</div>
+      <div style={{ color:C.muted, fontSize:13 }}>{message}</div>
     </div>
+  );
+}
+
+// ─── Dropdown Style Component ────────────────────────────────────────────────
+function MonthSelect({ value, onChange, availMonths }) {
+  const options = availMonths.length > 0 ? availMonths : [new Date().toISOString().slice(0,7)];
+  return (
+    <select value={value} onChange={onChange} style={{ background:C.card, border:`1px solid ${C.border}`, color:C.text, borderRadius:10, padding:"8px 12px", fontSize:14, fontWeight:600, outline:"none", appearance:"none" }}>
+      <option value="all">All Time</option>
+      {options.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
+    </select>
   );
 }
 
@@ -168,21 +186,25 @@ export default function App() {
   const [groups, setGroups] = useState(DEFAULT_GROUPS);
   const [savings, setSavings] = useState([]);
   const [bills, setBills] = useState([]);
-  const [pocketBudget, setPocketBudget] = useState("");
+  const [budgets, setBudgets] = useState([]);
   const [ready, setReady] = useState(false);
   const [filterMonth, setFilterMonth] = useState("all");
   const [currency, setCurrencyState] = useState("EGP");
   const [username, setUsernameState] = useState("");
+  const [lastBackup, setLastBackup] = useState(null);
 
   useEffect(() => {
     (async () => {
-      const [t,b,ec,ic,g,s,cur,uname,bl,pb] = await Promise.all([
+      const [t,b,ec,ic,g,s,cur,uname,bl,bdg, lb] = await Promise.all([
         load(KEYS.txns,[]), load(KEYS.banks,DEFAULT_BANKS), load(KEYS.expCats,DEFAULT_EXP_CATS),
         load(KEYS.incCats,DEFAULT_INC_CATS), load(KEYS.groups,DEFAULT_GROUPS), load(KEYS.savings,[]),
-        load(KEYS.currency,"EGP"), load(KEYS.username,""), load(KEYS.bills,[]), load(KEYS.pocketBudget,"")
+        load(KEYS.currency,"EGP"), load(KEYS.username,""), load(KEYS.bills,[]), load(KEYS.budgets,[]), load(KEYS.lastBackup, null)
       ]);
       setTxns(t); setBanks(b); setExpCats(ec); setIncCats(ic); setGroups(g); setSavings(s);
-      setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setBills(bl); setPocketBudget(pb);
+      setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setBills(bl); setBudgets(bdg); setLastBackup(lb);
+      
+      const currentMonth = new Date().toISOString().slice(0,7);
+      setFilterMonth(currentMonth);
       setReady(true);
     })();
   }, []);
@@ -197,9 +219,9 @@ export default function App() {
   const saveGroups = async (g) => { setGroups(g); await persist(KEYS.groups,g); };
   const saveSavings = async (s) => { setSavings(s); await persist(KEYS.savings,s); };
   const saveBills = async (b) => { setBills(b); await persist(KEYS.bills,b); };
+  const saveBudgets = async (bdg) => { setBudgets(bdg); await persist(KEYS.budgets,bdg); };
   const saveCurrencyHandler = async (c) => { setCurrencyState(c); setCurrency(c); await persist(KEYS.currency,c); };
   const saveUsernameHandler = async (n) => { setUsernameState(n); await persist(KEYS.username,n); };
-  const savePocketBudget = async (v) => { setPocketBudget(v); await persist(KEYS.pocketBudget,v); };
 
   const bankBalance = useCallback((bankId) => {
     const inc=txns.filter(t=>t.bankId===bankId&&t.type==="income").reduce((a,t)=>a+t.amount,0);
@@ -212,78 +234,95 @@ export default function App() {
 
   const allCats=[...expCats,...incCats];
   const filteredTxns=filterMonth==="all"?txns:txns.filter(t=>t.date.startsWith(filterMonth));
+  
+  // Dynamic months based on transactions ONLY
   const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
+  const showBackupAlert = lastBackup && (Date.now() - lastBackup > 3 * 24 * 60 * 60 * 1000);
 
   return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:90, position:"relative"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:100, position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       
-      {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} pocketBudget={pocketBudget} txnsAll={txns}/>}
+      {showBackupAlert && tab==="dashboard" && (
+        <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <span>⚠️ It's been 3 days since your last backup!</span>
+          <button onClick={()=>setTab("settings")} style={{background:"transparent", border:`1px solid ${C.yellow}`, color:C.yellow, borderRadius:8, padding:"4px 8px", fontSize:10}}>Go Backup</button>
+        </div>
+      )}
+
+      {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns}/>}
       {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")}/>}
-      {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency}/>}
+      {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
       {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
+      {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>setTab("settings")} currency={currency}/>}
       {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} txns={txns}/>}
-      {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} pocketBudget={pocketBudget} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onPocketBudget={savePocketBudget}/>}
+      {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onOpenBudgets={()=>setTab("budgets")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets}/>}
       
       <BottomNav tab={tab} setTab={setTab} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} />
     </div>
   );
 }
 
-// ─── FAB & Curved Bottom Nav ──────────────────────────────────────────────────
+// ─── Custom Curved Bottom Nav ─────────────────────────────────────────────────
 function BottomNav({ tab, setTab, expCats, banks, onAdd, currency }) {
   const [showQuick, setShowQuick] = useState(false);
-  const [quickForm, setQuickForm] = useState(null); // {catId, amount}
+  const [quickForm, setQuickForm] = useState(null);
   const pressTimer = useRef(null);
 
-  const handlePressStart = () => { pressTimer.current = setTimeout(() => setShowQuick(true), 500); };
-  const handlePressEnd = () => { clearTimeout(pressTimer.current); if(!showQuick && !quickForm) setTab("add"); };
+  const handlePressStart = (e) => { e.preventDefault(); pressTimer.current = setTimeout(() => setShowQuick(true), 400); };
+  const handlePressEnd = (e) => { e.preventDefault(); clearTimeout(pressTimer.current); if(!showQuick && !quickForm) setTab("add"); };
 
   const handleQuickSelect = (catId, amt) => { setShowQuick(false); setQuickForm({ catId, amount: String(amt), bankId: banks[0]?.id||"", note:"" }); };
   const handleQuickSave = async () => {
-    if(!quickForm.amount || isNaN(+quickForm.amount)) return;
+    if(!quickForm.amount || isNaN(parseFloat(quickForm.amount))) return;
     const cat = expCats.find(c=>c.id===quickForm.catId);
     const bank = banks.find(b=>b.id===quickForm.bankId);
-    await onAdd({ type:"expense", amount:+quickForm.amount, date:today(), bankId:quickForm.bankId, bankName:bank?.name, catId:quickForm.catId, catName:cat?.name, catIcon:cat?.icon, note:quickForm.note });
+    await onAdd({ type:"expense", amount:parseFloat(quickForm.amount), date:today(), bankId:quickForm.bankId, bankName:bank?.name, catId:quickForm.catId, catName:cat?.name, catIcon:cat?.icon, note:quickForm.note });
     setQuickForm(null); setTab("dashboard");
   };
 
   return (
     <>
-      <nav style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:520, background:C.surface, display:"flex", justifyContent:"space-between", padding:"10px 10px 18px", zIndex:50, borderTop:`1px solid ${C.border}` }}>
-        <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} setTab={setTab} />
-        <NavBtn id="monthly" icon={ICONS.bills_nav} label="Bills" tab={tab} setTab={setTab} style={{marginRight:30}} />
-        
-        {/* Floating Action Button (FAB) */}
-        <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", top:-25 }}>
-          <button onPointerDown={handlePressStart} onPointerUp={handlePressEnd} onPointerLeave={()=>clearTimeout(pressTimer.current)} 
-                  style={{ width:56, height:56, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:28, border:`6px solid ${C.bg}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none" }}
-                  onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
-            +
-          </button>
-          
-          {/* Quick Add Floating Menu */}
-          {showQuick && (
-            <div style={{ position:"absolute", bottom:70, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:10, display:"flex", gap:10, boxShadow:"0 10px 25px rgba(0,0,0,0.5)", animation:"popIn 0.2s" }}>
-              <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 10px) scale(0.9);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
-              <button onClick={()=>handleQuickSelect("coffee", 50)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", color:C.text, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}><span style={{fontSize:20}}>☕</span><span style={{fontSize:11,fontWeight:700}}>Coffee</span></button>
-              <button onClick={()=>handleQuickSelect("transport", 30)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", color:C.text, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}><span style={{fontSize:20}}>🚗</span><span style={{fontSize:11,fontWeight:700}}>Ride</span></button>
-            </div>
-          )}
+      <nav style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:520, zIndex:50 }}>
+        {/* The background bar with a CSS trick for the notch */}
+        <div style={{ position:"absolute", bottom:0, width:"100%", height:70, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", padding:"0 10px" }}>
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingRight:40 }}>
+             <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} setTab={setTab} />
+             <NavBtn id="monthly" icon={ICONS.bills_nav} label="Bills" tab={tab} setTab={setTab} />
+          </div>
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingLeft:40 }}>
+             <NavBtn id="history" icon="☰" label="History" tab={tab} setTab={setTab} />
+             <NavBtn id="settings" icon={ICONS.settings} label="Settings" tab={tab} setTab={setTab} />
+          </div>
         </div>
 
-        <NavBtn id="history" icon="☰" label="History" tab={tab} setTab={setTab} style={{marginLeft:30}} />
-        <NavBtn id="settings" icon={ICONS.settings} label="Settings" tab={tab} setTab={setTab} />
+        {/* The FAB & Cutout Container */}
+        <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", bottom:25, width:76, height:76, borderRadius:"50%", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <button onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={()=>clearTimeout(pressTimer.current)} onContextMenu={e=>e.preventDefault()}
+                  style={{ width:60, height:60, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:32, border:`none`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none", WebkitUserSelect:"none", WebkitTouchCallout:"none" }}
+                  onPointerDown={e=>e.currentTarget.style.transform="scale(0.92)"} onPointerUp={e=>e.currentTarget.style.transform="scale(1)"}>
+            +
+          </button>
+        </div>
+          
+        {/* Quick Add Floating Menu */}
+        {showQuick && (
+          <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:10, display:"flex", gap:10, boxShadow:"0 10px 25px rgba(0,0,0,0.5)", animation:"popIn 0.2s" }}>
+            <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 10px) scale(0.9);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
+            <button onClick={()=>handleQuickSelect("coffee", 50)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", color:C.text, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}><span style={{fontSize:20}}>☕</span><span style={{fontSize:11,fontWeight:700}}>Coffee</span></button>
+            <button onClick={()=>handleQuickSelect("transport", 30)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", color:C.text, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}><span style={{fontSize:20}}>🚗</span><span style={{fontSize:11,fontWeight:700}}>Ride</span></button>
+          </div>
+        )}
       </nav>
 
-      {/* Quick Add Smart Form */}
+      {/* Quick Add Smart Form Modal */}
       {quickForm && (
         <Modal title="Quick Add" onClose={()=>setQuickForm(null)}>
           <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:20, padding:"10px 14px", background:C.card, borderRadius:12, border:`1px solid ${C.border}`}}>
             <span style={{fontSize:24}}>{ICONS[expCats.find(c=>c.id===quickForm.catId)?.icon]||"📌"}</span>
             <span style={{fontSize:16, fontWeight:700, color:C.text}}>{expCats.find(c=>c.id===quickForm.catId)?.name}</span>
           </div>
-          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" value={quickForm.amount} onChange={e=>setQuickForm({...quickForm, amount:e.target.value})} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
+          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={quickForm.amount} onChange={e=>setQuickForm({...quickForm, amount:e.target.value})} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
           <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Pay From</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer"}}>{b.name}</button>)}</div></div>
           <Input label="Note (optional)" placeholder="e.g. Uber, Starbucks..." value={quickForm.note} onChange={e=>setQuickForm({...quickForm, note:e.target.value})}/>
           <Btn full onClick={handleQuickSave}>Save Quickly</Btn>
@@ -295,18 +334,18 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency }) {
   );
 }
 
-function NavBtn({ id, icon, label, tab, setTab, style }) {
+function NavBtn({ id, icon, label, tab, setTab }) {
   const active = tab === id;
   return (
-    <button onClick={()=>setTab(id)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 12px", borderRadius:12, cursor:"pointer", transition:"color .2s", flex:1, ...style }}>
-      <span style={{fontSize:20}}>{icon}</span>
+    <button onClick={()=>setTab(id)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"4px 0", cursor:"pointer", transition:"color .2s", width:50 }}>
+      <span style={{fontSize:22}}>{icon}</span>
       <span style={{fontSize:9, fontWeight:700, letterSpacing:.5, textTransform:"uppercase"}}>{label}</span>
     </button>
   );
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, pocketBudget, txnsAll }) {
+function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll }) {
   const [hideTotal, setHideTotal] = useState(false);
 
   const totalBalance = banks.reduce((s,b)=>s+bankBalance(b.id),0);
@@ -314,25 +353,18 @@ function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, 
   const totalExp = txns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
 
   const currentMonthStr = new Date().toISOString().slice(0,7);
+  const isCurrentMonth = filterMonth === currentMonthStr || filterMonth === "all";
+  
+  // Bills Stats
+  const billsForMonth = isCurrentMonth ? currentMonthStr : filterMonth;
+  const paidBillsCount = bills.filter(b=>b.payments?.some(p=>p.month===billsForMonth)).length;
   const totalBillsCount = bills.length;
-  const paidBillsCount = bills.filter(b=>b.payments?.some(p=>p.month===currentMonthStr)).length;
-  const remainingBillsAmount = bills.filter(b=>!b.payments?.some(p=>p.month===currentMonthStr)).reduce((sum,b)=>sum+b.amount,0);
+  const remainingBillsAmount = bills.filter(b=>!b.payments?.some(p=>p.month===billsForMonth)).reduce((sum,b)=>sum+b.amount,0);
 
-  const now=new Date();
-  const monthOptions=[{value:"all",label:"All Time"},...Array.from({length:12},(_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-i,1);const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;return{value:val,label:`${MONTHS[d.getMonth()]} ${d.getFullYear()}`};})];
-
-  // Safe to Spend Logic (Pocket Budget)
-  let safeToSpendDaily = null;
-  let daysLeft = 0;
-  if (pocketBudget && !isNaN(+pocketBudget) && +pocketBudget > 0) {
-    const d = new Date();
-    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    daysLeft = daysInMonth - d.getDate() + 1;
-    const targetCats = groups.filter(g => g.id === "daily" || g.id === "lifestyle").flatMap(g => g.cats);
-    const spentDaily = txnsAll.filter(t => t.type === "expense" && t.date.startsWith(currentMonthStr) && targetCats.includes(t.catId)).reduce((a,t) => a+t.amount, 0);
-    const remaining = (+pocketBudget) - spentDaily;
-    safeToSpendDaily = Math.max(0, remaining / daysLeft);
-  }
+  // Days left calculation for budgets
+  const d = new Date();
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const daysLeft = Math.max(1, daysInMonth - d.getDate() + 1);
 
   return (
     <div style={{padding:"24px 16px 0"}}>
@@ -344,9 +376,7 @@ function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, 
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div>
-        <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 12px",fontSize:13,outline:"none"}}>
-          {monthOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} />
       </div>
 
       <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Accounts</div>
@@ -376,15 +406,53 @@ function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, 
         <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalExp)}</div></Card>
       </div>
 
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Expense Breakdown</div>
-      {safeToSpendDaily !== null && (
-        <Card style={{padding:"16px", marginBottom:10, borderColor:C.accent+"44", background:C.accentDim}}>
-          <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>🛡️ Safe To Spend</div>
-          <div style={{color:C.accent,fontSize:24,fontWeight:800,marginBottom:2}}>{hideTotal?"••••":fmt(safeToSpendDaily)}</div>
-          <div style={{color:C.faint,fontSize:11,fontWeight:600}}>Daily budget for the next {daysLeft} days</div>
-        </Card>
+      {/* Monthly Bills Tracker Card */}
+      {bills.length > 0 && (
+        <>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Bills</div>
+          <Card style={{padding:"14px 14px 12px", marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <span style={{color:C.text,fontWeight:700,fontSize:14}}>⚡ Upcoming Payments</span>
+              <Pill color={paidBillsCount===totalBillsCount?C.accent:C.red}>{paidBillsCount}/{totalBillsCount} Paid</Pill>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{color:C.red,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(remainingBillsAmount)}</span>
+              <span style={{color:C.muted,fontSize:13}}>remaining</span>
+            </div>
+            <ProgressBar value={paidBillsCount} max={totalBillsCount} color={C.red}/>
+          </Card>
+        </>
       )}
 
+      {/* Dynamic Budgets Section */}
+      {budgets.length > 0 && (
+        <>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+            {budgets.map(bdg => {
+              // Calculate spent for this budget in current month
+              const spent = txnsAll.filter(t => t.type === "expense" && t.date.startsWith(currentMonthStr) && bdg.cats.includes(t.catId)).reduce((a,t) => a+t.amount, 0);
+              const remaining = Math.max(0, bdg.amount - spent);
+              const safeDaily = remaining / daysLeft;
+              return (
+                <Card key={bdg.id} style={{padding:"16px 14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}><div style={{width:8,height:8,borderRadius:99,background:C.accent}}/><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:10}}>
+                    <div>
+                      <div style={{color:C.accent,fontSize:22,fontWeight:800,lineHeight:1}}>{hideTotal?"••••":fmt(remaining)}</div>
+                      <div style={{color:C.faint,fontSize:11,fontWeight:600,marginTop:4}}>Safe Daily: {fmt(safeDaily)}</div>
+                    </div>
+                    <div style={{color:C.muted,fontSize:12}}>of {fmt(bdg.amount)}</div>
+                  </div>
+                  <ProgressBar value={spent} max={bdg.amount} color={C.accent}/>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Expense Breakdown</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         {groups.map(g=>{
           const total=txns.filter(t=>t.type==="expense"&&g.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0);
@@ -397,7 +465,7 @@ function Dashboard({ txns, bills, banks, groups, expCats, savings, filterMonth, 
         })()}
       </div>
 
-      {savings.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div><div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>{savings.map(s=>{const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;return(<Card key={s.id} style={{padding:"14px 14px 12px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span><Pill color={C.yellow}>{pct}%</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:15,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div><ProgressBar value={saved} max={s.goal} color={C.yellow}/></Card>);})}</div></>)}
+      {savings.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div><div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>{savings.map(s=>{const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;return(<Card key={s.id} style={{padding:"14px 14px 12px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span><Pill color={C.yellow}>{pct}%</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div><ProgressBar value={saved} max={s.goal} color={C.yellow}/></Card>);})}</div></>)}
 
       {txns.length>0&&(<><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Recent Transactions</div><div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>{txns.slice(0,5).map(t=><TxnRow key={t.id} txn={t} hideTotal={hideTotal}/>)}</div></>)}
     </div>
@@ -431,16 +499,16 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
   useEffect(()=>{if(type==="expense"&&expCats.length)setCatId(expCats[0].id);if(type==="income"&&incCats.length)setCatId(incCats[0].id);if(type==="saving"&&savings.length)setSavingId(savings[0].id);},[type]);
 
   const handleSubmit=async()=>{
-    if(!amount||isNaN(+amount)||+amount<=0) return;
+    if(!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0) return;
     const bank=banks.find(b=>b.id===bankId);
     if(type==="saving"){
       if(!savingId)return; const sv=savings.find(s=>s.id===savingId); if(!sv)return;
-      const c={id:Date.now().toString(),amount:+amount,date,bankId,bankName:bank?.name};
+      const c={id:Date.now().toString(),amount:parseFloat(amount),date,bankId,bankName:bank?.name};
       await onSaveSavings(savings.map(s=>s.id===savingId?{...s,contributions:[...(s.contributions||[]),c]}:s));
-      await onAdd({type:"saving",amount:+amount,date,bankId,bankName:bank?.name,catName:sv.name,catIcon:"saving",note});
+      await onAdd({type:"saving",amount:parseFloat(amount),date,bankId,bankName:bank?.name,catName:sv.name,catIcon:"saving",note});
     } else {
       const cat=cats.find(c=>c.id===catId);
-      await onAdd({type,amount:+amount,date,bankId,bankName:bank?.name,catId,catName:cat?.name,catIcon:cat?.icon,note});
+      await onAdd({type,amount:parseFloat(amount),date,bankId,bankName:bank?.name,catId,catName:cat?.name,catIcon:cat?.icon,note});
     }
     setAmount(""); setNote(""); setDate(today()); onDone();
   };
@@ -455,7 +523,7 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
       </div>
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div>
-        <input type="number" placeholder="0" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+        <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
       <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
@@ -467,13 +535,13 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
-function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency }) {
+function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, availMonths }) {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
   const [confirmId, setConfirmId] = useState(null);
   const [editTxn, setEditTxn] = useState(null);
-  const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
+  
   const filtered=txns.filter(t=>{
     if(filterType!=="all"&&t.type!==filterType)return false;
     if(filterMonth!=="all"&&!t.date.startsWith(filterMonth))return false;
@@ -488,10 +556,10 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency }
       <div style={{display:"flex",gap:8,marginBottom:14,overflowX:"auto"}}>
         {["all","expense","income","saving"].map(f=>(<button key={f} onClick={()=>setFilterType(f)} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterType===f?C.accent:C.border}`,background:filterType===f?C.accentDim:"transparent",color:filterType===f?C.accent:C.muted,fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize"}}>{f}</button>))}
       </div>
-      <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 12px",color:C.text,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:16}}>
-        <option value="all">All Months</option>
-        {availMonths.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
-      </select>
+      
+      <div style={{marginBottom:16}}>
+        <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} />
+      </div>
 
       <div style={{display:"flex",flexDirection:"column"}}>
         {filtered.length===0&&<EmptyState icon="💸" message="No transactions found." />}
@@ -515,13 +583,13 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   const [note, setNote] = useState(txn.note||"");
   const cats=txn.type==="expense"?expCats:txn.type==="income"?incCats:[];
   const handleSave=async()=>{
-    if(!amount||isNaN(+amount)||+amount<=0)return;
+    if(!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0)return;
     const bank=banks.find(b=>b.id===bankId); const cat=cats.find(c=>c.id===catId);
-    await onSave({amount:+amount,date,bankId,bankName:bank?.name,catId,catName:cat?.name||txn.catName,catIcon:cat?.icon||txn.catIcon,note});
+    await onSave({amount:parseFloat(amount),date,bankId,bankName:bank?.name,catId,catName:cat?.name||txn.catName,catIcon:cat?.icon||txn.catIcon,note});
   };
   return (
     <Modal title="Edit Transaction" onClose={onClose}>
-      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div><input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
+      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
       <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
@@ -539,7 +607,7 @@ function SavingsPage({ savings, onSave, onBack }) {
   const [editId, setEditId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
 
-  const handleAdd=async()=>{if(!name||!goal)return;if(editId){await onSave(savings.map(s=>s.id===editId?{...s,name,goal:+goal}:s));setEditId(null);}else{await onSave([...savings,{id:Date.now().toString(),name,goal:+goal,contributions:[]}]);}setName("");setGoal("");setShowAdd(false);};
+  const handleAdd=async()=>{if(!name||!goal)return;if(editId){await onSave(savings.map(s=>s.id===editId?{...s,name,goal:parseFloat(goal)}:s));setEditId(null);}else{await onSave([...savings,{id:Date.now().toString(),name,goal:parseFloat(goal),contributions:[]}]);}setName("");setGoal("");setShowAdd(false);};
   const startEdit=(s)=>{setEditId(s.id);setName(s.name);setGoal(s.goal);setShowAdd(true);};
 
   return (
@@ -565,14 +633,80 @@ function SavingsPage({ savings, onSave, onBack }) {
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>{fmt(Math.max(0,s.goal-saved))} left</span></div>
                 <ProgressBar value={saved} max={s.goal} color={C.yellow}/>
-                {s.contributions?.length>0&&(<div style={{marginTop:12}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Contributions</div>{s.contributions.slice(-3).reverse().map(c=>(<div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}><span style={{color:C.muted,fontSize:13}}>{fmtDate(c.date)} · {c.bankName}</span><span style={{color:C.yellow,fontWeight:700,fontSize:13}}>+{fmt(c.amount)}</span></div>))}</div>)}
               </div>
             </SwipeRow>
           );
         })}
       </div>
-      {showAdd&&(<Modal title={editId?"Edit Goal":"New Saving Goal"} onClose={()=>{setShowAdd(false);setEditId(null);}}><Input label="Goal Name" placeholder="e.g. Travel Fund..." value={name} onChange={e=>setName(e.target.value)}/><Input label="Target Amount" type="number" value={goal} onChange={e=>setGoal(e.target.value)}/><Btn full onClick={handleAdd}>{editId?"Update Goal":"Create Goal"}</Btn></Modal>)}
+      {showAdd&&(<Modal title={editId?"Edit Goal":"New Saving Goal"} onClose={()=>{setShowAdd(false);setEditId(null);}}><Input label="Goal Name" placeholder="e.g. Travel Fund..." value={name} onChange={e=>setName(e.target.value)}/><Input label="Target Amount" type="number" step="any" value={goal} onChange={e=>setGoal(e.target.value)}/><Btn full onClick={handleAdd}>{editId?"Update Goal":"Create Goal"}</Btn></Modal>)}
       {confirmId&&<ConfirmModal title="Delete Goal?" message="This will permanently delete this saving goal." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(savings.filter(s=>s.id!==confirmId));setConfirmId(null);}}/>}
+    </div>
+  );
+}
+
+// ─── Budgets Page (Custom Multi-Budgets) ──────────────────────────────────────
+function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [selectedCats, setSelectedCats] = useState([]);
+  const [confirmId, setConfirmId] = useState(null);
+
+  const startEdit=(b)=>{setEditId(b.id);setName(b.name);setAmount(b.amount);setSelectedCats(b.cats||[]);setShowAdd(true);};
+  const handleAdd=async()=>{
+    if(!name||!amount||selectedCats.length===0)return;
+    if(editId) await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:parseFloat(amount),cats:selectedCats}:b));
+    else await onSave([...budgets,{id:Date.now().toString(),name,amount:parseFloat(amount),cats:selectedCats}]);
+    setShowAdd(false);setEditId(null);setName("");setAmount("");setSelectedCats([]);
+  };
+
+  return (
+    <div style={{padding:"24px 16px 0"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={onBack} style={{background:"none",border:"none",color:C.accent,fontSize:20,cursor:"pointer",padding:0,lineHeight:1}}>❮</button>
+          <div style={{color:C.text,fontSize:22,fontWeight:800}}>Budgets</div>
+        </div>
+        <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
+      </div>
+      {budgets.length===0&&<EmptyState icon="📊" message="Create specific budgets to track your spending limits." />}
+      
+      <div style={{display:"flex",flexDirection:"column"}}>
+        {budgets.map(b=>(
+          <SwipeRow key={b.id} onEdit={()=>startEdit(b)} onDelete={()=>setConfirmId(b.id)}>
+            <div style={{padding:16}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
+                <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
+              </div>
+              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Linked to {b.cats.length} categories</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,4).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}{b.cats.length>4&&<span style={{color:C.faint,fontSize:12,alignSelf:"center"}}>+{b.cats.length-4} more</span>}</div>
+            </div>
+          </SwipeRow>
+        ))}
+      </div>
+
+      {showAdd&&(<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}}>
+        <Input label="Budget Name" placeholder="e.g. Shopping Allowance" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label={`Monthly Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+        <div style={{marginBottom:14}}>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Tracked Categories</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:150,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
+            {expCats.map(c=>{
+              const checked=selectedCats.includes(c.id);
+              return(
+                <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"4px 0"}}>
+                  <div onClick={()=>setSelectedCats(checked?selectedCats.filter(x=>x!==c.id):[...selectedCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div>
+                  <span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <Btn full onClick={handleAdd}>{editId?"Update Budget":"Save Budget"}</Btn>
+      </Modal>)}
+      {confirmId&&<ConfirmModal title="Delete Budget?" message="This won't delete your transactions, just the budget limit." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
     </div>
   );
 }
@@ -582,25 +716,23 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [confirmUndo, setConfirmUndo] = useState(null); // Bill object to undo
+  const [confirmUndo, setConfirmUndo] = useState(null); 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [bankId, setBankId] = useState(banks[0]?.id||"");
   const [catId, setCatId] = useState(expCats[0]?.id||"");
   
-  // Month Filter setup
   const defaultMonth = new Date().toISOString().slice(0,7);
   const [filterMonth, setFilterMonth] = useState(defaultMonth);
-  // Get all unique months from bills payments history to populate dropdown, plus current month
   const availMonths = [...new Set([...bills.flatMap(b=>b.payments?.map(p=>p.month)||[]), defaultMonth])].sort().reverse();
 
   const isPaid = (bill) => bill.payments?.some(p=>p.month === filterMonth);
 
   const openAdd=(item=null)=>{setEditItem(item);setName(item?.name||"");setAmount(item?.amount?String(item.amount):"");setBankId(item?.bankId||banks[0]?.id||"");setCatId(item?.catId||expCats[0]?.id||"");setShowAdd(true);};
   const handleSave=async()=>{
-    if(!name||!amount||isNaN(+amount)||+amount<=0)return;
-    if(editItem) await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:+amount,bankId,catId}:b));
-    else await onSave([...bills,{id:Date.now().toString(),name,amount:+amount,bankId,catId,payments:[]}]);
+    if(!name||!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0)return;
+    if(editItem) await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:parseFloat(amount),bankId,catId}:b));
+    else await onSave([...bills,{id:Date.now().toString(),name,amount:parseFloat(amount),bankId,catId,payments:[]}]);
     setShowAdd(false);setEditItem(null);setName("");setAmount("");
   };
 
@@ -614,12 +746,10 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const handleUndoConfirm = async () => {
     if(!confirmUndo) return;
     const payment = confirmUndo.payments.find(p=>p.month === filterMonth);
-    if(payment && payment.txnId) await delTxn(payment.txnId); // Cascade delete transaction
+    if(payment && payment.txnId) await delTxn(payment.txnId); 
     await onSave(bills.map(b=>b.id===confirmUndo.id?{...b,payments:b.payments.filter(p=>p.month!==filterMonth)}:b));
     setConfirmUndo(null);
   };
-
-  const handleDelete=async(id)=>{await onSave(bills.filter(b=>b.id!==id));setConfirmDelete(null);};
 
   const paidCount=bills.filter(b=>isPaid(b)).length;
   const totalMonthly=bills.reduce((a,b)=>a+b.amount,0);
@@ -632,9 +762,9 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
         <Btn small onClick={()=>openAdd()}>+ Add Bill</Btn>
       </div>
 
-      <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 12px",fontSize:13,outline:"none",marginBottom:16}}>
-        {availMonths.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
-      </select>
+      <div style={{marginBottom:16}}>
+         <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} />
+      </div>
       
       <div style={{color:C.muted,fontSize:13,marginBottom:16}}>{paidCount}/{bills.length} paid in selected month</div>
       
@@ -674,15 +804,15 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
         })}
       </div>
       
-      {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select><Btn full onClick={handleSave}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
-      {confirmDelete&&<ConfirmModal title="Delete Bill?" message="Remove this from your monthly bills?" onClose={()=>setConfirmDelete(null)} onConfirm={()=>handleDelete(confirmDelete)}/>}
+      {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select><Btn full onClick={handleSave}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
+      {confirmDelete&&<ConfirmModal title="Delete Bill?" message="Remove this from your monthly bills?" onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
       {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This will mark "${confirmUndo.name}" as unpaid and delete the expense transaction from your history.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
     </div>
   );
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
-function Settings({ banks, expCats, incCats, groups, pocketBudget, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onPocketBudget }) {
+function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onOpenBudgets, setLastBackup, txns, bills, savings, budgets }) {
   const [section, setSection] = useState("profile");
   const [modal, setModal] = useState(null);
   const [inputName, setInputName] = useState("");
@@ -691,7 +821,6 @@ function Settings({ banks, expCats, incCats, groups, pocketBudget, onBanks, onEx
   const [inputIcon, setInputIcon] = useState("others");
   const [groupCats, setGroupCats] = useState([]);
   const [nameInput, setNameInput] = useState(username||"");
-  const [budgetInput, setBudgetInput] = useState(pocketBudget||"");
   const [confirmDel, setConfirmDel] = useState(null);
 
   const openAdd=(type,item=null)=>{setModal({type,item});setInputName(item?.name||"");setInputColor(item?.color||C.accent);setInputGroup(item?.group||"daily");setInputIcon(item?.icon||"others");setGroupCats(item?.cats||[]);};
@@ -711,8 +840,23 @@ function Settings({ banks, expCats, incCats, groups, pocketBudget, onBanks, onEx
     else if(type==="group")await onGroups(groups.filter(g=>g.id!==item.id));
     setConfirmDel(null);
   };
+  
+  const handleBackup = async () => {
+    const data = { txns, banks, expCats, incCats, groups, savings, bills, budgets, currency, username };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "DeliveryDiary_Backup.json"; // Fixed name for Overwrite
+    a.click();
+    const now = Date.now();
+    await save(KEYS.lastBackup, now);
+    setLastBackup(now);
+    alert("Backup saved! Check your Downloads folder.");
+  };
+
   const canDelBank=(b)=>bankBalance(b.id)===0;
-  const iconKeys=Object.keys(ICONS).filter(k=>!["dashboard","add","settings","saving","bills_nav","income","expense","transfer","close","check","trash","edit","bank","cash","goal"].includes(k));
+  const iconKeys=Object.keys(ICONS).filter(k=>!["dashboard","add","settings","saving","bills_nav","income","expense","transfer","close","check","trash","edit","bank","cash","goal", "budget"].includes(k));
 
   const SettingRow=({item,type,onEdit,canDel=true})=>(
     <SwipeRow onEdit={()=>onEdit(item)} onDelete={()=>canDel?setConfirmDel({type,item}):alert(`Clear balance first to delete ${item.name}`)}>
@@ -729,23 +873,23 @@ function Settings({ banks, expCats, incCats, groups, pocketBudget, onBanks, onEx
     <div style={{padding:"24px 16px 0"}}>
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>Settings</div>
       <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-        {[{id:"profile",label:"👤 Profile"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."},{id:"incCats",label:"📥 Inc. Cat."},{id:"groups",label:"📊 Groups"}].map(s=>(
+        {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."},{id:"incCats",label:"📥 Inc. Cat."},{id:"groups",label:"📊 Groups"}].map(s=>(
           <button key={s.id} onClick={()=>setSection(s.id)} style={{whiteSpace:"nowrap",padding:"8px 14px",borderRadius:10,border:`1px solid ${section===s.id?C.accent:C.border}`,background:section===s.id?C.accentDim:"transparent",color:section===s.id?C.accent:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{s.label}</button>
         ))}
       </div>
 
       {section==="profile"&&(
         <div>
-          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Budgets</span></div><span style={{color:C.muted}}>❯</span></div>
           
-          <Card style={{marginBottom:16}}>
-            <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Pocket Budget (Safe to Spend)</div>
-            <div style={{color:C.faint,fontSize:12,marginBottom:10,lineHeight:1.4}}>Set your monthly allowance for daily expenses. This excludes bills and savings.</div>
-            <input type="number" value={budgetInput} onChange={e=>setBudgetInput(e.target.value)} placeholder="e.g. 3000" style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/>
-            <Btn full onClick={()=>{onPocketBudget(budgetInput);alert("Budget updated!");}}>Save Budget</Btn>
-          </Card>
-
           <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Your Name</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter your name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim());alert("Name updated!");}}>Save Name</Btn></Card>
+          
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Data & Backup</div>
+          <Card style={{marginBottom:16}}>
+            <p style={{color:C.faint, fontSize:12, marginBottom:12, lineHeight:1.4}}>Download a backup of your data. If your phone asks to replace the existing file, tap Replace.</p>
+            <Btn full onClick={handleBackup} color={C.blue}>⬇️ Download Backup</Btn>
+          </Card>
         </div>
       )}
 
