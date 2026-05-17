@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-// ─── Palette & Helpers ────────────────────────────────────────────────────────
+// ─── Palette & Global Helpers ──────────────────────────────────────────────────
 const C = {
   bg: "#0f0f13", surface: "#17171f", card: "#1e1e28", border: "#2a2a38",
   accent: "#6ee7b7", accentDim: "#1a3d30",
@@ -19,8 +19,18 @@ const CURRENCIES = [
 
 let _currency = "EGP";
 const setCurrency = (c) => { _currency = c; };
-// Fixed decimal rounding: up to 2 decimal places to keep fractions exact
-const fmt = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: _currency, maximumFractionDigits: 2 }).format(n || 0);
+
+// Formatting with EXACT floating points without rigid rounding, forced 1 or 2 decimals if fraction exists
+const fmt = (n) => {
+  const rounded = Math.round(n * 100) / 100;
+  return new Intl.NumberFormat("en-US", { 
+    style: "currency", 
+    currency: _currency, 
+    minimumFractionDigits: rounded % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 2 
+  }).format(rounded);
+};
+
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const fmtDate = (d) => { const dt = new Date(d + "T00:00:00"); return `${DAYS[dt.getDay()]}, ${dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`; };
 const today = () => new Date().toISOString().split("T")[0];
@@ -49,8 +59,8 @@ const DEFAULT_GROUPS = [
   { id:"lifestyle", name:"Lifestyle", color:C.purple, cats:["shopping","entertainment"] }
 ];
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
-const KEYS = { txns:"et_txns", banks:"et_banks", expCats:"et_expCats", incCats:"et_incCats", groups:"et_groups", savings:"et_savings", currency:"et_currency", username:"et_username", lastBackup:"et_lastBackup", bills:"et_bills", budgets:"et_budgets" };
+// ─── Storage Helpers ──────────────────────────────────────────────────────────
+const KEYS = { txns:"et_txns", banks:"et_banks", expCats:"et_expCats", incCats:"et_incCats", groups:"et_groups", savings:"et_savings", currency:"et_currency", username:"et_username", lastBackup:"et_lastBackup", bills:"et_bills", budgets:"et_budgets", q_coffee:"et_q_coffee", q_ride:"et_q_ride" };
 async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
 async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
@@ -94,6 +104,20 @@ function Input({ label, ...props }) {
   );
 }
 
+// ─── Unified Styled Dropdown Selection ──────────────────────────────────────────
+function MonthSelect({ value, onChange, availMonths }) {
+  const options = availMonths.length > 0 ? availMonths : [new Date().toISOString().slice(0,7)];
+  return (
+    <div style={{ position:"relative", display:"inline-block" }}>
+      <select value={value} onChange={onChange} style={{ background:C.card, border:`1px solid ${C.border}`, color:C.text, borderRadius:10, padding:"8px 32px 8px 12px", fontSize:13, fontWeight:600, outline:"none", appearance:"none", cursor:"pointer" }}>
+        <option value="all">All Time</option>
+        {options.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
+      </select>
+      <span style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", color:C.muted, fontSize:10, pointerEvents:"none" }}>▼</span>
+    </div>
+  );
+}
+
 function Select({ label, children, ...props }) {
   return (
     <div style={{ marginBottom:14 }}>
@@ -117,66 +141,62 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
-// ─── Swipeable Row (Separated Swipe Left/Right) ──────────────────────────────
+// ─── Swipeable Row (Highly Fluid Micro-interactions with Center Lock) ─────────
 function SwipeRow({ onEdit, onDelete, children }) {
   const [slide, setSlide] = useState(0);
   const startX = useRef(null);
+  const currentX = useRef(0);
 
-  const handleTouchStart = (e) => { startX.current = e.touches[0].clientX; };
+  const handleTouchStart = (e) => { startX.current = e.touches[0].clientX; currentX.current = slide; };
+  
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
     const diff = e.touches[0].clientX - startX.current;
-    // Limit slide to -80 (left for delete) and +80 (right for edit)
-    if (diff < 0) setSlide(Math.max(diff, -80));
-    else if (diff > 0) setSlide(Math.min(diff, 80));
+    let target = currentX.current + diff;
+
+    // Center lock/Dead-zone magnet mechanism when crossing center boundaries
+    if (currentX.current > 0 && target < 15) target = 0;
+    if (currentX.current < 0 && target > -15) target = 0;
+
+    // Boundaries constraints
+    if (target < 0) setSlide(Math.max(target, -85)); // Swipe left reveals delete
+    else if (target > 0) setSlide(Math.min(target, 85)); // Swipe right reveals edit
+    else setSlide(0);
   };
+  
   const handleTouchEnd = () => {
-    if (slide < -40) setSlide(-80); // Snap to Delete
-    else if (slide > 40) setSlide(80); // Snap to Edit
-    else setSlide(0); // Snap back to center
     startX.current = null;
+    if (slide < -45) setSlide(-85);
+    else if (slide > 45) setSlide(85);
+    else setSlide(0);
   };
 
   return (
     <div style={{ position:"relative", overflow:"hidden", borderRadius:12, marginBottom:8 }}>
-      {/* Background Actions */}
-      <div style={{ position:"absolute", inset:0, display:"flex", justifyContent:"space-between" }}>
-        <button onClick={()=>{setSlide(0); onEdit&&onEdit();}} style={{ width:80, background:C.blueDim, border:`1px solid ${C.blue}33`, color:C.blue, fontSize:20, cursor:"pointer", borderRadius:"12px 0 0 12px" }}>✎</button>
-        <button onClick={()=>{setSlide(0); onDelete&&onDelete();}} style={{ width:80, background:C.redDim, border:`1px solid ${C.red}33`, color:C.red, fontSize:20, cursor:"pointer", borderRadius:"0 12px 12px 0" }}>🗑</button>
+      <div style={{ position:"absolute", inset:0, display:"flex", justifyContent:"space-between", zIndex:0 }}>
+        <button onClick={()=>{setSlide(0); onEdit&&onEdit();}} style={{ width:85, background:C.blueDim, border:"none", color:C.blue, fontSize:18, fontWeight:700, cursor:"pointer" }}>✎ Edit</button>
+        <button onClick={()=>{setSlide(0); onDelete&&onDelete();}} style={{ width:85, background:C.redDim, border:"none", color:C.red, fontSize:18, fontWeight:700, cursor:"pointer" }}>🗑 Delete</button>
       </div>
-      
-      {/* Foreground Card */}
       <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
-           style={{ transform:`translateX(${slide}px)`, transition:startX.current?"none":"transform 0.2s ease", touchAction:"pan-y", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, position:"relative", zIndex:1 }}>
+           style={{ transform:`translateX(${slide}px)`, transition:startX.current?"none":"transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1)", touchAction:"pan-y", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, position:"relative", zIndex:1 }}>
         {children}
       </div>
     </div>
   );
 }
 
-// ─── Empty State (Simple & Clean iOS Style) ──────────────────────────────────
+// ─── Empty State (Muted, Minimalist iOS Style) ───────────────────────────────
 function EmptyState({ icon, message }) {
   return (
-    <div style={{ textAlign:"center", padding:"60px 20px", opacity:0.6 }}>
-      <div style={{ fontSize:36, marginBottom:12, filter:"grayscale(100%) opacity(40%)" }}>{icon}</div>
-      <div style={{ color:C.text, fontSize:16, fontWeight:600, letterSpacing:0.5, marginBottom:6, fontStyle:"italic" }}>Easy come, easy go.</div>
-      <div style={{ color:C.muted, fontSize:13 }}>{message}</div>
+    <div style={{ textAlign:"center", padding:"70px 20px", opacity:0.45 }}>
+      <div style={{ fontSize:32, marginBottom:10, filter:"grayscale(100%) opacity(50%)" }}>{icon}</div>
+      <div style={{ color:C.text, fontSize:14, fontWeight:500, letterSpacing:0.3, marginBottom:4 }}>Easy come, easy go.</div>
+      <div style={{ color:C.muted, fontSize:12 }}>{message}</div>
     </div>
   );
 }
 
-// ─── Dropdown Style Component ────────────────────────────────────────────────
-function MonthSelect({ value, onChange, availMonths }) {
-  const options = availMonths.length > 0 ? availMonths : [new Date().toISOString().slice(0,7)];
-  return (
-    <select value={value} onChange={onChange} style={{ background:C.card, border:`1px solid ${C.border}`, color:C.text, borderRadius:10, padding:"8px 12px", fontSize:14, fontWeight:600, outline:"none", appearance:"none" }}>
-      <option value="all">All Time</option>
-      {options.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
-    </select>
-  );
-}
-
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ─── Main Application Logic ───────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [txns, setTxns] = useState([]);
@@ -195,24 +215,58 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [t,b,ec,ic,g,s,cur,uname,bl,bdg, lb] = await Promise.all([
+      const [t,b,ec,ic,g,s,cur,uname,bl,bdg,lb] = await Promise.all([
         load(KEYS.txns,[]), load(KEYS.banks,DEFAULT_BANKS), load(KEYS.expCats,DEFAULT_EXP_CATS),
         load(KEYS.incCats,DEFAULT_INC_CATS), load(KEYS.groups,DEFAULT_GROUPS), load(KEYS.savings,[]),
         load(KEYS.currency,"EGP"), load(KEYS.username,""), load(KEYS.bills,[]), load(KEYS.budgets,[]), load(KEYS.lastBackup, null)
       ]);
       setTxns(t); setBanks(b); setExpCats(ec); setIncCats(ic); setGroups(g); setSavings(s);
       setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setBills(bl); setBudgets(bdg); setLastBackup(lb);
-      
-      const currentMonth = new Date().toISOString().slice(0,7);
-      setFilterMonth(currentMonth);
+      setFilterMonth(new Date().toISOString().slice(0,7));
       setReady(true);
     })();
   }, []);
 
   const persist = useCallback(async (key,val) => { await save(key,val); }, []);
-  const addTxn = async (t) => { const next=[{...t,id:Date.now().toString()},...txns]; setTxns(next); await persist(KEYS.txns,next); return next; };
+  
+  const bankBalance = useCallback((bankId) => {
+    const inc=txns.filter(t=>t.bankId===bankId&&t.type==="income").reduce((a,t)=>a+t.amount,0);
+    const exp=txns.filter(t=>t.bankId===bankId&&t.type==="expense").reduce((a,t)=>a+t.amount,0);
+    const sav=txns.filter(t=>t.bankId===bankId&&t.type==="saving").reduce((a,t)=>a+t.amount,0);
+    return inc-exp-sav;
+  }, [txns]);
+
+  const addTxn = async (t) => {
+    if (t.type === "expense" || t.type === "saving") {
+      const currentBal = bankBalance(t.bankId);
+      if (currentBal < t.amount) {
+        alert("⚠️ عفواً، رصيد هذا الحساب لا يكفي لإتمام عملية الدفع!");
+        return false;
+      }
+    }
+    const next=[{...t,id:Date.now().toString()},...txns]; 
+    setTxns(next); 
+    await persist(KEYS.txns,next); 
+    return next; 
+  };
+  
   const delTxn = async (id) => { const next=txns.filter(t=>t.id!==id); setTxns(next); await persist(KEYS.txns,next); return next; };
-  const updateTxn = async (id,data) => { const next=txns.map(t=>t.id===id?{...t,...data}:t); setTxns(next); await persist(KEYS.txns,next); };
+  
+  const updateTxn = async (id,data) => {
+    const original = txns.find(t=>t.id===id);
+    if(data.amount && (original.type === "expense" || original.type === "saving")) {
+      const netBalWithoutThis = bankBalance(data.bankId) + original.amount;
+      if (netBalWithoutThis < data.amount) {
+        alert("⚠️ عفواً، رصيد هذا الحساب لا يكفي لإتمام التعديل!");
+        return false;
+      }
+    }
+    const next=txns.map(t=>t.id===id?{...t,...data}:t); 
+    setTxns(next); 
+    await persist(KEYS.txns,next);
+    return true;
+  };
+  
   const saveBanks = async (b) => { setBanks(b); await persist(KEYS.banks,b); };
   const saveExpCats = async (c) => { setExpCats(c); await persist(KEYS.expCats,c); };
   const saveIncCats = async (c) => { setIncCats(c); await persist(KEYS.incCats,c); };
@@ -223,112 +277,133 @@ export default function App() {
   const saveCurrencyHandler = async (c) => { setCurrencyState(c); setCurrency(c); await persist(KEYS.currency,c); };
   const saveUsernameHandler = async (n) => { setUsernameState(n); await persist(KEYS.username,n); };
 
-  const bankBalance = useCallback((bankId) => {
-    const inc=txns.filter(t=>t.bankId===bankId&&t.type==="income").reduce((a,t)=>a+t.amount,0);
-    const exp=txns.filter(t=>t.bankId===bankId&&t.type==="expense").reduce((a,t)=>a+t.amount,0);
-    const sav=txns.filter(t=>t.bankId===bankId&&t.type==="saving").reduce((a,t)=>a+t.amount,0);
-    return inc-exp-sav;
-  }, [txns]);
-
   if (!ready) return <div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:C.accent,fontSize:28}}>◈</div></div>;
 
   const allCats=[...expCats,...incCats];
   const filteredTxns=filterMonth==="all"?txns:txns.filter(t=>t.date.startsWith(filterMonth));
   
-  // Dynamic months based on transactions ONLY
+  // Dynamic Month Filtering based exclusively on transaction records
   const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
   const showBackupAlert = lastBackup && (Date.now() - lastBackup > 3 * 24 * 60 * 60 * 1000);
 
   return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:100, position:"relative"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:110, position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       
       {showBackupAlert && tab==="dashboard" && (
-        <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <span>⚠️ It's been 3 days since your last backup!</span>
-          <button onClick={()=>setTab("settings")} style={{background:"transparent", border:`1px solid ${C.yellow}`, color:C.yellow, borderRadius:8, padding:"4px 8px", fontSize:10}}>Go Backup</button>
+        <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyBetween:"center", alignItems:"center"}}>
+          <span>⚠️ مر أكثر من 3 أيام منذ آخر نسخة احتياطية لك!</span>
+          <button onClick={()=>setTab("settings")} style={{background:"transparent", border:`1px solid ${C.yellow}`, color:C.yellow, borderRadius:8, padding:"4px 8px", fontSize:10}}>نسخ الآن</button>
         </div>
       )}
 
       {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns}/>}
-      {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")}/>}
+      {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
       {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
       {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
       {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>setTab("settings")} currency={currency}/>}
-      {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} txns={txns}/>}
+      {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency}/>}
       {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onOpenBudgets={()=>setTab("budgets")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets}/>}
       
-      <BottomNav tab={tab} setTab={setTab} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} />
+      <BottomNav tab={tab} setTab={setTab} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} bankBalance={bankBalance} />
     </div>
   );
 }
 
-// ─── Custom Curved Bottom Nav ─────────────────────────────────────────────────
-function BottomNav({ tab, setTab, expCats, banks, onAdd, currency }) {
+// ─── Custom Curved Bottom Nav & Smart Defaults ────────────────────────────────
+function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance }) {
   const [showQuick, setShowQuick] = useState(false);
   const [quickForm, setQuickForm] = useState(null);
   const pressTimer = useRef(null);
 
-  const handlePressStart = (e) => { e.preventDefault(); pressTimer.current = setTimeout(() => setShowQuick(true), 400); };
+  const handlePressStart = (e) => { e.preventDefault(); pressTimer.current = setTimeout(() => setShowQuick(true), 450); };
   const handlePressEnd = (e) => { e.preventDefault(); clearTimeout(pressTimer.current); if(!showQuick && !quickForm) setTab("add"); };
 
-  const handleQuickSelect = (catId, amt) => { setShowQuick(false); setQuickForm({ catId, amount: String(amt), bankId: banks[0]?.id||"", note:"" }); };
+  const handleQuickSelect = async (catId) => {
+    setShowQuick(false);
+    // Fetch last saved inputs from memory cache or configure standard fallback defaults
+    const savedData = await load(catId === "coffee" ? KEYS.q_coffee : KEYS.q_ride, null);
+    setQuickForm({
+      catId,
+      amount: savedData ? String(savedData.amount) : "50",
+      bankId: savedData && banks.some(b=>b.id===savedData.bankId) ? savedData.bankId : (banks[0]?.id || ""),
+      note: savedData ? savedData.note : ""
+    });
+  };
+
   const handleQuickSave = async () => {
-    if(!quickForm.amount || isNaN(parseFloat(quickForm.amount))) return;
+    const parsedAmt = parseFloat(quickForm.amount);
+    if(!quickForm.amount || isNaN(parsedAmt) || parsedAmt <= 0) return;
+    
     const cat = expCats.find(c=>c.id===quickForm.catId);
     const bank = banks.find(b=>b.id===quickForm.bankId);
-    await onAdd({ type:"expense", amount:parseFloat(quickForm.amount), date:today(), bankId:quickForm.bankId, bankName:bank?.name, catId:quickForm.catId, catName:cat?.name, catIcon:cat?.icon, note:quickForm.note });
-    setQuickForm(null); setTab("dashboard");
+    
+    const success = await onAdd({ 
+      type:"expense", amount:parsedAmt, date:today(), 
+      bankId:quickForm.bankId, bankName:bank?.name, 
+      catId:quickForm.catId, catName:cat?.name, catIcon:cat?.icon, 
+      note:quickForm.note 
+    });
+
+    if (success !== false) {
+      // Memory persistence mapping for subsequent rapid insertions
+      await save(quickForm.catId === "coffee" ? KEYS.q_coffee : KEYS.q_ride, { amount: parsedAmt, bankId: quickForm.bankId, note: quickForm.note });
+      setQuickForm(null); 
+      setTab("dashboard");
+    }
   };
 
   return (
     <>
       <nav style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:520, zIndex:50 }}>
-        {/* The background bar with a CSS trick for the notch */}
-        <div style={{ position:"absolute", bottom:0, width:"100%", height:70, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", padding:"0 10px" }}>
-          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingRight:40 }}>
+        <div style={{ position:"absolute", bottom:0, width:"100%", height:72, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", padding:"0 10px" }}>
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingRight:44 }}>
              <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} setTab={setTab} />
              <NavBtn id="monthly" icon={ICONS.bills_nav} label="Bills" tab={tab} setTab={setTab} />
           </div>
-          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingLeft:40 }}>
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingLeft:44 }}>
              <NavBtn id="history" icon="☰" label="History" tab={tab} setTab={setTab} />
              <NavBtn id="settings" icon={ICONS.settings} label="Settings" tab={tab} setTab={setTab} />
           </div>
         </div>
 
-        {/* The FAB & Cutout Container */}
-        <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", bottom:25, width:76, height:76, borderRadius:"50%", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {/* Centralised Integrated Cutout Cradle */}
+        <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", bottom:24, width:80, height:80, borderRadius:"50%", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <button onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={()=>clearTimeout(pressTimer.current)} onContextMenu={e=>e.preventDefault()}
-                  style={{ width:60, height:60, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:32, border:`none`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none", WebkitUserSelect:"none", WebkitTouchCallout:"none" }}
-                  onPointerDown={e=>e.currentTarget.style.transform="scale(0.92)"} onPointerUp={e=>e.currentTarget.style.transform="scale(1)"}>
+                  style={{ width:64, height:64, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:34, border:`none`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none", WebkitUserSelect:"none", WebkitTouchCallout:"none" }}
+                  onPointerDown={e=>e.currentTarget.style.transform="scale(0.9)"} onPointerUp={e=>e.currentTarget.style.transform="scale(1)"}>
             +
           </button>
         </div>
           
-        {/* Quick Add Floating Menu */}
+        {/* Scoped Isolated Quick Action Panels */}
         {showQuick && (
-          <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:10, display:"flex", gap:10, boxShadow:"0 10px 25px rgba(0,0,0,0.5)", animation:"popIn 0.2s" }}>
-            <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 10px) scale(0.9);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
-            <button onClick={()=>handleQuickSelect("coffee", 50)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", color:C.text, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}><span style={{fontSize:20}}>☕</span><span style={{fontSize:11,fontWeight:700}}>Coffee</span></button>
-            <button onClick={()=>handleQuickSelect("transport", 30)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", color:C.text, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}><span style={{fontSize:20}}>🚗</span><span style={{fontSize:11,fontWeight:700}}>Ride</span></button>
+          <div style={{ position:"absolute", bottom:114, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:20, padding:12, display:"flex", gap:12, boxShadow:"0 12px 30px rgba(0,0,0,0.6)", animation:"popIn 0.2s" }}>
+            <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 12px) scale(0.95);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
+            <button onClick={()=>handleQuickSelect("coffee")} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, width:74, height:74, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, cursor:"pointer" }}>
+              <span style={{fontSize:26, display:"block", lineHeight:1}}>☕</span>
+              <span style={{fontSize:11,fontWeight:700}}>Coffee</span>
+            </button>
+            <button onClick={()=>handleQuickSelect("transport")} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, width:74, height:74, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, cursor:"pointer" }}>
+              <span style={{fontSize:26, display:"block", lineHeight:1}}>🚗</span>
+              <span style={{fontSize:11,fontWeight:700}}>Ride</span>
+            </button>
           </div>
         )}
       </nav>
 
-      {/* Quick Add Smart Form Modal */}
       {quickForm && (
-        <Modal title="Quick Add" onClose={()=>setQuickForm(null)}>
-          <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:20, padding:"10px 14px", background:C.card, borderRadius:12, border:`1px solid ${C.border}`}}>
-            <span style={{fontSize:24}}>{ICONS[expCats.find(c=>c.id===quickForm.catId)?.icon]||"📌"}</span>
-            <span style={{fontSize:16, fontWeight:700, color:C.text}}>{expCats.find(c=>c.id===quickForm.catId)?.name}</span>
+        <Modal title="Quick Insertion" onClose={()=>setQuickForm(null)}>
+          <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:20, padding:"12px", background:C.card, borderRadius:12, border:`1px solid ${C.border}`}}>
+            <span style={{fontSize:28}}>{quickForm.catId === "coffee" ? "☕" : "🚗"}</span>
+            <span style={{fontSize:16, fontWeight:700, color:C.text}}>{quickForm.catId === "coffee" ? "Coffee & Soft Drinks" : "Transport & Logistics"}</span>
           </div>
           <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={quickForm.amount} onChange={e=>setQuickForm({...quickForm, amount:e.target.value})} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
-          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Pay From</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer"}}>{b.name}</button>)}</div></div>
-          <Input label="Note (optional)" placeholder="e.g. Uber, Starbucks..." value={quickForm.note} onChange={e=>setQuickForm({...quickForm, note:e.target.value})}/>
-          <Btn full onClick={handleQuickSave}>Save Quickly</Btn>
+          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Source Ledger</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer"}}>{b.name}</button>)}</div></div>
+          <Input label="Annotation / Note" placeholder="e.g. Starbucks, Taxi..." value={quickForm.note} onChange={e=>setQuickForm({...quickForm, note:e.target.value})}/>
+          <Btn full onClick={handleQuickSave}>Confirm Settlement</Btn>
         </Modal>
       )}
-      {/* Tap anywhere to close quick menu */}
       {showQuick && <div onClick={()=>setShowQuick(false)} style={{position:"fixed", inset:0, zIndex:40}} />}
     </>
   );
@@ -337,14 +412,14 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency }) {
 function NavBtn({ id, icon, label, tab, setTab }) {
   const active = tab === id;
   return (
-    <button onClick={()=>setTab(id)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"4px 0", cursor:"pointer", transition:"color .2s", width:50 }}>
-      <span style={{fontSize:22}}>{icon}</span>
+    <button onClick={()=>setTab(id)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0", cursor:"pointer", transition:"color .2s", width:55 }}>
+      <span style={{fontSize:20}}>{icon}</span>
       <span style={{fontSize:9, fontWeight:700, letterSpacing:.5, textTransform:"uppercase"}}>{label}</span>
     </button>
   );
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
+// ─── Dashboard Screen ─────────────────────────────────────────────────────────
 function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll }) {
   const [hideTotal, setHideTotal] = useState(false);
 
@@ -355,13 +430,11 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   const currentMonthStr = new Date().toISOString().slice(0,7);
   const isCurrentMonth = filterMonth === currentMonthStr || filterMonth === "all";
   
-  // Bills Stats
   const billsForMonth = isCurrentMonth ? currentMonthStr : filterMonth;
   const paidBillsCount = bills.filter(b=>b.payments?.some(p=>p.month===billsForMonth)).length;
   const totalBillsCount = bills.length;
   const remainingBillsAmount = bills.filter(b=>!b.payments?.some(p=>p.month===billsForMonth)).reduce((sum,b)=>sum+b.amount,0);
 
-  // Days left calculation for budgets
   const d = new Date();
   const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   const daysLeft = Math.max(1, daysInMonth - d.getDate() + 1);
@@ -389,6 +462,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
           <button onClick={()=>setHideTotal(v=>!v)} style={{background:C.border,border:"none",color:C.muted,width:36,height:36,borderRadius:99,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{hideTotal?"🙈":"🐵"}</button>
         </div>
       </Card>
+      
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         {banks.map(b=>{
           const bal=bankBalance(b.id);
@@ -406,7 +480,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalExp)}</div></Card>
       </div>
 
-      {/* Monthly Bills Tracker Card */}
+      {/* Structured Native Monthly Bills Tracker Card */}
       {bills.length > 0 && (
         <>
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Bills</div>
@@ -424,23 +498,22 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
-      {/* Dynamic Budgets Section */}
+      {/* Symmetric Unified Budgeting Cluster Layout */}
       {budgets.length > 0 && (
         <>
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
             {budgets.map(bdg => {
-              // Calculate spent for this budget in current month
               const spent = txnsAll.filter(t => t.type === "expense" && t.date.startsWith(currentMonthStr) && bdg.cats.includes(t.catId)).reduce((a,t) => a+t.amount, 0);
               const remaining = Math.max(0, bdg.amount - spent);
               const safeDaily = remaining / daysLeft;
               return (
-                <Card key={bdg.id} style={{padding:"16px 14px"}}>
+                <Card key={bdg.id} style={{padding:"14px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}><div style={{width:8,height:8,borderRadius:99,background:C.accent}}/><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span></div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:10}}>
                     <div>
-                      <div style={{color:C.accent,fontSize:22,fontWeight:800,lineHeight:1}}>{hideTotal?"••••":fmt(remaining)}</div>
-                      <div style={{color:C.faint,fontSize:11,fontWeight:600,marginTop:4}}>Safe Daily: {fmt(safeDaily)}</div>
+                      <div style={{color:C.accent,fontSize:20,fontWeight:800,lineHeight:1}}>{hideTotal?"••••":fmt(remaining)}</div>
+                      <div style={{color:C.muted,fontSize:11,fontWeight:500,marginTop:5}}>Safe Daily: {fmt(safeDaily)}</div>
                     </div>
                     <div style={{color:C.muted,fontSize:12}}>of {fmt(bdg.amount)}</div>
                   </div>
@@ -472,21 +545,8 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   );
 }
 
-function TxnRow({ txn, hideTotal }) {
-  const isExp=txn.type==="expense", isInc=txn.type==="income";
-  return (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px"}}>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}>
-        <div style={{width:36,height:36,borderRadius:10,background:isExp?C.redDim:isInc?C.accentDim:C.yellowDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{txn.type==="saving"?ICONS.saving:ICONS[txn.catIcon]||"📌"}</div>
-        <div><div style={{color:C.text,fontWeight:600,fontSize:14}}>{txn.catName||txn.type}</div><div style={{color:C.muted,fontSize:11}}>{txn.bankName} · {fmtDate(txn.date)}</div></div>
-      </div>
-      <div style={{color:isExp?C.red:isInc?C.accent:C.yellow,fontWeight:800,fontSize:15}}>{isExp?"−":"+"}{hideTotal?"••••":fmt(txn.amount)}</div>
-    </div>
-  );
-}
-
-// ─── Add Transaction ──────────────────────────────────────────────────────────
-function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone }) {
+// ─── Add Transaction Screen ───────────────────────────────────────────────────
+function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone, bankBalance }) {
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today());
@@ -499,18 +559,23 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
   useEffect(()=>{if(type==="expense"&&expCats.length)setCatId(expCats[0].id);if(type==="income"&&incCats.length)setCatId(incCats[0].id);if(type==="saving"&&savings.length)setSavingId(savings[0].id);},[type]);
 
   const handleSubmit=async()=>{
-    if(!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0) return;
+    const parsedAmt = parseFloat(amount);
+    if(!amount||isNaN(parsedAmt)||parsedAmt<=0) return;
     const bank=banks.find(b=>b.id===bankId);
+    
     if(type==="saving"){
       if(!savingId)return; const sv=savings.find(s=>s.id===savingId); if(!sv)return;
-      const c={id:Date.now().toString(),amount:parseFloat(amount),date,bankId,bankName:bank?.name};
-      await onSaveSavings(savings.map(s=>s.id===savingId?{...s,contributions:[...(s.contributions||[]),c]}:s));
-      await onAdd({type:"saving",amount:parseFloat(amount),date,bankId,bankName:bank?.name,catName:sv.name,catIcon:"saving",note});
+      const success = await onAdd({type:"saving",amount:parsedAmt,date,bankId,bankName:bank?.name,catName:sv.name,catIcon:"saving",note});
+      if(success !== false) {
+        const c={id:Date.now().toString(),amount:parsedAmt,date,bankId,bankName:bank?.name};
+        await onSaveSavings(savings.map(s=>s.id===savingId?{...s,contributions:[...(s.contributions||[]),c]}:s));
+        setAmount(""); setNote(""); onDone();
+      }
     } else {
       const cat=cats.find(c=>c.id===catId);
-      await onAdd({type,amount:parseFloat(amount),date,bankId,bankName:bank?.name,catId,catName:cat?.name,catIcon:cat?.icon,note});
+      const success = await onAdd({type,amount:parsedAmt,date,bankId,bankName:bank?.name,catId,catName:cat?.name,catIcon:cat?.icon,note});
+      if(success !== false) { setAmount(""); setNote(""); onDone(); }
     }
-    setAmount(""); setNote(""); setDate(today()); onDone();
   };
 
   return (
@@ -522,7 +587,7 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
         ))}
       </div>
       <div style={{marginBottom:14}}>
-        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
         <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
       <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
@@ -534,7 +599,7 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
   );
 }
 
-// ─── History ──────────────────────────────────────────────────────────────────
+// ─── History Screen ───────────────────────────────────────────────────────────
 function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, availMonths }) {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -558,7 +623,7 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
       </div>
       
       <div style={{marginBottom:16}}>
-        <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} />
+         <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} />
       </div>
 
       <div style={{display:"flex",flexDirection:"column"}}>
@@ -570,7 +635,7 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
         ))}
       </div>
       {confirmId&&<ConfirmModal title="Delete Transaction?" message="This action cannot be undone." onClose={()=>setConfirmId(null)} onConfirm={()=>{onDelete(confirmId);setConfirmId(null);}}/>}
-      {editTxn&&<EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} onSave={async(data)=>{await onUpdate(editTxn.id,data);setEditTxn(null);}} onClose={()=>setEditTxn(null)}/>}
+      {editTxn&&<EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} onSave={async(data)=>{const ok=await onUpdate(editTxn.id,data); if(ok)setEditTxn(null);}} onClose={()=>setEditTxn(null)}/>}
     </div>
   );
 }
@@ -582,14 +647,10 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   const [catId, setCatId] = useState(txn.catId||"");
   const [note, setNote] = useState(txn.note||"");
   const cats=txn.type==="expense"?expCats:txn.type==="income"?incCats:[];
+  
   const handleSave=async()=>{
-    if(!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0)return;
-    const bank=banks.find(b=>b.id===bankId); const cat=cats.find(c=>c.id===catId);
-    await onSave({amount:parseFloat(amount),date,bankId,bankName:bank?.name,catId,catName:cat?.name||txn.catName,catIcon:cat?.icon||txn.catIcon,note});
-  };
-  return (
-    <Modal title="Edit Transaction" onClose={onClose}>
-      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
+    const parsed = parseFloat(amount);
+    if(!amount||isNaN(parsed)||parsed style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
       <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
@@ -599,15 +660,21 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   );
 }
 
-// ─── Savings ─────────────────────────────────────────────────────────────────
-function SavingsPage({ savings, onSave, onBack }) {
+// ─── Savings Page ────────────────────────────────────────────────────────────
+function SavingsPage({ savings, onSave, txns, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
   const [editId, setEditId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
 
-  const handleAdd=async()=>{if(!name||!goal)return;if(editId){await onSave(savings.map(s=>s.id===editId?{...s,name,goal:parseFloat(goal)}:s));setEditId(null);}else{await onSave([...savings,{id:Date.now().toString(),name,goal:parseFloat(goal),contributions:[]}]);}setName("");setGoal("");setShowAdd(false);};
+  const handleAdd=async()=>{
+    if(!name||!goal)return;
+    const parsedGoal = parseFloat(goal);
+    if(editId){await onSave(savings.map(s=>s.id===editId?{...s,name,goal:parsedGoal}:s));setEditId(null);}
+    else{await onSave([...savings,{id:Date.now().toString(),name,goal:parsedGoal,contributions:[]}]);}
+    setName("");setGoal("");setShowAdd(false);
+  };
   const startEdit=(s)=>{setEditId(s.id);setName(s.name);setGoal(s.goal);setShowAdd(true);};
 
   return (
@@ -619,7 +686,7 @@ function SavingsPage({ savings, onSave, onBack }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
       </div>
-      {savings.length===0&&<EmptyState icon="◎" message="No saving goals yet." />}
+      {savings.length===0&&<EmptyState icon="◎" message="No saving goals configured yet." />}
       <div style={{display:"flex",flexDirection:"column"}}>
         {savings.map(s=>{
           const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
@@ -644,7 +711,7 @@ function SavingsPage({ savings, onSave, onBack }) {
   );
 }
 
-// ─── Budgets Page (Custom Multi-Budgets) ──────────────────────────────────────
+// ─── Budgets Screen (Multi-Budgets Standalone Module) ─────────────────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -654,10 +721,12 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   const [confirmId, setConfirmId] = useState(null);
 
   const startEdit=(b)=>{setEditId(b.id);setName(b.name);setAmount(b.amount);setSelectedCats(b.cats||[]);setShowAdd(true);};
+  
   const handleAdd=async()=>{
     if(!name||!amount||selectedCats.length===0)return;
-    if(editId) await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:parseFloat(amount),cats:selectedCats}:b));
-    else await onSave([...budgets,{id:Date.now().toString(),name,amount:parseFloat(amount),cats:selectedCats}]);
+    const parsedAmt = parseFloat(amount);
+    if(editId) await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:parsedAmt,cats:selectedCats}:b));
+    else await onSave([...budgets,{id:Date.now().toString(),name,amount:parsedAmt,cats:selectedCats}]);
     setShowAdd(false);setEditId(null);setName("");setAmount("");setSelectedCats([]);
   };
 
@@ -670,7 +739,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
       </div>
-      {budgets.length===0&&<EmptyState icon="📊" message="Create specific budgets to track your spending limits." />}
+      {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
       
       <div style={{display:"flex",flexDirection:"column"}}>
         {budgets.map(b=>(
@@ -680,23 +749,23 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
                 <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
                 <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
               </div>
-              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Linked to {b.cats.length} categories</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,4).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}{b.cats.length>4&&<span style={{color:C.faint,fontSize:12,alignSelf:"center"}}>+{b.cats.length-4} more</span>}</div>
+              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Monitoring {b.cats.length} expense nodes</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,5).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}</div>
             </div>
           </SwipeRow>
         ))}
       </div>
 
-      {showAdd&&(<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}}>
-        <Input label="Budget Name" placeholder="e.g. Shopping Allowance" value={name} onChange={e=>setName(e.target.value)}/>
-        <Input label={`Monthly Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+      {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}}>
+        <Input label="Budget / Envelope Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
         <div style={{marginBottom:14}}>
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Tracked Categories</div>
-          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:150,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
             {expCats.map(c=>{
               const checked=selectedCats.includes(c.id);
               return(
-                <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"4px 0"}}>
+                <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"5px 0", userSelect:"none"}}>
                   <div onClick={()=>setSelectedCats(checked?selectedCats.filter(x=>x!==c.id):[...selectedCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div>
                   <span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span>
                 </label>
@@ -704,15 +773,15 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
             })}
           </div>
         </div>
-        <Btn full onClick={handleAdd}>{editId?"Update Budget":"Save Budget"}</Btn>
+        <Btn full onClick={handleAdd}>Commit Limit</Btn>
       </Modal>)}
-      {confirmId&&<ConfirmModal title="Delete Budget?" message="This won't delete your transactions, just the budget limit." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
+      {confirmId&&<ConfirmModal title="Remove Envelope Budget?" message="This drops the limit tracking profile without dropping historical expenses." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
     </div>
   );
 }
 
-// ─── Monthly Bills ────────────────────────────────────────────────────────────
-function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, txns }) {
+// ─── Monthly Bills Screen ─────────────────────────────────────────────────────
+function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -729,18 +798,29 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const isPaid = (bill) => bill.payments?.some(p=>p.month === filterMonth);
 
   const openAdd=(item=null)=>{setEditItem(item);setName(item?.name||"");setAmount(item?.amount?String(item.amount):"");setBankId(item?.bankId||banks[0]?.id||"");setCatId(item?.catId||expCats[0]?.id||"");setShowAdd(true);};
+  
   const handleSave=async()=>{
-    if(!name||!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0)return;
-    if(editItem) await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:parseFloat(amount),bankId,catId}:b));
-    else await onSave([...bills,{id:Date.now().toString(),name,amount:parseFloat(amount),bankId,catId,payments:[]}]);
+    const parsedAmt = parseFloat(amount);
+    if(!name||!amount||isNaN(parsedAmt)||parsedAmt<=0)return;
+    if(editItem) await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:parsedAmt,bankId,catId}:b));
+    else await onSave([...bills,{id:Date.now().toString(),name,amount:parsedAmt,bankId,catId,payments:[]}]);
     setShowAdd(false);setEditItem(null);setName("");setAmount("");
   };
 
   const handlePay=async(bill)=>{
     const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
     const txnId=Date.now().toString(); const dateStr=today();
-    await onAddTxn({id:txnId,type:"expense",amount:bill.amount,date:dateStr,bankId:bill.bankId,bankName:bank?.name,catId:bill.catId,catName:cat?.name||bill.name,catIcon:cat?.icon||"bills",note:`Monthly: ${bill.name}`});
-    await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:filterMonth,date:dateStr,txnId}]}:b));
+    
+    const success = await onAddTxn({
+      type:"expense",amount:bill.amount,date:dateStr,
+      bankId:bill.bankId,bankName:bank?.name,
+      catId:bill.catId,catName:cat?.name||bill.name,catIcon:cat?.icon||"bills",
+      note:`Monthly Bill Settlement: ${bill.name}`
+    });
+
+    if (success !== false) {
+      await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:filterMonth,date:dateStr,txnId}]}:b));
+    }
   };
 
   const handleUndoConfirm = async () => {
@@ -757,7 +837,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
 
   return (
     <div style={{padding:"24px 16px 0"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div style={{color:C.text,fontSize:22,fontWeight:800}}>Monthly Bills</div>
         <Btn small onClick={()=>openAdd()}>+ Add Bill</Btn>
       </div>
@@ -775,7 +855,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
         </div>
       )}
       
-      {bills.length===0&&<EmptyState icon="📋" message="No monthly bills set up yet." />}
+      {bills.length===0&&<EmptyState icon="📋" message="No recurrent fixed monthly bill items configured yet." />}
       <div style={{display:"flex",flexDirection:"column"}}>
         {bills.map(bill=>{
           const paid=isPaid(bill);
@@ -783,20 +863,18 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
           const thisPay=bill.payments?.find(p=>p.month===filterMonth);
           return (
             <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
-              <div style={{padding:"16px 16px 14px", border:`1.5px solid ${paid?C.accent+"66":C.red+"66"}`, borderRadius:12}}>
+              <div style={{padding:"14px", border:`1.5px solid ${paid?C.accent+"44":C.red+"44"}`, borderRadius:12, background:C.card}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                      <span style={{color:C.text,fontWeight:700,fontSize:15}}>{bill.name}</span>
-                    </div>
-                    <div style={{color:C.muted,fontSize:12}}>{bank?.name} · {cat?.name||"—"}</div>
+                    <span style={{color:C.text,fontWeight:700,fontSize:15, display:"block", marginBottom:4}}>{bill.name}</span>
+                    <div style={{color:C.muted,fontSize:12}}>{bank?.name} · {cat?.name||"Fixed Account"}</div>
                   </div>
-                  <div style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(bill.amount)}</div>
+                  <div style={{color:C.text,fontSize:17,fontWeight:800}}>{fmt(bill.amount)}</div>
                 </div>
                 {!paid?(
-                  <button onClick={()=>handlePay(bill)} style={{width:"100%",background:C.redDim,border:`1.5px solid ${C.red}`,color:C.red,borderRadius:10,padding:"10px 0",fontWeight:700,fontSize:14,cursor:"pointer",transition:"opacity .15s"}}>Pay Bill ❌</button>
+                  <button onClick={()=>handlePay(bill)} style={{width:"100%",background:C.redDim,border:`1px solid ${C.red}`,color:C.red,borderRadius:10,padding:"10px 0",fontWeight:700,fontSize:14,cursor:"pointer"}}>Pay Bill ❌</button>
                 ):(
-                  <button onClick={()=>setConfirmUndo(bill)} style={{width:"100%",background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"10px 0",fontWeight:700,fontSize:14,cursor:"pointer",transition:"opacity .15s"}}>Paid ✅ {thisPay?.date&&`(${fmtDate(thisPay.date)})`}</button>
+                  <button onClick={()=>setConfirmUndo(bill)} style={{width:"100%",background:C.accentDim,border:`1px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"10px 0",fontWeight:700,fontSize:14,cursor:"pointer"}}>Paid ✅ {thisPay?.date&&`(${thisPay.date.slice(5)})`}</button>
                 )}
               </div>
             </SwipeRow>
@@ -805,13 +883,13 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
       </div>
       
       {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select><Btn full onClick={handleSave}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
-      {confirmDelete&&<ConfirmModal title="Delete Bill?" message="Remove this from your monthly bills?" onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
-      {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This will mark "${confirmUndo.name}" as unpaid and delete the expense transaction from your history.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
+      {confirmDelete&&<ConfirmModal title="Delete Permanent Record?" message="Remove this from your monthly template cycle entirely?" onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
+      {confirmUndo&&<ConfirmModal title="Revert Settlement status?" message={`This will flag "${confirmUndo.name}" as outstanding and automatically delete the ledger entry.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
     </div>
   );
 }
 
-// ─── Settings ─────────────────────────────────────────────────────────────────
+// ─── Settings Screen ──────────────────────────────────────────────────────────
 function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onOpenBudgets, setLastBackup, txns, bills, savings, budgets }) {
   const [section, setSection] = useState("profile");
   const [modal, setModal] = useState(null);
@@ -824,6 +902,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
   const [confirmDel, setConfirmDel] = useState(null);
 
   const openAdd=(type,item=null)=>{setModal({type,item});setInputName(item?.name||"");setInputColor(item?.color||C.accent);setInputGroup(item?.group||"daily");setInputIcon(item?.icon||"others");setGroupCats(item?.cats||[]);};
+  
   const handleSave=async()=>{
     if(!inputName.trim())return; const id=modal.item?.id||Date.now().toString();
     if(modal.type==="bank") await onBanks(modal.item?banks.map(b=>b.id===id?{id,name:inputName,color:inputColor}:b):[...banks,{id,name:inputName,color:inputColor}]);
@@ -832,6 +911,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     else if(modal.type==="group") await onGroups(modal.item?groups.map(g=>g.id===id?{id,name:inputName,color:inputColor,cats:groupCats}:g):[...groups,{id,name:inputName,color:inputColor,cats:groupCats}]);
     setModal(null);
   };
+  
   const doDelete=async()=>{
     const{type,item}=confirmDel;
     if(type==="bank")await onBanks(banks.filter(b=>b.id!==item.id));
@@ -847,69 +927,63 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "DeliveryDiary_Backup.json"; // Fixed name for Overwrite
+    a.download = "DeliveryDiary_Backup.json"; // Overwrite triggers prompt on matching names
     a.click();
     const now = Date.now();
     await save(KEYS.lastBackup, now);
     setLastBackup(now);
-    alert("Backup saved! Check your Downloads folder.");
+    alert("🔄 Backup transaction completed successfully.");
   };
 
   const canDelBank=(b)=>bankBalance(b.id)===0;
   const iconKeys=Object.keys(ICONS).filter(k=>!["dashboard","add","settings","saving","bills_nav","income","expense","transfer","close","check","trash","edit","bank","cash","goal", "budget"].includes(k));
 
-  const SettingRow=({item,type,onEdit,canDel=true})=>(
-    <SwipeRow onEdit={()=>onEdit(item)} onDelete={()=>canDel?setConfirmDel({type,item}):alert(`Clear balance first to delete ${item.name}`)}>
-      <div style={{display:"flex",alignItems:"center",padding:"12px 16px"}}>
-        {(type==="bank"||type==="group")&&<div style={{width:10,height:10,borderRadius:99,background:item.color,marginRight:10}}/>}
-        {(type==="expCat"||type==="incCat")&&<span style={{fontSize:18,marginRight:10}}>{ICONS[item.icon]||"📌"}</span>}
-        <div><div style={{color:C.text,fontWeight:600,fontSize:14}}>{item.name}</div>
-        {type==="bank"&&<div style={{color:C.faint,fontSize:11}}>{fmt(bankBalance(item.id))}</div>}</div>
-      </div>
-    </SwipeRow>
-  );
-
   return (
     <div style={{padding:"24px 16px 0"}}>
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>Settings</div>
       <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-        {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."},{id:"incCats",label:"📥 Inc. Cat."},{id:"groups",label:"📊 Groups"}].map(s=>(
+        {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."}].map(s=>(
           <button key={s.id} onClick={()=>setSection(s.id)} style={{whiteSpace:"nowrap",padding:"8px 14px",borderRadius:10,border:`1px solid ${section===s.id?C.accent:C.border}`,background:section===s.id?C.accentDim:"transparent",color:section===s.id?C.accent:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{s.label}</button>
         ))}
       </div>
 
       {section==="profile"&&(
         <div>
-          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals</span></div><span style={{color:C.muted}}>❯</span></div>
-          <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Budgets</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals Setup</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Monthly Budgets Controls</span></div><span style={{color:C.muted}}>❯</span></div>
           
-          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Your Name</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter your name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim());alert("Name updated!");}}>Save Name</Btn></Card>
+          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Profile Username</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim());alert("Username configuration updated!");}}>Commit Name</Btn></Card>
           
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Data & Backup</div>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Vault Ledger Backups</div>
           <Card style={{marginBottom:16}}>
-            <p style={{color:C.faint, fontSize:12, marginBottom:12, lineHeight:1.4}}>Download a backup of your data. If your phone asks to replace the existing file, tap Replace.</p>
-            <Btn full onClick={handleBackup} color={C.blue}>⬇️ Download Backup</Btn>
+            <p style={{color:C.muted, fontSize:12, marginBottom:12, lineHeight:1.4}}>Download backup payload files locally. If prompted for overwrite, accept replace properties.</p>
+            <Btn full onClick={handleBackup} color={C.blue}>⬇️ Download Secure Backup</Btn>
           </Card>
         </div>
       )}
 
       {section==="currency"&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>{CURRENCIES.map(cur=>(<button key={cur.code} onClick={()=>onCurrency(cur.code)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:currency===cur.code?C.accentDim:C.card,border:`1.5px solid ${currency===cur.code?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",textAlign:"left"}}><div><div style={{color:currency===cur.code?C.accent:C.text,fontWeight:700,fontSize:15}}>{cur.code}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>{cur.name}</div></div>{currency===cur.code&&<span style={{color:C.accent,fontSize:20}}>✓</span>}</button>))}</div>)}
-      {section==="banks"&&(<><div style={{display:"flex",flexDirection:"column"}}>{banks.map(b=><SettingRow key={b.id} item={b} type="bank" onEdit={i=>openAdd("bank",i)} canDel={canDelBank(b)}/>)}</div><Btn outline full onClick={()=>openAdd("bank")}>+ Add Account</Btn></>)}
-      {section==="expCats"&&(<><div style={{display:"flex",flexDirection:"column"}}>{expCats.map(c=><SettingRow key={c.id} item={c} type="expCat" onEdit={i=>openAdd("expCat",i)}/>)}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Category</Btn></>)}
-      {section==="incCats"&&(<><div style={{display:"flex",flexDirection:"column"}}>{incCats.map(c=><SettingRow key={c.id} item={c} type="incCat" onEdit={i=>openAdd("incCat",i)}/>)}</div><Btn outline full onClick={()=>openAdd("incCat")}>+ Add Category</Btn></>)}
-      {section==="groups"&&(<><div style={{display:"flex",flexDirection:"column"}}>{groups.map(g=>(<SwipeRow key={g.id} onEdit={()=>openAdd("group",g)} onDelete={()=>setConfirmDel({type:"group",item:g})}><div style={{padding:"12px 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}><div style={{width:10,height:10,borderRadius:99,background:g.color}}/><span style={{color:C.text,fontWeight:700}}>{g.name}</span></div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{g.cats.map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<Pill key={cid} color={g.color}>{cat.name}</Pill>:null;})}</div></div></SwipeRow>))}</div><Btn outline full onClick={()=>openAdd("group")}>+ Add Group</Btn></>)}
+      {section==="banks"&&(<><div style={{display:"flex",flexDirection:"column"}}>{banks.map(b=>(
+        <SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>canDelBank(b)?setConfirmDel({type:"bank",item:b}):alert("Clear balance statement fully first.")}>
+          <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}}><div style={{width:10,height:10,borderRadius:99,background:b.color,marginRight:10}}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
+        </SwipeRow>
+      ))}</div><Btn outline full onClick={()=>openAdd("bank")}>+ Add Account Node</Btn></>)}
+      {section==="expCats"&&(<><div style={{display:"flex",flexDirection:"column"}}>{expCats.map(c=>(
+        <SwipeRow key={c.id} onEdit={()=>openAdd("expCat",c)} onDelete={()=>setConfirmDel({type:"expCat",item:c})}>
+          <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}}><span style={{fontSize:18,marginRight:10}}>{ICONS[c.icon]||"📌"}</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>{c.name}</span></div>
+        </SwipeRow>
+      ))}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Expense Node</Btn></>)}
 
       {modal&&(
-        <Modal title={`${modal.item?"Edit":"Add"} ${modal.type}`} onClose={()=>setModal(null)}>
-          <Input label="Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
-          {(modal.type==="bank"||modal.type==="group")&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>)}
-          {(modal.type==="expCat"||modal.type==="incCat")&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
-          {modal.type==="expCat"&&(<Select label="Group Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
-          {modal.type==="group"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Expense Categories</div><div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflow:"auto"}}>{expCats.map(c=>{const checked=groupCats.includes(c.id);return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 0"}}><div onClick={()=>setGroupCats(checked?groupCats.filter(x=>x!==c.id):[...groupCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div><span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span></label>);})}</div></div>)}
-          <Btn full onClick={handleSave} style={{marginTop:8}}>Save</Btn>
+        <Modal title={`${modal.item?"Modify":"Append"} ${modal.type}`} onClose={()=>setModal(null)}>
+          <Input label="Label Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
+          {modal.type==="bank"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Hex Tone Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>)}
+          {modal.type==="expCat"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>System Glyphs Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
+          {modal.type==="expCat"&&(<Select label="Group Allocation Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
+          <Btn full onClick={handleSave} style={{marginTop:8}}>Commit Settings</Btn>
         </Modal>
       )}
-      {confirmDel&&<ConfirmModal title="Delete?" message="Are you sure? This cannot be undone." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
+      {confirmDel&&<ConfirmModal title="Confirm Drop Operation?" message="Are you absolutely sure? Associated tracking nodes might mismatch." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
     </div>
   );
 }
