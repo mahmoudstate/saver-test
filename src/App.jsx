@@ -75,73 +75,6 @@ const KEYS = {
 async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
 async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
-// ─── Native-Style Fluid Elastic Swipe Back View Provider (Only used in DeepLedger) ──
-function SwipeBackProvider({ onSwipeBack, children, active }) {
-  const [offsetX, setOffsetX] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const currentTranslateX = useRef(0);
-  const isValidSwipe = useRef(false);
-
-  const handleTouchStart = (e) => {
-    if (!active || isAnimating) return;
-    startX.current = e.touches[0].clientX;
-    startY.current = e.touches[0].clientY;
-    currentTranslateX.current = 0;
-    isValidSwipe.current = false;
-  };
-
-  const handleTouchMove = (e) => {
-    if (!active || isAnimating) return;
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    
-    const diffX = currentX - startX.current;
-    const diffY = Math.abs(currentY - startY.current);
-
-    if (!isValidSwipe.current && diffX > 15 && diffY < 8) {
-      isValidSwipe.current = true;
-    }
-
-    if (isValidSwipe.current && diffX > 0) {
-      e.preventDefault();
-      currentTranslateX.current = diffX;
-      setOffsetX(diffX);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!active || isAnimating || !isValidSwipe.current) return;
-    
-    setIsAnimating(true);
-    const triggerThreshold = window.innerWidth * 0.35;
-
-    if (currentTranslateX.current > triggerThreshold) {
-      setOffsetX(window.innerWidth);
-      setTimeout(() => {
-        onSwipeBack();
-        setOffsetX(0);
-        setIsAnimating(false);
-      }, 200);
-    } else {
-      setOffsetX(0);
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 150);
-    }
-    isValidSwipe.current = false;
-  };
-
-  return (
-    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
-         style={{ transform: `translateX(${offsetX}px)`, transition: isAnimating ? "transform 0.18s cubic-bezier(0.1, 0.8, 0.25, 1)" : "none", minHeight: "100vh", width: "100%", position:"relative", overflowX:"hidden" }}>
-      {children}
-    </div>
-  );
-}
-
 // ─── Shared UI Components ──────────────────────────────────────────────────────
 function Pill({ color, children, style }) { return <span style={{ background:color+"22", color, border:`1px solid ${color}44`, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:700, letterSpacing:0.5, ...style }}>{children}</span>; }
 function Card({ children, style, ...props }) { return <div {...props} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>{children}</div>; }
@@ -154,7 +87,6 @@ function Modal({ title, onClose, children, center }) {
           @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
           @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         `}</style>
-        {/* Aligned Header with Larger X */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
           <span style={{ color:C.text, fontWeight:700, fontSize:18, lineHeight:1 }}>{title}</span>
           <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:36, height:36, borderRadius:99, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
@@ -233,7 +165,7 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
-// ─── Swipeable Row (With Smart Scroll Axis Protection & Select Shield) ─────────
+// ─── Swipeable Row (With Strict Scroll Axis Protection) ────────────────────────
 function SwipeRow({ onEdit, onDelete, children }) {
   const [slide, setSlide] = useState(0);
   const startX = useRef(null);
@@ -253,13 +185,19 @@ function SwipeRow({ onEdit, onDelete, children }) {
     const diffX = e.touches[0].clientX - startX.current;
     const diffY = Math.abs(e.touches[0].clientY - startY.current);
 
-    if (!isSwipeLocked.current && diffY > 10) {
-      startX.current = null;
-      return;
+    if (!isSwipeLocked.current) {
+      // Strict vertical lock: if scrolling down/up intentionally
+      if (diffY > Math.abs(diffX) && diffY > 5) {
+        startX.current = null;
+        return;
+      }
+      // Horizontal threshold crossed
+      if (Math.abs(diffX) > 10) {
+        isSwipeLocked.current = true;
+      }
     }
 
-    if (Math.abs(diffX) > 10) {
-      isSwipeLocked.current = true;
+    if (isSwipeLocked.current) {
       let target = currentX.current + diffX;
       if (target < 0) setSlide(Math.max(target, -85)); 
       else if (target > 0) setSlide(Math.min(target, 85)); 
@@ -321,6 +259,7 @@ export default function App() {
   const [ledgerBank, setLedgerBank] = useState(null);
   const [ledgerGroup, setLedgerGroup] = useState(null);
   const [ledgerSaving, setLedgerSaving] = useState(null);
+  const [ledgerBudget, setLedgerBudget] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -421,7 +360,7 @@ export default function App() {
   const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
   const showBackupAlert = lastBackup && (Date.now() - lastBackup > 3 * 24 * 60 * 60 * 1000);
 
-  const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || tab === "savings" || tab === "budgets" || tab === "quickactions";
+  const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || ledgerBudget || tab === "savings" || tab === "budgets" || tab === "quickactions";
 
   return (
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative", userSelect:"none", WebkitUserSelect:"none"}}>
@@ -434,9 +373,9 @@ export default function App() {
         </div>
       )}
 
-      {!ledgerBank && !ledgerGroup && !ledgerSaving ? (
+      {!ledgerBank && !ledgerGroup && !ledgerSaving && !ledgerBudget ? (
         <>
-          {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={setLedgerBank} onOpenGroup={setLedgerGroup} onOpenSaving={setLedgerSaving} />}
+          {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={setLedgerBank} onOpenGroup={setLedgerGroup} onOpenSaving={setLedgerSaving} onOpenBudget={setLedgerBudget} />}
           {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
           {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
           
@@ -454,6 +393,7 @@ export default function App() {
           {ledgerBank && <DeepLedgerView title={`${ledgerBank.name} History`} subtitle={fmt(bankBalance(ledgerBank.id))} txns={txns.filter(t=>t.bankId===ledgerBank.id)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerBank(null)} />}
           {ledgerGroup && <DeepLedgerView title={`${ledgerGroup.name} History`} subtitle="Categorized Expenses" txns={txns.filter(t=>t.type==="expense" && ledgerGroup.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerGroup(null)} />}
           {ledgerSaving && <DeepLedgerView title={`${ledgerSaving.name} History`} subtitle={`Goal Target: ${fmt(ledgerSaving.goal)}`} txns={txns.filter(t=>t.type==="saving" && t.catName===ledgerSaving.name)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerSaving(null)} />}
+          {ledgerBudget && <DeepLedgerView title={`${ledgerBudget.name} History`} subtitle={`Limit: ${fmt(ledgerBudget.amount)}`} txns={txns.filter(t=>t.type==="expense" && ledgerBudget.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerBudget(null)} />}
         </>
       )}
       
@@ -573,7 +513,7 @@ function NavBtn({ id, icon, label, tab, setTab }) {
 }
 
 // ─── Dashboard Screen ────────────────────────────────────────────────────────
-function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn, onOpenBank, onOpenGroup, onOpenSaving }) {
+function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn, onOpenBank, onOpenGroup, onOpenSaving, onOpenBudget }) {
   const [hideTotal, setHideTotal] = useState(false);
   const [recentFilter, setRecentFilter] = useState("all");
 
@@ -669,7 +609,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
               const remaining = Math.max(0, bdg.amount - spent);
               const safeDaily = remaining / daysLeft;
               return (
-                <Card key={bdg.id} style={{padding:"14px"}}>
+                <Card key={bdg.id} onClick={()=>onOpenBudget(bdg)} className="interactive-card" style={{padding:"14px", cursor: "pointer", transition: "transform 0.1s ease"}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}><div style={{width:8,height:8,borderRadius:99,background:C.accent}}/><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span></div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:10}}>
                     <div>
@@ -749,7 +689,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   );
 }
 
-// ─── Professional Clean Full-Page Deep History View Screen ───────────────────
+// ─── Clean Deep History View (No Swipe Back, Big X Aligned) ────────────────────
 function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expCats, onClose }) {
   const [filter, setFilter] = useState("all");
   const [confirmId, setConfirmId] = useState(null);
@@ -762,35 +702,32 @@ function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expC
   });
 
   return (
-    <SwipeBackProvider active={true} onSwipeBack={onClose}>
-      <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
-        {/* Aligned Header with Larger X */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: C.text, fontWeight: 800, fontSize: 24, lineHeight:1 }}>{title}</span>
-          <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 36, height: 36, borderRadius: 99, cursor: "pointer", fontSize: 16, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
-        </div>
-        
-        <div style={{ color: C.accent, fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{subtitle}</div>
-
-        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-          {["all", "in", "out"].map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${filter === f ? C.accent : C.border}`, background: filter === f ? C.accentDim : "transparent", color: filter === f ? C.accent : C.muted, fontWeight: 700, fontSize: 11, cursor: "pointer", textTransform: "uppercase" }}>{f}</button>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {list.length === 0 && <div style={{ padding: "40px 0", textAlign: "center", color: C.faint, fontSize: 13 }}>No financial logs recorded under this section.</div>}
-          {list.map(t => (
-            <SwipeRow key={t.id} onEdit={() => setEditTxn(t)} onDelete={() => setConfirmId(t.id)}>
-              <TxnRow txn={t} hideTotal={false} />
-            </SwipeRow>
-          ))}
-        </div>
-
-        {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
-        {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={[]} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
+    <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ color: C.text, fontWeight: 800, fontSize: 24, lineHeight: 1 }}>{title}</span>
+        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 42, height: 42, borderRadius: 99, cursor: "pointer", fontSize: 18, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
       </div>
-    </SwipeBackProvider>
+      
+      <div style={{ color: C.accent, fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{subtitle}</div>
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+        {["all", "in", "out"].map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${filter === f ? C.accent : C.border}`, background: filter === f ? C.accentDim : "transparent", color: filter === f ? C.accent : C.muted, fontWeight: 700, fontSize: 11, cursor: "pointer", textTransform: "uppercase" }}>{f}</button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {list.length === 0 && <div style={{ padding: "40px 0", textAlign: "center", color: C.faint, fontSize: 13 }}>No financial logs recorded under this section.</div>}
+        {list.map(t => (
+          <SwipeRow key={t.id} onEdit={() => setEditTxn(t)} onDelete={() => setConfirmId(t.id)}>
+            <TxnRow txn={t} hideTotal={false} />
+          </SwipeRow>
+        ))}
+      </div>
+
+      {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
+      {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={[]} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
+    </div>
   );
 }
 
@@ -932,7 +869,7 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   );
 }
 
-// ─── Savings Page (Swipe Disabled, Big Back Arrow added) ─────────────────────
+// ─── Savings Page ─────────────────────────────────────────────────────────────
 function SavingsPage({ savings, onSave, txns, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -983,7 +920,7 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
   );
 }
 
-// ─── Budgets Screen (Swipe Disabled, Big Back Arrow added) ────────────────────
+// ─── Budgets Screen ───────────────────────────────────────────────────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -1052,7 +989,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   );
 }
 
-// ─── Quick Actions Slots (Swipe Disabled, Flat Context for Modal, Big Back Arrow) ──
+// ─── Quick Actions Slots ──────────────────────────────────────────────────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   const [editingId, setEditingId] = useState(null);
   const [catId, setCatId] = useState("");
@@ -1131,7 +1068,7 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   );
 }
 
-// ─── Monthly Bills Screen (Bright Paid Button & Explicit Undo) ──────────────────
+// ─── Monthly Bills Screen ─────────────────────────────────────────────────────
 function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
