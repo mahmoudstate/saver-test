@@ -75,7 +75,7 @@ const KEYS = {
 async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
 async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
-// ─── Native-Style Fluid Elastic Swipe Back View Provider ───────────────────────
+// ─── Native-Style Fluid Elastic Swipe Back View Provider (Only used in DeepLedger) ──
 function SwipeBackProvider({ onSwipeBack, children, active }) {
   const [offsetX, setOffsetX] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -101,7 +101,6 @@ function SwipeBackProvider({ onSwipeBack, children, active }) {
     const diffX = currentX - startX.current;
     const diffY = Math.abs(currentY - startY.current);
 
-    // Lock dynamic gesture validation: Explicit horizontal axis movement over layout scroll routing
     if (!isValidSwipe.current && diffX > 15 && diffY < 8) {
       isValidSwipe.current = true;
     }
@@ -120,7 +119,6 @@ function SwipeBackProvider({ onSwipeBack, children, active }) {
     const triggerThreshold = window.innerWidth * 0.35;
 
     if (currentTranslateX.current > triggerThreshold) {
-      // Elastic dynamic snap slide screen out fluidly
       setOffsetX(window.innerWidth);
       setTimeout(() => {
         onSwipeBack();
@@ -128,7 +126,6 @@ function SwipeBackProvider({ onSwipeBack, children, active }) {
         setIsAnimating(false);
       }, 200);
     } else {
-      // Bounce animation frame recovery snap back safely
       setOffsetX(0);
       setTimeout(() => {
         setIsAnimating(false);
@@ -157,9 +154,10 @@ function Modal({ title, onClose, children, center }) {
           @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
           @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         `}</style>
+        {/* Aligned Header with Larger X */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-          <span style={{ color:C.text, fontWeight:700, fontSize:17 }}>{title}</span>
-          <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:30, height:30, borderRadius:99, cursor:"pointer", fontSize:14 }}>✕</button>
+          <span style={{ color:C.text, fontWeight:700, fontSize:18, lineHeight:1 }}>{title}</span>
+          <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:36, height:36, borderRadius:99, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
         </div>
         {children}
       </div>
@@ -255,7 +253,6 @@ function SwipeRow({ onEdit, onDelete, children }) {
     const diffX = e.touches[0].clientX - startX.current;
     const diffY = Math.abs(e.touches[0].clientY - startY.current);
 
-    // Active Axis Protection Filter block out lateral motions if vertically routing scroll view
     if (!isSwipeLocked.current && diffY > 10) {
       startX.current = null;
       return;
@@ -321,7 +318,6 @@ export default function App() {
   
   const [appAlert, setAppAlert] = useState(null);
 
-  // Router States replacing messy Modals with pristine Full Pages
   const [ledgerBank, setLedgerBank] = useState(null);
   const [ledgerGroup, setLedgerGroup] = useState(null);
   const [ledgerSaving, setLedgerSaving] = useState(null);
@@ -443,9 +439,11 @@ export default function App() {
           {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={setLedgerBank} onOpenGroup={setLedgerGroup} onOpenSaving={setLedgerSaving} />}
           {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
           {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
+          
           {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
           {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>setTab("settings")} currency={currency}/>}
           {tab==="quickactions" && <QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>setTab("settings")} />}
+          
           {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} setAppAlert={setAppAlert}/>}
           {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onOpenBudgets={()=>setTab("budgets")} onOpenQuickActions={()=>setTab("quickactions")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert}/>}
           
@@ -464,7 +462,7 @@ export default function App() {
   );
 }
 
-// ─── Bottom Navigation & Restored Tight Form Quick Box Container ───────────────
+// ─── Bottom Navigation ────────────────────────────────────────────────────────
 function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, setAppAlert, quickActions }) {
   const [showQuick, setShowQuick] = useState(false);
   const [quickForm, setQuickForm] = useState(null);
@@ -527,7 +525,6 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
           </button>
         </div>
           
-        {/* Restored Custom Alignment: Backdrop Container shrinks perfectly to bounding items match */}
         {showQuick && activeShortcuts.length > 0 && (
           <div style={{ position:"fixed", bottom:135, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:24, padding:"12px", width: "auto", maxWidth: "90%", boxShadow:"0 12px 32px rgba(0,0,0,0.7)", animation:"popIn 0.15s cubic-bezier(0.1, 0.8, 0.2, 1.15)", zIndex: 60, display: "flex", justifyContent: "center" }}>
             <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 14px) scale(0.96);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
@@ -575,7 +572,7 @@ function NavBtn({ id, icon, label, tab, setTab }) {
   );
 }
 
-// ─── Dashboard Screen (Interactive Matrix Triggers) ──────────────────────────
+// ─── Dashboard Screen ────────────────────────────────────────────────────────
 function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn, onOpenBank, onOpenGroup, onOpenSaving }) {
   const [hideTotal, setHideTotal] = useState(false);
   const [recentFilter, setRecentFilter] = useState("all");
@@ -767,9 +764,10 @@ function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expC
   return (
     <SwipeBackProvider active={true} onSwipeBack={onClose}>
       <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
+        {/* Aligned Header with Larger X */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: C.text, fontWeight: 800, fontSize: 24 }}>{title}</span>
-          <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 34, height: 34, borderRadius: 99, cursor: "pointer", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          <span style={{ color: C.text, fontWeight: 800, fontSize: 24, lineHeight:1 }}>{title}</span>
+          <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 36, height: 36, borderRadius: 99, cursor: "pointer", fontSize: 16, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
         </div>
         
         <div style={{ color: C.accent, fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{subtitle}</div>
@@ -934,7 +932,7 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   );
 }
 
-// ─── Savings Page (Clean Swipe Back Architecture) ────────────────────────────
+// ─── Savings Page (Swipe Disabled, Big Back Arrow added) ─────────────────────
 function SavingsPage({ savings, onSave, txns, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -952,39 +950,40 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
   const startEdit=(s)=>{setEditId(s.id);setName(s.name);setGoal(s.goal);setShowAdd(true);};
 
   return (
-    <SwipeBackProvider active={true} onSwipeBack={onBack}>
-      <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+    <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
           <div style={{color:C.text,fontSize:22,fontWeight:800}}>Saving Goals</div>
-          <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
         </div>
-        {savings.length===0&&<EmptyState icon="◎" message="No saving goals configured yet." />}
-        <div style={{display:"flex",flexDirection:"column"}}>
-          {savings.map(s=>{
-            const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
-            const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;
-            return (
-              <SwipeRow key={s.id} onEdit={()=>startEdit(s)} onDelete={()=>setConfirmId(s.id)}>
-                <div style={{padding:16}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                    <div><div style={{color:C.text,fontWeight:700,fontSize:17}}>{s.name}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>Goal: {fmt(s.goal)}</div></div>
-                    <Pill color={C.yellow}>{pct}%</Pill>
-                  </div>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>{fmt(Math.max(0,s.goal-saved))} left</span></div>
-                  <ProgressBar value={saved} max={s.goal} color={C.yellow}/>
-                </div>
-              </SwipeRow>
-            );
-          })}
-        </div>
-        {showAdd&&(<Modal title={editId?"Edit Goal":"New Saving Goal"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}><Input label="Goal Name" placeholder="e.g. Travel Fund..." value={name} onChange={e=>setName(e.target.value)}/><Input label="Target Amount" type="number" step="any" value={goal} onChange={e=>setGoal(e.target.value)}/><Btn full onClick={handleAdd}>{editId?"Update Goal":"Create Goal"}</Btn></Modal>)}
-        {confirmId&&<ConfirmModal title="Delete Goal?" message="This will permanently delete this saving goal." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(savings.filter(s=>s.id!==confirmId));setConfirmId(null);}}/>}
+        <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
       </div>
-    </SwipeBackProvider>
+      {savings.length===0&&<EmptyState icon="◎" message="No saving goals configured yet." />}
+      <div style={{display:"flex",flexDirection:"column"}}>
+        {savings.map(s=>{
+          const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
+          const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;
+          return (
+            <SwipeRow key={s.id} onEdit={()=>startEdit(s)} onDelete={()=>setConfirmId(s.id)}>
+              <div style={{padding:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                  <div><div style={{color:C.text,fontWeight:700,fontSize:17}}>{s.name}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>Goal: {fmt(s.goal)}</div></div>
+                  <Pill color={C.yellow}>{pct}%</Pill>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.yellow,fontSize:18,fontWeight:800}}>{fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>{fmt(Math.max(0,s.goal-saved))} left</span></div>
+                <ProgressBar value={saved} max={s.goal} color={C.yellow}/>
+              </div>
+            </SwipeRow>
+          );
+        })}
+      </div>
+      {showAdd&&(<Modal title={editId?"Edit Goal":"New Saving Goal"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}><Input label="Goal Name" placeholder="e.g. Travel Fund..." value={name} onChange={e=>setName(e.target.value)}/><Input label="Target Amount" type="number" step="any" value={goal} onChange={e=>setGoal(e.target.value)}/><Btn full onClick={handleAdd}>{editId?"Update Goal":"Create Goal"}</Btn></Modal>)}
+      {confirmId&&<ConfirmModal title="Delete Goal?" message="This will permanently delete this saving goal." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(savings.filter(s=>s.id!==confirmId));setConfirmId(null);}}/>}
+    </div>
   );
 }
 
-// ─── Budgets Screen (Clean Swipe Back Architecture) ───────────────────────────
+// ─── Budgets Screen (Swipe Disabled, Big Back Arrow added) ────────────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -1004,55 +1003,56 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   };
 
   return (
-    <SwipeBackProvider active={true} onSwipeBack={onBack}>
-      <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+    <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
           <div style={{color:C.text,fontSize:22,fontWeight:800}}>Budgets</div>
-          <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
         </div>
-        {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
-        
-        <div style={{display:"flex",flexDirection:"column"}}>
-          {budgets.map(b=>(
-            <SwipeRow key={b.id} onEdit={()=>startEdit(b)} onDelete={()=>setConfirmId(b.id)}>
-              <div style={{padding:16}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
-                  <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
-                </div>
-                <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Monitoring {b.cats.length} expense nodes</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,5).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}</div>
-              </div>
-            </SwipeRow>
-          ))}
-        </div>
-
-        {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
-          <Input label="Budget Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
-          <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
-          <div style={{marginBottom:14}}>
-            <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
-              {expCats.map(c=>{
-                const checked=selectedCats.includes(c.id);
-                return(
-                  <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"5px 0", userSelect:"none"}}>
-                    <div onClick={()=>setSelectedCats(checked?selectedCats.filter(x=>x!==c.id):[...selectedCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div>
-                    <span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-          <Btn full onClick={handleAdd}>Commit Limit</Btn>
-        </Modal>)}
-        {confirmId&&<ConfirmModal title="Remove Envelope Budget?" message="This drops the limit tracking profile without dropping historical expenses." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
+        <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
       </div>
-    </SwipeBackProvider>
+      {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
+      
+      <div style={{display:"flex",flexDirection:"column"}}>
+        {budgets.map(b=>(
+          <SwipeRow key={b.id} onEdit={()=>startEdit(b)} onDelete={()=>setConfirmId(b.id)}>
+            <div style={{padding:16}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
+                <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
+              </div>
+              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Monitoring {b.cats.length} expense nodes</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,5).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}</div>
+            </div>
+          </SwipeRow>
+        ))}
+      </div>
+
+      {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
+        <Input label="Budget Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+        <div style={{marginBottom:14}}>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
+            {expCats.map(c=>{
+              const checked=selectedCats.includes(c.id);
+              return(
+                <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"5px 0", userSelect:"none"}}>
+                  <div onClick={()=>setSelectedCats(checked?selectedCats.filter(x=>x!==c.id):[...selectedCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div>
+                  <span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <Btn full onClick={handleAdd}>Commit Limit</Btn>
+      </Modal>)}
+      {confirmId&&<ConfirmModal title="Remove Envelope Budget?" message="This drops the limit tracking profile without dropping historical expenses." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
+    </div>
   );
 }
 
-// ─── Quick Actions Slots (Clean Swipe Back Architecture) ───────────────────────
+// ─── Quick Actions Slots (Swipe Disabled, Flat Context for Modal, Big Back Arrow) ──
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   const [editingId, setEditingId] = useState(null);
   const [catId, setCatId] = useState("");
@@ -1088,51 +1088,50 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   };
 
   return (
-    <SwipeBackProvider active={true} onSwipeBack={onBack}>
-      <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
-        <div style={{marginBottom: 20}}>
-          <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions Slots</div>
-        </div>
-
-        <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 responsive shortcuts available globally when long pressing the navigation action node.</p>
-        
-        <div style={{display:"flex", flexDirection:"column", gap:12}}>
-          {quickActions.map((q, idx) => {
-            const cat = expCats.find(c => c.id === q.catId);
-            const bank = banks.find(b => b.id === q.bankId);
-            return (
-              <Card key={q.id} style={{padding: "14px 16px", display: "flex", justifyContent:"space-between", alignItems:"center"}}>
-                <div>
-                  <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Disabled / Empty"}</div>
-                  {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Amount: {fmt(parseFloat(q.amount))} · Ledger: {bank?.name}</div>}
-                </div>
-                <div style={{display: "flex", gap: 8}}>
-                  <Btn small onClick={()=>openConfigure(q)} color={C.blue} outline>Setup</Btn>
-                  {q.catId && <Btn small onClick={()=>handleClearShortcut(q.id)} color={C.red} outline style={{padding:"5px 10px"}}>✕</Btn>}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {editingId && (
-          <Modal title="Configure Fast Shortcut Slot" onClose={()=>setEditingId(null)} center={false}>
-            <Select label="Expense Category" value={catId} onChange={e=>setCatId(e.target.value)}>
-              {expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]} {c.name}</option>)}
-            </Select>
-            <Input label="Default Fixed Amount" type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} />
-            <Select label="Default Source Ledger Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
-              {banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
-            </Select>
-            <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Commit Shortcut Slot</Btn>
-          </Modal>
-        )}
+    <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 20}}>
+        <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
+        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions Slots</div>
       </div>
-    </SwipeBackProvider>
+
+      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 responsive shortcuts available globally when long pressing the navigation action node.</p>
+      
+      <div style={{display:"flex", flexDirection:"column", gap:12}}>
+        {quickActions.map((q, idx) => {
+          const cat = expCats.find(c => c.id === q.catId);
+          const bank = banks.find(b => b.id === q.bankId);
+          return (
+            <Card key={q.id} style={{padding: "14px 16px", display: "flex", justifyContent:"space-between", alignItems:"center"}}>
+              <div>
+                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Disabled / Empty"}</div>
+                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Amount: {fmt(parseFloat(q.amount))} · Ledger: {bank?.name}</div>}
+              </div>
+              <div style={{display: "flex", gap: 8}}>
+                <Btn small onClick={()=>openConfigure(q)} color={C.blue} outline>Setup</Btn>
+                {q.catId && <Btn small onClick={()=>handleClearShortcut(q.id)} color={C.red} outline style={{padding:"5px 10px"}}>✕</Btn>}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {editingId && (
+        <Modal title="Configure Fast Shortcut Slot" onClose={()=>setEditingId(null)} center={false}>
+          <Select label="Expense Category" value={catId} onChange={e=>setCatId(e.target.value)}>
+            {expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]} {c.name}</option>)}
+          </Select>
+          <Input label="Default Fixed Amount" type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} />
+          <Select label="Default Source Ledger Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
+            {banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+          </Select>
+          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Commit Shortcut Slot</Btn>
+        </Modal>
+      )}
+    </div>
   );
 }
 
-// ─── Monthly Bills Screen (Prismatic Stack Action Architecture) ─────────────────
+// ─── Monthly Bills Screen (Bright Paid Button & Explicit Undo) ──────────────────
 function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -1217,10 +1216,8 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
           const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
           return (
             <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
-              {/* Premium Two-Tier Dynamic Stack Layout - Absolutely Zero jumping metrics elements */}
               <div style={{padding:"14px 16px", background:C.card, display: "flex", flexDirection:"column", gap: 12, boxSizing: "border-box"}}>
                 
-                {/* Tier 1: Fixed Global Metric Row */}
                 <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
                   <div style={{minWidth: 0, flex: 1}}>
                     <span style={{color:C.text, fontWeight:700, fontSize:15, display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{bill.name}</span>
@@ -1231,22 +1228,21 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
                   </div>
                 </div>
 
-                {/* Tier 2: Dedicated Control Operations Grid Block */}
                 <div style={{width: "100%", display: "flex", marginTop: 2}}>
                   {!paid ? (
                     <button onClick={()=>handlePay(bill)} 
-                            style={{background:"transparent", border:`1px solid ${C.accent}`, color:C.accent, borderRadius:10, width: "100%", height: 38, fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap: 4}}>
+                            style={{background:"transparent", border:`1px solid ${C.accent}`, color:C.accent, borderRadius:10, width: "100%", height: 42, fontWeight:700, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap: 4}}>
                       Pay Bill
                     </button>
                   ) : (
                     <div style={{display: "flex", width: "100%", gap: 10, alignItems: "center"}}>
-                      <div style={{flex: 1, background: C.accentDim, border: `1px solid ${C.accent}25`, color: C.accent, borderRadius: 10, height: 38, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 4}}>
+                      <div style={{flex: 1, background: C.accent, color: C.bg, borderRadius: 10, height: 42, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 4}}>
                         ✓ Paid ({filterMonth.slice(5)})
                       </div>
                       <button onClick={()=>setConfirmUndo(bill)} 
-                              style={{background: C.border, border: "none", color: C.red, borderRadius: 10, width: 44, height: 38, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}} 
+                              style={{background: C.card, border: `1px solid ${C.border}`, color: C.text, borderRadius: 10, height: 42, padding: "0 16px", fontSize: 14, fontWeight:700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6}} 
                               title="Revert Status Node">
-                        ⟲
+                        Undo ⟲
                       </button>
                     </div>
                   )}
