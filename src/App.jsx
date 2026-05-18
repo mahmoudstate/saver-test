@@ -88,8 +88,8 @@ function Modal({ title, onClose, children, center }) {
           @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         `}</style>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-          <span style={{ color:C.text, fontWeight:700, fontSize:18, lineHeight:1 }}>{title}</span>
-          <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:36, height:36, borderRadius:99, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          <span style={{ color:C.text, fontWeight:700, fontSize:18, margin:0, padding:0 }}>{title}</span>
+          <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:38, height:38, borderRadius:99, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", padding:0, margin:0 }}>✕</button>
         </div>
         {children}
       </div>
@@ -165,39 +165,51 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
-// ─── Swipeable Row (With Strict Scroll Axis Protection) ────────────────────────
+// ─── Swipeable Row (With Unbreakable Strict Axis Lock) ────────────────────────
 function SwipeRow({ onEdit, onDelete, children }) {
   const [slide, setSlide] = useState(0);
   const startX = useRef(null);
   const startY = useRef(null);
   const currentX = useRef(0);
-  const isSwipeLocked = useRef(false);
+  
+  // Two-Flag System for absolute axis separation
+  const isHorizontalSwipe = useRef(false);
+  const isVerticalScroll = useRef(false);
 
   const handleTouchStart = (e) => { 
     startX.current = e.touches[0].clientX; 
     startY.current = e.touches[0].clientY; 
     currentX.current = slide; 
-    isSwipeLocked.current = false;
+    isHorizontalSwipe.current = false;
+    isVerticalScroll.current = false;
   };
   
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
-    const diffX = e.touches[0].clientX - startX.current;
-    const diffY = Math.abs(e.touches[0].clientY - startY.current);
+    
+    const touchX = e.touches[0].clientX;
+    const touchY = e.touches[0].clientY;
+    const diffX = touchX - startX.current;
+    const diffY = Math.abs(touchY - startY.current);
 
-    if (!isSwipeLocked.current) {
-      // Strict vertical lock: if scrolling down/up intentionally
-      if (diffY > Math.abs(diffX) && diffY > 5) {
-        startX.current = null;
+    // 1. If we already established the user is scrolling vertically, ignore X completely
+    if (isVerticalScroll.current) return;
+
+    // 2. Decide the primary axis logic
+    if (!isHorizontalSwipe.current) {
+      if (diffY > Math.abs(diffX) && diffY > 3) {
+        // Strict Vertical Lock activated
+        isVerticalScroll.current = true;
         return;
       }
-      // Horizontal threshold crossed
-      if (Math.abs(diffX) > 10) {
-        isSwipeLocked.current = true;
+      if (Math.abs(diffX) > 10 && Math.abs(diffX) > diffY) {
+        // Horizontal Swipe activated
+        isHorizontalSwipe.current = true;
       }
     }
 
-    if (isSwipeLocked.current) {
+    // 3. Execute horizontal sliding if locked to X axis
+    if (isHorizontalSwipe.current) {
       let target = currentX.current + diffX;
       if (target < 0) setSlide(Math.max(target, -85)); 
       else if (target > 0) setSlide(Math.min(target, 85)); 
@@ -689,7 +701,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   );
 }
 
-// ─── Clean Deep History View (No Swipe Back, Big X Aligned) ────────────────────
+// ─── Clean Deep History View (No Swipe Back, Big X Perfectly Aligned) ─────────
 function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expCats, onClose }) {
   const [filter, setFilter] = useState("all");
   const [confirmId, setConfirmId] = useState(null);
@@ -703,9 +715,9 @@ function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expC
 
   return (
     <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ color: C.text, fontWeight: 800, fontSize: 24, lineHeight: 1 }}>{title}</span>
-        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 42, height: 42, borderRadius: 99, cursor: "pointer", fontSize: 18, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <span style={{ color: C.text, fontWeight: 800, fontSize: 24, margin: 0, padding: 0, display: "flex", alignItems: "center" }}>{title}</span>
+        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 44, height: 44, borderRadius: 99, cursor: "pointer", fontSize: 20, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, padding: 0, margin: 0 }}>✕</button>
       </div>
       
       <div style={{ color: C.accent, fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{subtitle}</div>
