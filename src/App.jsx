@@ -75,36 +75,42 @@ const KEYS = {
 async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
 async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
-// ─── Swipeable Back Gesture Wrapper Component ──────────────────────────────────
+// ─── Native Full-Screen Swipe Back Gesture Provider ───────────────────────────
 function SwipeBackProvider({ onSwipeBack, children, active }) {
   const startX = useRef(0);
   const startY = useRef(0);
-  const isEdge = useRef(false);
+  const canSwipe = useRef(false);
 
   const handleTouchStart = (e) => {
     if (!active) return;
-    const x = e.touches[0].clientX;
+    startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
-    if (x <= 25 || x >= window.innerWidth - 25) {
-      startX.current = x;
-      isEdge.current = true;
+    
+    // Allows fluid swiping starting anywhere from the left 40% of screen area
+    if (startX.current < window.innerWidth * 0.4) {
+      canSwipe.current = true;
     } else {
-      isEdge.current = false;
+      canSwipe.current = false;
     }
   };
 
   const handleTouchMove = (e) => {
-    if (!active || !isEdge.current) return;
-    const diffX = Math.abs(e.touches[0].clientX - startX.current);
-    const diffY = Math.abs(e.touches[0].clientY - startY.current);
-    if (diffX > 65 && diffY < 40) {
-      isEdge.current = false;
+    if (!active || !canSwipe.current) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    
+    const diffX = currentX - startX.current;
+    const diffY = Math.abs(currentY - startY.current);
+
+    // Lock dynamic gesture validation: Explicit Left-to-Right layout swap swipe triggered
+    if (diffX > 75 && diffY < 35) {
+      canSwipe.current = false;
       onSwipeBack();
     }
   };
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} style={{ minHeight: "100%", width: "100%" }}>
+    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} style={{ minHeight: "100vh", width: "100%", position:"relative" }}>
       {children}
     </div>
   );
@@ -116,21 +122,19 @@ function Card({ children, style, ...props }) { return <div {...props} style={{ b
 
 function Modal({ title, onClose, children, center }) {
   return (
-    <SwipeBackProvider active={true} onSwipeBack={onClose}>
-      <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:center?"center":"flex-end", justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-        <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:center?"20px":"20px 20px 0 0", width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:center?"popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)":"slideUp 0.3s ease-out" }}>
-          <style>{`
-            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-            @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-          `}</style>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-            <span style={{ color:C.text, fontWeight:700, fontSize:17 }}>{title}</span>
-            <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:30, height:30, borderRadius:99, cursor:"pointer", fontSize:14 }}>✕</button>
-          </div>
-          {children}
+    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:center?"center":"flex-end", justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:center?"20px":"20px 20px 0 0", width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:center?"popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)":"slideUp 0.3s ease-out" }}>
+        <style>{`
+          @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+          @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        `}</style>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <span style={{ color:C.text, fontWeight:700, fontSize:17 }}>{title}</span>
+          <button onClick={onClose} style={{ background:C.border, border:"none", color:C.muted, width:30, height:30, borderRadius:99, cursor:"pointer", fontSize:14 }}>✕</button>
         </div>
+        {children}
       </div>
-    </SwipeBackProvider>
+    </div>
   );
 }
 
@@ -274,6 +278,11 @@ export default function App() {
   
   const [appAlert, setAppAlert] = useState(null);
 
+  // Deep Full-Page Router States replacing messy Modals
+  const [ledgerBank, setLedgerBank] = useState(null);
+  const [ledgerGroup, setLedgerGroup] = useState(null);
+  const [ledgerSaving, setLedgerSaving] = useState(null);
+
   useEffect(() => {
     (async () => {
       const [t,b,ec,ic,g,s,cur,uname,bl,bdg,lb,qa] = await Promise.all([
@@ -373,34 +382,48 @@ export default function App() {
   const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
   const showBackupAlert = lastBackup && (Date.now() - lastBackup > 3 * 24 * 60 * 60 * 1000);
 
+  // Check if any sub-full-page view is active to conditionally adjust layouts or prevent double wraps
+  const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || tab === "savings" || tab === "budgets" || tab === "quickactions";
+
   return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:130, position:"relative"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans','Segoe UI',sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       
-      {showBackupAlert && tab==="dashboard" && (
+      {showBackupAlert && tab==="dashboard" && !isSubPageActive && (
         <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
           <span>⚠️ It has been over 3 days since your last backup!</span>
           <button onClick={()=>setTab("settings")} style={{background:"transparent", border:`1px solid ${C.yellow}`, color:C.yellow, borderRadius:8, padding:"4px 8px", fontSize:10, cursor:"pointer"}}>Backup Now</button>
         </div>
       )}
 
-      {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn}/>}
-      {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
-      {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
-      {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
-      {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>setTab("settings")} currency={currency}/>}
-      {tab==="quickactions" && <QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>setTab("settings")} />}
-      {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} setAppAlert={setAppAlert}/>}
-      {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onOpenBudgets={()=>setTab("budgets")} onOpenQuickActions={()=>setTab("quickactions")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert}/>}
-      
-      <BottomNav tab={tab} setTab={setTab} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} bankBalance={bankBalance} setAppAlert={setAppAlert} quickActions={quickActions} />
+      {/* Conditionally Render Core Views or Full Screen Ledgers Pages */}
+      {!ledgerBank && !ledgerGroup && !ledgerSaving ? (
+        <>
+          {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={setLedgerBank} onOpenGroup={setLedgerGroup} onOpenSaving={setLedgerSaving} />}
+          {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
+          {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
+          {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
+          {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>setTab("settings")} currency={currency}/>}
+          {tab==="quickactions" && <QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>setTab("settings")} />}
+          {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} setAppAlert={setAppAlert}/>}
+          {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onOpenBudgets={()=>setTab("budgets")} onOpenQuickActions={()=>setTab("quickactions")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert}/>}
+          
+          <BottomNav tab={tab} setTab={setTab} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} bankBalance={bankBalance} setAppAlert={setAppAlert} quickActions={quickActions} />
+        </>
+      ) : (
+        <>
+          {ledgerBank && <DeepLedgerView title={`${ledgerBank.name} Ledger`} subtitle={fmt(bankBalance(ledgerBank.id))} txns={txns.filter(t=>t.bankId===ledgerBank.id)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerBank(null)} />}
+          {ledgerGroup && <DeepLedgerView title={`${ledgerGroup.name} Log`} subtitle="Categorized Expenses" txns={txns.filter(t=>t.type==="expense" && ledgerGroup.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerGroup(null)} />}
+          {ledgerSaving && <DeepLedgerView title={`${ledgerSaving.name} Vault`} subtitle={`Goal Target: ${fmt(ledgerSaving.goal)}`} txns={txns.filter(t=>t.type==="saving" && t.catName===ledgerSaving.name)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerSaving(null)} />}
+        </>
+      )}
       
       {appAlert && <AlertModal title={appAlert.title} message={appAlert.message} btnColor={appAlert.color} onClose={()=>setAppAlert(null)} />}
     </div>
   );
 }
 
-// ─── Custom Responsive Bottom Nav Component (Vodafone Layout) ─────────────────
+// ─── Custom Responsive Bottom Nav Component (With Restored Compact Box Setup) ─
 function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, setAppAlert, quickActions }) {
   const [showQuick, setShowQuick] = useState(false);
   const [quickForm, setQuickForm] = useState(null);
@@ -441,19 +464,13 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
     }
   };
 
-  // Grid layout helper depending on configured active count
-  const getGridStyle = () => {
-    const count = activeShortcuts.length;
-    if (count === 1) return { display: "grid", gridTemplateColumns: "1fr", justifyItems: "center" };
-    if (count === 2) return { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 };
-    if (count === 3) return { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }; // Row 1: 2 items, Row 2: centered wrapped manually below
-    return { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }; // 4 items (2x2)
+  const getFlexLayoutContainerStyle = () => {
+    return { display: "flex", gap: 10, justifyContent: "center", alignItems: "center", flexWrap: "wrap", width: "100%" };
   };
 
   return (
     <>
       <nav style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:520, zIndex:50 }}>
-        {/* Raised bar with extra padding height (95px total) */}
         <div style={{ position:"absolute", bottom:0, width:"100%", height:95, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", padding:"0 12px" }}>
           <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-around", paddingRight:48, marginBottom:16 }}>
              <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} setTab={setTab} />
@@ -465,7 +482,6 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
           </div>
         </div>
 
-        {/* Clean drop element blending without bounding borders */}
         <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", bottom:38, width:84, height:84, borderRadius:"50%", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <button onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={()=>clearTimeout(pressTimer.current)} onContextMenu={e=>e.preventDefault()}
                   style={{ width:68, height:68, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:36, border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"transform 0.1s", userSelect:"none", WebkitUserSelect:"none" }}
@@ -474,49 +490,23 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
           </button>
         </div>
           
+        {/* Dynamic Flying Grid Shortcut Layer - Custom Architecture Match */}
         {showQuick && activeShortcuts.length > 0 && (
-          <div style={{ position:"absolute", bottom:135, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:24, padding:16, width: "85%", maxWidth: 340, boxShadow:"0 12px 30px rgba(0,0,0,0.6)", animation:"popIn 0.2s", zIndex: 60 }}>
-            <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 12px) scale(0.95);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
+          <div style={{ position:"fixed", bottom:135, left:"50%", transform:"translateX(-50%)", background:C.card, border:`1px solid ${C.border}`, borderRadius:24, padding:"14px 16px", width: "85%", maxWidth: 300, boxShadow:"0 12px 32px rgba(0,0,0,0.7)", animation:"popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.15)", zIndex: 60, display: "flex", justifyContent: "center" }}>
+            <style>{`@keyframes popIn { from{opacity:0; transform:translate(-50%, 14px) scale(0.96);} to{opacity:1; transform:translate(-50%, 0) scale(1);} }`}</style>
             
-            <div style={getGridStyle()}>
-              {activeShortcuts.length === 3 ? (
-                <>
-                  {/* Row 1 for 3-item layout */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, gridColumn: "1 / span 2" }}>
-                    {activeShortcuts.slice(0,2).map(q => {
-                      const cat = expCats.find(c=>c.id===q.catId);
-                      return (
-                        <button key={q.id} onClick={()=>handleQuickSelect(q)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, height:74, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, cursor:"pointer" }}>
-                          <span style={{fontSize:24, display:"block", lineHeight:1}}>{ICONS[cat?.icon]||"📌"}</span>
-                          <span style={{fontSize:11,fontWeight:700}}>{cat?.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {/* Row 2 centered single item */}
-                  <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / span 2", marginTop: 4 }}>
-                    {activeShortcuts.slice(2,3).map(q => {
-                      const cat = expCats.find(c=>c.id===q.catId);
-                      return (
-                        <button key={q.id} onClick={()=>handleQuickSelect(q)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, width: "48%", height:74, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, cursor:"pointer" }}>
-                          <span style={{fontSize:24, display:"block", lineHeight:1}}>{ICONS[cat?.icon]||"📌"}</span>
-                          <span style={{fontSize:11,fontWeight:700}}>{cat?.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                activeShortcuts.map(q => {
-                  const cat = expCats.find(c=>c.id===q.catId);
-                  return (
-                    <button key={q.id} onClick={()=>handleQuickSelect(q)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, width: activeShortcuts.length === 1 ? 120 : "auto", height:74, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, cursor:"pointer" }}>
-                      <span style={{fontSize:24, display:"block", lineHeight:1}}>{ICONS[cat?.icon]||"📌"}</span>
-                      <span style={{fontSize:11,fontWeight:700}}>{cat?.name}</span>
-                    </button>
-                  );
-                })
-              )}
+            <div style={getFlexLayoutContainerStyle()}>
+              {activeShortcuts.map(q => {
+                const cat = expCats.find(c=>c.id===q.catId);
+                return (
+                  // Restored precise compact box layout style from historical user preference
+                  <button key={q.id} onClick={()=>handleQuickSelect(q)} 
+                          style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:92, height:92, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4, cursor:"pointer", padding:"4px", boxSizing:"border-box" }}>
+                    <span style={{fontSize:26, display:"block", lineHeight:1, marginBottom: 2}}>{ICONS[cat?.icon]||"📌"}</span>
+                    <span style={{fontSize:10, fontWeight:700, color: C.text, textAlign: "center", width: "100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{cat?.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -549,12 +539,9 @@ function NavBtn({ id, icon, label, tab, setTab }) {
   );
 }
 
-// ─── Dashboard Screen (With Savings Goals Lifted Upwards) ───────────────────
-function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn }) {
+// ─── Dashboard Screen (Triggers Full Sub-Pages on Interaction) ───────────────
+function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn, onOpenBank, onOpenGroup, onOpenSaving }) {
   const [hideTotal, setHideTotal] = useState(false);
-  const [ledgerBank, setLedgerBank] = useState(null);
-  const [ledgerGroup, setLedgerGroup] = useState(null);
-  const [ledgerSaving, setLedgerSaving] = useState(null);
   const [recentFilter, setRecentFilter] = useState("all");
 
   const totalBalance = banks.reduce((s,b)=>s+bankBalance(b.id),0);
@@ -573,14 +560,11 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   const daysLeft = Math.max(1, daysInMonth - d.getDate() + 1);
 
-  // Filtered recent transactions list
   const recentsFiltered = txns.filter(t => {
     if (recentFilter === "expenses") return t.type === "expense";
     if (recentFilter === "income") return t.type === "income";
     return true;
   }).slice(0, 5);
-
-  const activeShortcutsCount = recentsFiltered.length;
 
   return (
     <div style={{padding:"24px 16px 0"}}>
@@ -606,21 +590,21 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </div>
       </Card>
       
-      {/* Interactive Banks Grid with Micro-Interactions */}
+      {/* Interactive Banks Grid with Spring Scale Feedback */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         {banks.map(b=>{
           const bal=bankBalance(b.id);
           return (
-            <Card key={b.id} onClick={()=>setLedgerBank(b)} 
+            <Card key={b.id} onClick={()=>onOpenBank(b)} 
                   className="interactive-card"
-                  style={{padding:"14px 14px 12px", cursor: "pointer", transition: "transform 0.1s ease, background 0.1s ease"}}>
+                  style={{padding:"14px 14px 12px", cursor: "pointer", transition: "transform 0.12s cubic-bezier(0.4, 0, 0.2, 1)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}><div style={{width:8,height:8,borderRadius:99,background:b.color,flexShrink:0}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{b.name}</span></div>
               <div style={{color:bal<0?C.red:C.text,fontSize:17,fontWeight:800}}>{hideTotal?"••••":fmt(bal)}</div>
             </Card>
           );
         })}
         <style>{`
-          .interactive-card:active { transform: scale(0.97); opacity: 0.9; }
+          .interactive-card:active { transform: scale(0.965); opacity: 0.92; }
         `}</style>
       </div>
       
@@ -672,7 +656,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
-      {/* Lifted Interactive Savings Goals */}
       {savings.length > 0 && (
         <>
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div>
@@ -681,8 +664,8 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
               const saved = s.contributions?.reduce((a,c)=>a+c.amount,0) || 0;
               const pct = s.goal ? Math.min(100, Math.round((saved/s.goal)*100)) : 0;
               return (
-                <Card key={s.id} onClick={()=>setLedgerSaving(s)} className="interactive-card"
-                      style={{padding:"14px 14px 12px", cursor: "pointer", transition: "transform 0.1s ease"}}>
+                <Card key={s.id} onClick={()=>onOpenSaving(s)} className="interactive-card"
+                      style={{padding:"14px 14px 12px", cursor: "pointer", transition: "transform 0.12s ease"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                     <span style={{color:C.text,fontWeight:700,fontSize:14}}>🎯 {s.name}</span>
                     <Pill color={C.yellow}>{pct}%</Pill>
@@ -699,7 +682,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
-      {/* Interactive Expense Breakdown */}
       <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Expense Breakdown</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         {groups.map(g=>{
@@ -707,8 +689,8 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
           if(!total) return null;
           const pct=totalExp?Math.round((total/totalExp)*100):0;
           return (
-            <Card key={g.id} onClick={()=>setLedgerGroup(g)} className="interactive-card"
-                  style={{padding:"14px 14px 12px", cursor:"pointer", transition:"transform 0.1s ease"}}>
+            <Card key={g.id} onClick={()=>onOpenGroup(g)} className="interactive-card"
+                  style={{padding:"14px 14px 12px", cursor:"pointer", transition:"transform 0.12s ease"}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:g.color}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{g.name}</span></div>
               <div style={{color:g.color,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div>
               <ProgressBar value={total} max={totalExp} color={g.color}/>
@@ -716,12 +698,8 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
             </Card>
           );
         })}
-        {(()=> {
-          const gc=groups.flatMap(g=>g.cats);const total=txns.filter(t=>t.type==="expense"&&!gc.includes(t.catId)).reduce((a,t)=>a+t.amount,0);const pct=totalExp?Math.round((total/totalExp)*100):0;return total>0?(<Card style={{padding:"14px 14px 12px"}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:C.faint}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>Other</span></div><div style={{color:C.text,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div><ProgressBar value={total} max={totalExp} color={C.faint}/><div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div></Card>):null;
-        })()}
       </div>
 
-      {/* Recent Transactions Section with Quick Tab Filters */}
       <div style={{marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Recent Transactions</div>
         <div style={{display:"flex", gap:4}}>
@@ -730,24 +708,19 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
           ))}
         </div>
       </div>
-      {activeShortcutsCount > 0 ? (
+      {recentsFiltered.length > 0 ? (
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
           {recentsFiltered.map(t=><TxnRow key={t.id} txn={t} hideTotal={hideTotal}/>)}
         </div>
       ) : (
         <div style={{padding:"20px 0", textAlign:"center", color:C.faint, fontSize:12}}>No transaction matches.</div>
       )}
-
-      {/* Dynamic Native-Style Interactive Deep Ledgers */}
-      {ledgerBank && <DeepLedgerModal title={`${ledgerBank.name} Ledger`} subtitle={fmt(bankBalance(ledgerBank.id))} txns={txnsAll.filter(t=>t.bankId===ledgerBank.id)} onDelete={onDeleteTxn} onUpdate={onUpdateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerBank(null)} />}
-      {ledgerGroup && <DeepLedgerModal title={`${ledgerGroup.name} Breakdown`} subtitle="Categorized Expenses" txns={txnsAll.filter(t=>t.type==="expense" && ledgerGroup.cats.includes(t.catId))} onDelete={onDeleteTxn} onUpdate={onUpdateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerGroup(null)} />}
-      {ledgerSaving && <DeepLedgerModal title={`${ledgerSaving.name} Vault`} subtitle={`Goal: ${fmt(ledgerSaving.goal)}`} txns={txnsAll.filter(t=>t.type==="saving" && t.catName===ledgerSaving.name)} onDelete={onDeleteTxn} onUpdate={onUpdateTxn} banks={banks} expCats={expCats} onClose={()=>setLedgerSaving(null)} />}
     </div>
   );
 }
 
-// ─── Reusable Dynamic Deep Ledger Modal (Swipe to Back Active) ─────────────────
-function DeepLedgerModal({ title, subtitle, txns, onDelete, onUpdate, banks, expCats, onClose }) {
+// ─── Professional Clean Full-Page Deep Ledgers View Screen ───────────────────
+function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expCats, onClose }) {
   const [filter, setFilter] = useState("all");
   const [confirmId, setConfirmId] = useState(null);
   const [editTxn, setEditTxn] = useState(null);
@@ -759,33 +732,43 @@ function DeepLedgerModal({ title, subtitle, txns, onDelete, onUpdate, banks, exp
   });
 
   return (
-    <Modal title={title} onClose={onClose} center={false}>
-      <div style={{marginBottom:18}}>
-        <div style={{color:C.accent, fontSize:22, fontWeight:800}}>{subtitle}</div>
+    // Clean Gesture Wrapper: Left-to-Right layout swap swipe back replaces arrow controls
+    <SwipeBackProvider active={true} onSwipeBack={onClose}>
+      <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
+        {/* Header Section (Removed arrow icon asset for pristine edge action design) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <span style={{ color: C.text, fontWeight: 800, fontSize: 24 }}>{title}</span>
+          <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 34, height: 34, borderRadius: 99, cursor: "pointer", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+        </div>
+        
+        <div style={{ color: C.accent, fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{subtitle}</div>
+
+        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+          {["all", "in", "out"].map(f => (
+            <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${filter === f ? C.accent : C.border}`, background: filter === f ? C.accentDim : "transparent", color: filter === f ? C.accent : C.muted, fontWeight: 700, fontSize: 11, cursor: "pointer", textTransform: "uppercase" }}>{f}</button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {list.length === 0 && <div style={{ padding: "40px 0", textAlign: "center", color: C.faint, fontSize: 13 }}>No financial logs recorded under this section.</div>}
+          {list.map(t => (
+            <SwipeRow key={t.id} onEdit={() => setEditTxn(t)} onDelete={() => setConfirmId(t.id)}>
+              <TxnRow txn={t} hideTotal={false} />
+            </SwipeRow>
+          ))}
+        </div>
+
+        {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
+        {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={[]} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
       </div>
-      <div style={{display:"flex", gap:6, marginBottom:16}}>
-        {["all", "in", "out"].map(f => (
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 12px", borderRadius:8, border:`1px solid ${filter===f?C.accent:C.border}`, background:filter===f?C.accentDim:"transparent", color:filter===f?C.accent:C.muted, fontWeight:600, fontSize:12, cursor:"pointer", textTransform:"uppercase"}}>{f}</button>
-        ))}
-      </div>
-      <div style={{display:"flex", flexDirection:"column", maxHeight: "40vh", overflow:"auto"}}>
-        {list.length === 0 && <div style={{padding:"30px 0", textAlign:"center", color:C.faint, fontSize:13}}>No records registered.</div>}
-        {list.map(t => (
-          <SwipeRow key={t.id} onEdit={()=>setEditTxn(t)} onDelete={()=>setConfirmId(t.id)}>
-            <TxnRow txn={t} hideTotal={false} />
-          </SwipeRow>
-        ))}
-      </div>
-      {confirmId && <ConfirmModal title="Delete Transaction?" message="This action drops the record and modifies balances instantly." onClose={()=>setConfirmId(null)} onConfirm={()=>{onDelete(confirmId); setConfirmId(null);}} />}
-      {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={[]} currency={_currency} onSave={async(data)=>{const ok=await onUpdate(editTxn.id,data); if(ok)setEditTxn(null);}} onClose={()=>setEditTxn(null)} />}
-    </Modal>
+    </SwipeBackProvider>
   );
 }
 
 function TxnRow({ txn, hideTotal }) {
   const isExp=txn.type==="expense", isInc=txn.type==="income";
   return (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px", background: C.card}}>
       <div style={{display:"flex",gap:10,alignItems:"center"}}>
         <div style={{width:36,height:36,borderRadius:10,background:isExp?C.redDim:isInc?C.accentDim:C.yellowDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{txn.type==="saving"?ICONS.saving:ICONS[txn.catIcon]||"📌"}</div>
         <div><div style={{color:C.text,fontWeight:600,fontSize:14}}>{txn.catName||txn.type}</div><div style={{color:C.muted,fontSize:11}}>{txn.bankName} · {fmtDate(txn.date)}</div></div>
@@ -920,7 +903,7 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   );
 }
 
-// ─── Savings Page ────────────────────────────────────────────────────────────
+// ─── Savings Page (Clean Swipe Back Navigation - No Arrow Indicators) ────────
 function SavingsPage({ savings, onSave, txns, onBack }) {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -939,12 +922,9 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
 
   return (
     <SwipeBackProvider active={true} onSwipeBack={onBack}>
-      <div style={{padding:"24px 16px 0"}}>
+      <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <button onClick={onBack} style={{background:"none",border:"none",color:C.accent,fontSize:20,cursor:"pointer",padding:0,lineHeight:1}}>❮</button>
-            <div style={{color:C.text,fontSize:22,fontWeight:800}}>Saving Goals</div>
-          </div>
+          <div style={{color:C.text,fontSize:22,fontWeight:800}}>Saving Goals</div>
           <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
         </div>
         {savings.length===0&&<EmptyState icon="◎" message="No saving goals configured yet." />}
@@ -973,7 +953,7 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
   );
 }
 
-// ─── Budgets Screen ───────────────────────────────────────────────────────────
+// ─── Budgets Envelope Page (Clean Swipe Navigation Integration) ───────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -994,12 +974,9 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
 
   return (
     <SwipeBackProvider active={true} onSwipeBack={onBack}>
-      <div style={{padding:"24px 16px 0"}}>
+      <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <button onClick={onBack} style={{background:"none",border:"none",color:C.accent,fontSize:20,cursor:"pointer",padding:0,lineHeight:1}}>❮</button>
-            <div style={{color:C.text,fontSize:22,fontWeight:800}}>Budgets</div>
-          </div>
+          <div style={{color:C.text,fontSize:22,fontWeight:800}}>Budgets</div>
           <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
         </div>
         {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
@@ -1044,7 +1021,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   );
 }
 
-// ─── Quick Actions Setup Page ──────────────────────────────────────────────────
+// ─── Quick Actions Config Screen (Clean Layout with Fluid Back Swiping) ────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   const [editingId, setEditingId] = useState(null);
   const [catId, setCatId] = useState("");
@@ -1081,9 +1058,8 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
 
   return (
     <SwipeBackProvider active={true} onSwipeBack={onBack}>
-      <div style={{padding:"24px 16px 0"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10, marginBottom:22}}>
-          <button onClick={onBack} style={{background:"none",border:"none",color:C.accent,fontSize:20,cursor:"pointer",padding:0,lineHeight:1}}>❮</button>
+      <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
+        <div style={{marginBottom: 20}}>
           <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions Slots</div>
         </div>
 
@@ -1125,7 +1101,7 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   );
 }
 
-// ─── Monthly Bills Screen (Compact Row Layout with Fixed Triggers) ─────────────
+// ─── Monthly Bills Screen (Precise Row Architecture Alignment) ──────────────────
 function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -1156,7 +1132,6 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
     const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
     const dateStr=today();
     
-    // Core insertion returns generated timestamp transaction token id
     const txnIdToken = await onAddTxn({
       type:"expense",amount:bill.amount,date:dateStr,
       bankId:bill.bankId,bankName:bank?.name,
@@ -1172,7 +1147,6 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const handleUndoConfirm = async () => {
     if(!confirmUndo) return;
     const payment = confirmUndo.payments.find(p=>p.month === filterMonth);
-    // Erase transaction entry from core storage using token matching securely
     if(payment && payment.txnId) {
       await delTxn(payment.txnId); 
     }
@@ -1210,30 +1184,33 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
         {bills.map(bill=>{
           const paid=isPaid(bill);
           const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
-          const thisPay=bill.payments?.find(p=>p.month===filterMonth);
           return (
             <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
-              {/* Refined Compact Layout Row Structure (Height minimized, horizontally unified) */}
-              <div style={{padding:"10px 14px", borderBottom:`1px solid ${C.border}`, background:C.card, display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 65, boxSizing: "border-box"}}>
-                <div style={{flex:1, minWidth:0, paddingRight: 10}}>
-                  <span style={{color:C.text, fontWeight:700, fontSize:14, display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{bill.name}</span>
-                  <div style={{color:C.muted, fontSize:11, marginTop: 2}}>{bank?.name} · {cat?.name||"Bills"}</div>
+              {/* Three-Column Precise Row Alignment Layout prevents dynamic element shifting */}
+              <div style={{padding:"12px 14px", borderBottom:`1px solid ${C.border}`, background:C.card, display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 68, boxSizing: "border-box"}}>
+                {/* Column 1: Descriptive Node Info */}
+                <div style={{flex: 1, minWidth: 0, paddingRight: 8}}>
+                  <span style={{color:C.text, fontWeight:700, fontSize:15, display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{bill.name}</span>
+                  <div style={{color:C.muted, fontSize:12, marginTop: 3}}>{bank?.name} · {cat?.name||"Bills"}</div>
                 </div>
                 
-                <div style={{display: "flex", alignItems: "center", gap: 14}}>
-                  <span style={{color:C.text, fontSize:15, fontWeight:800}}>{fmt(bill.amount)}</span>
-                  
+                {/* Column 2: Fixed Width Price Anchor Block prevents content jumping */}
+                <div style={{width: 85, textAlign: "right", paddingRight: 14, boxSizing: "border-box", flexShrink: 0}}>
+                  <span style={{color:C.text, fontSize:15, fontWeight:800, display:"block"}}>{fmt(bill.amount)}</span>
+                </div>
+                
+                {/* Column 3: Fixed Control Operations Area with optimized click sizing */}
+                <div style={{width: 90, display: "flex", justifyContent: "flex-end", alignItems: "center", flexShrink: 0}}>
                   {!paid ? (
-                    <button onClick={()=>handlePay(bill)} style={{background:C.redDim, border:`1px solid ${C.red}`, color:C.red, borderRadius:8, padding:"6px 14px", fontWeight:700, fontSize:12, cursor:"pointer"}}>
+                    <button onClick={()=>handlePay(bill)} style={{background:C.redDim, border:`1px solid ${C.red}`, color:C.red, borderRadius:8, width: 78, height: 32, fontWeight:700, fontSize:13, cursor:"pointer", transition:"opacity 0.1s"}}>
                       Pay
                     </button>
                   ) : (
-                    <div style={{display: "flex", alignItems: "center", gap: 6}}>
-                      <span style={{color: C.accent, fontSize: 12, fontWeight: 700, background: C.accentDim, padding: "5px 8px", borderRadius: 8, border: `1px solid ${C.accent}33`}}>
+                    <div style={{display: "flex", alignItems: "center", gap: 8}}>
+                      <span style={{color: C.accent, fontSize: 11, fontWeight: 700, background: C.accentDim, height: 28, padding: "0 8px", borderRadius: 8, border: `1px solid ${C.accent}33`, display:"flex", alignItems:"center", justifyContent:"center"}}>
                         ✓ Paid
                       </span>
-                      {/* Discrete Native Undo Handler Node Triggering Dialog Confirmation */}
-                      <button onClick={()=>setConfirmUndo(bill)} style={{background: C.border, border: "none", color: C.muted, borderRadius: 8, width: 28, height: 28, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center"}} title="Revert Payment Status">
+                      <button onClick={()=>setConfirmUndo(bill)} style={{background: C.border, border: "none", color: C.muted, borderRadius: 8, width: 28, height: 28, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition:"background 0.1s"}} title="Revert Payment Status">
                         ⟲
                       </button>
                     </div>
@@ -1323,7 +1300,6 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     <div style={{padding:"24px 16px 0"}}>
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>Settings</div>
       
-      {/* Horizontally aligned menu selectors (Unified Main list format) */}
       <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
         {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."}].map(s=>(
           <button key={s.id} onClick={()=>setSection(s.id)} style={{whiteSpace:"nowrap",padding:"8px 14px",borderRadius:10,border:`1px solid ${section===s.id?C.accent:C.border}`,background:section===s.id?C.accentDim:"transparent",color:section===s.id?C.accent:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{s.label}</button>
@@ -1334,8 +1310,6 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
         <div>
           <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals Setup</span></div><span style={{color:C.muted}}>❯</span></div>
           <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Monthly Budgets Controls</span></div><span style={{color:C.muted}}>❯</span></div>
-          
-          {/* Main List Entry Element Allocation for Quick Actions Setup */}
           <div onClick={onOpenQuickActions} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.blue}}>⚡</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Quick Actions</span></div><span style={{color:C.muted}}>❯</span></div>
           
           <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Profile Username</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Username configuration updated successfully!", color:C.accent});}}>Commit Name</Btn></Card>
