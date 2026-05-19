@@ -80,9 +80,12 @@ function Pill({ color, children, style }) { return <span style={{ background:col
 function Card({ children, style, ...props }) { return <div {...props} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>{children}</div>; }
 
 function Modal({ title, onClose, children, center }) {
+  const alignVal = center ? "center" : "flex-end";
+  const radiusVal = center ? "20px" : "20px 20px 0 0";
+  const animVal = center ? "popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)" : "slideUp 0.3s ease-out";
   return (
-    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:center?"center":"flex-end", justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:center?"20px":"20px 20px 0 0", width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:center?"popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)":"slideUp 0.3s ease-out" }}>
+    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:alignVal, justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:radiusVal, width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:animVal }}>
         <style>{`
           @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
           @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
@@ -337,7 +340,9 @@ export default function App() {
       setTxns(t); setBanks(b); setExpCats(ec); setIncCats(ic); setGroups(g); setSavings(s);
       setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setBills(bl); setBudgets(bdg); setLastBackup(lb);
       setQuickActions(qa);
-      setFilterMonth(new Date().toISOString().slice(0,7));
+      const curMonth = new Date().toISOString().slice(0,7);
+      const hasCurMonth = t.some(tx => tx.date.startsWith(curMonth));
+      setFilterMonth(hasCurMonth ? curMonth : "all");
       setReady(true);
     })();
   }, []);
@@ -579,14 +584,22 @@ function NavBtn({ id, icon, label, tab, setTab }) {
 
 // ─── Dashboard Screen ────────────────────────────────────────────────────────
 function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn, onOpenBank, onOpenGroup, onOpenSaving, onOpenBudget }) {
-  const [hideTotal, setHideTotal] = useState(false);
+  const [hideTotal, setHideTotal] = useState(true);
   const [recentFilter, setRecentFilter] = useState("all");
 
   const totalBalance = banks.reduce((s,b)=>s+bankBalance(b.id),0);
   const totalIncome = txns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
   const totalExp = txns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
 
+  // Month-over-month comparison
   const currentMonthStr = new Date().toISOString().slice(0,7);
+  const getPrevMonth = (m) => { const [y,mo]=m.split("-"); const d=new Date(+y,+mo-2,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; };
+  const prevMonth = filterMonth==="all" ? null : getPrevMonth(filterMonth);
+  const prevTxns = prevMonth ? txnsAll.filter(t=>t.date.startsWith(prevMonth)) : [];
+  const prevIncome = prevTxns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
+  const prevExp = prevTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
+  const incomeDiff = prevIncome>0 ? Math.round(((totalIncome-prevIncome)/prevIncome)*100) : null;
+  const expDiff = prevExp>0 ? Math.round(((totalExp-prevExp)/prevExp)*100) : null;
   const isCurrentMonth = filterMonth === currentMonthStr || filterMonth === "all";
   
   const billsForMonth = isCurrentMonth ? currentMonthStr : filterMonth;
@@ -644,8 +657,24 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
       </div>
       
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-        <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div><div style={{color:C.accent,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalIncome)}</div></Card>
-        <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalExp)}</div></Card>
+        <Card style={{padding:"14px 14px 12px"}}>
+          <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div>
+          <div style={{color:C.accent,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalIncome)}</div>
+          {incomeDiff!==null && !hideTotal && (
+            <div style={{fontSize:10,fontWeight:700,color:incomeDiff>=0?C.accent:C.red}}>
+              {incomeDiff>=0?"▲":"▼"} {Math.abs(incomeDiff)}% vs last month
+            </div>
+          )}
+        </Card>
+        <Card style={{padding:"14px 14px 12px"}}>
+          <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div>
+          <div style={{color:C.red,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalExp)}</div>
+          {expDiff!==null && !hideTotal && (
+            <div style={{fontSize:10,fontWeight:700,color:expDiff<=0?C.accent:C.red}}>
+              {expDiff<=0?"▼":"▲"} {Math.abs(expDiff)}% vs last month
+            </div>
+          )}
+        </Card>
       </div>
 
       {bills.length > 0 && (
@@ -791,7 +820,7 @@ function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expC
       </div>
 
       {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
-      {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={[]} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
+      {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={expCats} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
     </div>
   );
 }
@@ -854,7 +883,10 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
         <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
-      <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
+      <div style={{marginBottom:14}}>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark"}}/>
+      </div>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {type==="saving"?(savings.length>0?<Select label="Saving Goal" value={savingId} onChange={e=>setSavingId(e.target.value)}>{savings.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Select>:<div style={{color:C.muted,fontSize:13,marginBottom:14,padding:"10px 12px",background:C.card,borderRadius:10}}>No saving goals yet.</div>):(<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>)}
       <Input label="Note (optional)" placeholder="Add a note..." value={note} onChange={e=>setNote(e.target.value)}/>
@@ -925,7 +957,10 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
         <input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
-      <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
+      <div style={{marginBottom:14}}>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark"}}/>
+      </div>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
       <Input label="Note (optional)" value={note} onChange={e=>setNote(e.target.value)}/>
@@ -1218,7 +1253,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
           const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
           return (
             <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
-              <div style={{padding:"14px 16px", background:C.card, display: "flex", flexDirection:"column", gap: 12, boxSizing: "border-box"}}>
+              <div style={{padding:"12px 14px", background:C.card, display:"flex", flexDirection:"column", gap:10, boxSizing:"border-box"}}>
                 
                 <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
                   <div style={{minWidth: 0, flex: 1}}>
@@ -1230,21 +1265,20 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
                   </div>
                 </div>
 
-                <div style={{width: "100%", display: "flex", marginTop: 2}}>
+                <div style={{width:"100%",display:"flex",marginTop:0}}>
                   {!paid ? (
-                    <button onClick={()=>handlePay(bill)} 
-                            style={{background:"transparent", border:`1px solid ${C.accent}`, color:C.accent, borderRadius:10, width: "100%", height: 42, fontWeight:700, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap: 4}}>
-                      Pay Bill
+                    <button onClick={()=>handlePay(bill)}
+                            style={{background:C.accentDim, border:`1.5px solid ${C.accent}`, color:C.accent, borderRadius:10, width:"100%", height:44, fontWeight:800, fontSize:15, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, letterSpacing:0.3}}>
+                      <span style={{fontSize:16}}>✓</span> Pay Bill
                     </button>
                   ) : (
-                    <div style={{display: "flex", width: "100%", gap: 10, alignItems: "center"}}>
-                      <div style={{flex: 1, background: C.accent, color: C.bg, borderRadius: 10, height: 42, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 4}}>
-                        ✓ Paid ({filterMonth.slice(5)})
+                    <div style={{display:"flex", width:"100%", gap:8, alignItems:"center"}}>
+                      <div style={{flex:1, background:C.accent, color:C.bg, borderRadius:10, height:44, fontSize:13, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", gap:4}}>
+                        ✓ Paid {filterMonth.slice(5)}
                       </div>
-                      <button onClick={()=>setConfirmUndo(bill)} 
-                              style={{background: C.card, border: `1px solid ${C.border}`, color: C.text, borderRadius: 10, height: 42, padding: "0 16px", fontSize: 14, fontWeight:700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6}} 
-                              title="Revert Status Node">
-                        Undo ⟲
+                      <button onClick={()=>setConfirmUndo(bill)}
+                              style={{background:C.yellowDim, border:`1.5px solid ${C.yellow}`, color:C.yellow, borderRadius:10, height:44, padding:"0 14px", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:4, whiteSpace:"nowrap"}}>
+                        ⟲ Undo
                       </button>
                     </div>
                   )}
@@ -1303,7 +1337,8 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "DeliveryDiary_Backup.json"; 
+    const backupDate = new Date().toISOString().split("T")[0];
+    a.download = `Saver_Backup_${backupDate}.json`; 
     a.click();
     const now = Date.now();
     await save(KEYS.lastBackup, now);
@@ -1362,10 +1397,13 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
 
       {section==="currency"&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>{CURRENCIES.map(cur=>(<button key={cur.code} onClick={()=>onCurrency(cur.code)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:currency===cur.code?C.accentDim:C.card,border:`1.5px solid ${currency===cur.code?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",textAlign:"left"}}><div><div style={{color:currency===cur.code?C.accent:C.text,fontWeight:700,fontSize:15}}>{cur.code}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>{cur.name}</div></div>{currency===cur.code&&<span style={{color:C.accent,fontSize:20}}>✓</span>}</button>))}</div>)}
       {section==="banks"&&(<><div style={{display:"flex",flexDirection:"column"}}>{banks.map(b=>(
-        <SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>canDelBank(b)?setConfirmDel({type:"bank",item:b}):setAppAlert({title:"Action Blocked", message:"⚠️ Clear balance statement fully first before node dropping.", color:C.red})}>
-          <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}        }><div style={{width:10,height:10,borderRadius:99,background:b.color,marginRight:10}}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
+        <SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>canDelBank(b)?setConfirmDel({type:"bank",item:b}):setAppAlert({title:"Action Blocked", message:`Cannot delete "${b.name}" — it still has a balance of ${fmt(bankBalance(b.id))}. Clear balance first.`, color:C.red})}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:10,height:10,borderRadius:99,background:b.color}}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
+            <span style={{color:bankBalance(b.id)<0?C.red:C.muted,fontSize:13,fontWeight:700}}>{fmt(bankBalance(b.id))}</span>
+          </div>
         </SwipeRow>
-      ))}</div><Btn outline full onClick={()=>openAdd("bank")}>+ Add Account Node</Btn></>)}
+      ))}</div><Btn outline full onClick={()=>openAdd("bank")} style={{marginTop:8}}>+ Add Account</Btn></>)}
       {section==="expCats"&&(<><div style={{display:"flex",flexDirection:"column"}}>{expCats.map(c=>(
         <SwipeRow key={c.id} onEdit={()=>openAdd("expCat",c)} onDelete={()=>setConfirmDel({type:"expCat",item:c})}>
           <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}}><span style={{fontSize:18,marginRight:10}}>{ICONS[c.icon]||"📌"}</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>{c.name}</span></div>
