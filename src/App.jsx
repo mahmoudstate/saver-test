@@ -1,3 +1,31 @@
+// ─── Splash Screen ────────────────────────────────────────────────────────────
+function SplashScreen({ ready }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 500);
+    const t2 = setTimeout(() => setPhase(2), 1800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:999,background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none"}}>
+      <style>{`
+        @keyframes logoIn{0%{transform:scale(0.3) rotate(-10deg);opacity:0}65%{transform:scale(1.1) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0deg);opacity:1}}
+        @keyframes glow{0%,100%{box-shadow:0 0 0 0 #6ee7b700}50%{box-shadow:0 0 30px 10px #6ee7b730}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:0.25}40%{transform:translateY(-7px);opacity:1}}
+      `}</style>
+      <div style={{width:108,height:108,borderRadius:28,background:"linear-gradient(145deg,#1a3d30,#0d2219)",border:"1.5px solid #6ee7b733",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:26,animation:"logoIn 0.85s cubic-bezier(0.175,0.885,0.32,1.275) both, glow 2.2s ease 0.85s infinite"}}>
+        <span style={{fontSize:50,lineHeight:1,filter:"drop-shadow(0 0 12px #6ee7b766)"}}>◈</span>
+      </div>
+      <div style={{color:C.text,fontSize:34,fontWeight:800,letterSpacing:7,textTransform:"uppercase",marginBottom:8,animation:"logoIn 0.85s 0.1s both"}}>SAVER</div>
+      <div style={{color:C.muted,fontSize:13,fontWeight:400,letterSpacing:2,fontStyle:"italic",opacity:phase>=1?1:0,animation:phase>=1?"fadeUp 0.55s ease forwards":"none",marginBottom:70}}>Easy come, easy go.</div>
+      <div style={{display:"flex",gap:7,position:"absolute",bottom:54}}>
+        {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:99,background:C.accent,animation:`bounce 1.3s ease ${i*0.22}s infinite`}}/>)}
+      </div>
+    </div>
+  );
+}
+
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // ─── Palette & Global Helpers ──────────────────────────────────────────────────
@@ -80,12 +108,9 @@ function Pill({ color, children, style }) { return <span style={{ background:col
 function Card({ children, style, ...props }) { return <div {...props} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>{children}</div>; }
 
 function Modal({ title, onClose, children, center }) {
-  const alignVal = center ? "center" : "flex-end";
-  const radiusVal = center ? "20px" : "20px 20px 0 0";
-  const animVal = center ? "popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)" : "slideUp 0.3s ease-out";
   return (
-    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:alignVal, justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:radiusVal, width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:animVal }}>
+    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:center?"center":"flex-end", justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:center?"20px":"20px 20px 0 0", width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:center?"popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)":"slideUp 0.3s ease-out" }}>
         <style>{`
           @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
           @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
@@ -304,36 +329,6 @@ function EmptyState({ icon, message }) {
   );
 }
 
-// ─── Splash Screen ────────────────────────────────────────────────────────────
-function SplashScreen({ fading }) {
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 600);
-    const t2 = setTimeout(() => setPhase(2), 1900);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-  return (
-    <div style={{ position:"fixed", inset:0, zIndex:999, background:C.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", opacity:phase===2?0:1, transition:phase===2?"opacity 0.6s ease":"none", userSelect:"none" }}>
-      <style>{`
-        @keyframes logoIn { 0%{transform:scale(0.4) rotate(-8deg);opacity:0} 60%{transform:scale(1.08) rotate(2deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:1} }
-        @keyframes pulseGlow { 0%,100%{box-shadow:0 0 0px 0px #6ee7b700} 50%{box-shadow:0 0 32px 12px #6ee7b733} }
-        @keyframes taglineIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes dotBounce { 0%,80%,100%{transform:translateY(0);opacity:0.3} 40%{transform:translateY(-6px);opacity:1} }
-      `}</style>
-      <div style={{ width:110, height:110, borderRadius:"32px", background:"linear-gradient(135deg,#1a3d30 0%,#0d2e22 100%)", border:"2px solid #6ee7b744", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:28, animation:"logoIn 0.9s cubic-bezier(0.175,0.885,0.32,1.275) forwards, pulseGlow 2s ease-in-out 0.9s infinite" }}>
-        <span style={{ fontSize:52, lineHeight:1, filter:"drop-shadow(0 2px 8px #6ee7b755)" }}>◈</span>
-      </div>
-      <div style={{ color:"#e8e8f0", fontSize:36, fontWeight:800, letterSpacing:6, textTransform:"uppercase", marginBottom:10, animation:"logoIn 0.9s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s both" }}>SAVER</div>
-      <div style={{ color:"#8888a8", fontSize:14, fontWeight:500, letterSpacing:1.5, fontStyle:"italic", opacity:phase>=1?1:0, animation:phase>=1?"taglineIn 0.6s ease forwards":"none", marginBottom:60 }}>Easy come, easy go.</div>
-      <div style={{ display:"flex", gap:6, position:"absolute", bottom:60 }}>
-        {[0,1,2].map(i=>(
-          <div key={i} style={{ width:6, height:6, borderRadius:99, background:"#6ee7b7", animation:"dotBounce 1.2s ease-in-out "+(i*0.2)+"s infinite" }}/>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Application Logic ───────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("dashboard");
@@ -348,7 +343,8 @@ export default function App() {
   const [quickActions, setQuickActions] = useState(DEFAULT_QUICK_ACTIONS);
   const [ready, setReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [showSplash, setShowSplash] = useState(true);
+  const [hideTotal, setHideTotal] = useState(true);
+  const [dashScrollY, setDashScrollY] = useState(0);
   const [filterMonth, setFilterMonth] = useState("all");
   const [currency, setCurrencyState] = useState("EGP");
   const [username, setUsernameState] = useState("");
@@ -356,8 +352,6 @@ export default function App() {
   
   const [appAlert, setAppAlert] = useState(null);
 
-  const [hideTotal, setHideTotal] = useState(true);
-  const [dashScrollY, setDashScrollY] = useState(0);
   const [ledgerBank, setLedgerBank] = useState(null);
   const [ledgerGroup, setLedgerGroup] = useState(null);
   const [ledgerSaving, setLedgerSaving] = useState(null);
@@ -374,11 +368,9 @@ export default function App() {
       setTxns(t); setBanks(b); setExpCats(ec); setIncCats(ic); setGroups(g); setSavings(s);
       setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setBills(bl); setBudgets(bdg); setLastBackup(lb);
       setQuickActions(qa);
-      const curMonth = new Date().toISOString().slice(0,7);
-      const hasCurMonth = t.some(tx => tx.date.startsWith(curMonth));
-      setFilterMonth(hasCurMonth ? curMonth : "all");
+      setFilterMonth(new Date().toISOString().slice(0,7));
       setReady(true);
-      setTimeout(() => setShowSplash(false), 2500);
+      setTimeout(() => setShowSplash(false), 2600);
     })();
   }, []);
 
@@ -452,13 +444,13 @@ export default function App() {
       await save(KEYS.lastBackup, now);
       setLastBackup(now);
       
-      setAppAlert({ title: "Restore Successful", message: "🔄 Backup restored successfully! ✅", color: C.accent });
+      setAppAlert({ title: "Restore Successful", message: "🔄 Vault ledger datasets synchronized and restored successfully!", color: C.accent });
     } catch {
       setAppAlert({ title: "Restore Failed", message: "❌ Invalid or corrupted backup file structure detected.", color: C.red });
     }
   };
 
-  if (showSplash) return <SplashScreen fading={ready} />;
+  if (showSplash) return <SplashScreen ready={ready} />;
 
   const allCats=[...expCats,...incCats];
   const filteredTxns=filterMonth==="all"?txns:txns.filter(t=>t.date.startsWith(filterMonth));
@@ -480,7 +472,7 @@ export default function App() {
 
       {!ledgerBank && !ledgerGroup && !ledgerSaving && !ledgerBudget ? (
         <>
-          {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{ setDashScrollY(window.scrollY); setLedgerBank(b); }} onOpenGroup={(g)=>{ setDashScrollY(window.scrollY); setLedgerGroup(g); }} onOpenSaving={(s)=>{ setDashScrollY(window.scrollY); setLedgerSaving(s); }} onOpenBudget={(bdg)=>{ setDashScrollY(window.scrollY); setLedgerBudget(bdg); }} hideTotal={hideTotal} setHideTotal={setHideTotal} onOpenInsights={()=>setTab("insights")} />}
+          {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={setLedgerBank} onOpenGroup={setLedgerGroup} onOpenSaving={setLedgerSaving} onOpenBudget={setLedgerBudget} />}
           {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
           {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
           
@@ -488,7 +480,6 @@ export default function App() {
           {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>setTab("settings")} currency={currency}/>}
           {tab==="quickactions" && <QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>setTab("settings")} />}
           
-          {tab==="insights" && <InsightsPage txns={txns} banks={banks} expCats={expCats} groups={groups} savings={savings} filterMonth={filterMonth} onBack={()=>setTab("dashboard")}/>}
           {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} setAppAlert={setAppAlert}/>}
           {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>setTab("savings")} onOpenBudgets={()=>setTab("budgets")} onOpenQuickActions={()=>setTab("quickactions")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert}/>}
           
@@ -496,10 +487,10 @@ export default function App() {
         </>
       ) : (
         <>
-          {ledgerBank && <DeepLedgerView title={ledgerBank.name} headerType="bank" headerData={{balance: bankBalance(ledgerBank.id)}} txns={txns.filter(t=>t.bankId===ledgerBank.id)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerBank(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />}
-          {ledgerGroup && (()=>{ const spent=txns.filter(t=>t.type==="expense"&&ledgerGroup.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0); return <DeepLedgerView title={ledgerGroup.name} headerType="group" headerData={{spent, color:ledgerGroup.color}} txns={txns.filter(t=>t.type==="expense"&&ledgerGroup.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerGroup(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />; })()}
-          {ledgerSaving && (()=>{ const saved=txns.filter(t=>t.type==="saving"&&t.catName===ledgerSaving.name).reduce((a,t)=>a+t.amount,0); return <DeepLedgerView title={ledgerSaving.name} headerType="saving" headerData={{saved, goal:ledgerSaving.goal}} txns={txns.filter(t=>t.type==="saving"&&t.catName===ledgerSaving.name)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerSaving(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />; })()}
-          {ledgerBudget && (()=>{ const spent=txns.filter(t=>t.type==="expense"&&ledgerBudget.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0); return <DeepLedgerView title={ledgerBudget.name} headerType="budget" headerData={{spent, limit:ledgerBudget.amount}} txns={txns.filter(t=>t.type==="expense"&&ledgerBudget.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerBudget(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />; })()}
+          {ledgerBank && <DeepLedgerView title={`${ledgerBank.name} History`} subtitle={fmt(bankBalance(ledgerBank.id))} txns={txns.filter(t=>t.bankId===ledgerBank.id)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{setLedgerBank(null);setTimeout(()=>window.scrollTo(0,dashScrollY),50);}} />}
+          {ledgerGroup && <DeepLedgerView title={`${ledgerGroup.name} History`} subtitle="Categorized Expenses" txns={txns.filter(t=>t.type==="expense" && ledgerGroup.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{setLedgerGroup(null);setTimeout(()=>window.scrollTo(0,dashScrollY),50);}} />}
+          {ledgerSaving && <DeepLedgerView title={`${ledgerSaving.name} History`} subtitle={`Goal Target: ${fmt(ledgerSaving.goal)}`} txns={txns.filter(t=>t.type==="saving" && t.catName===ledgerSaving.name)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{setLedgerSaving(null);setTimeout(()=>window.scrollTo(0,dashScrollY),50);}} />}
+          {ledgerBudget && <DeepLedgerView title={`${ledgerBudget.name} History`} subtitle={`Limit: ${fmt(ledgerBudget.amount)}`} txns={txns.filter(t=>t.type==="expense" && ledgerBudget.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{setLedgerBudget(null);setTimeout(()=>window.scrollTo(0,dashScrollY),50);}} />}
         </>
       )}
       
@@ -513,8 +504,6 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
   const [showQuick, setShowQuick] = useState(false);
   const [quickForm, setQuickForm] = useState(null);
   const pressTimer = useRef(null);
-  // Remember last used amount & bank per shortcut
-  const lastUsed = useRef({});
 
   const activeShortcuts = quickActions.filter(q => q.catId);
 
@@ -523,14 +512,10 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
 
   const handleQuickSelect = (shortcut) => {
     setShowQuick(false);
-    // Use last used values if available, else use shortcut defaults
-    const prev = lastUsed.current[shortcut.id] || {};
     setQuickForm({
       catId: shortcut.catId,
-      shortcutId: shortcut.id,
-      amount: prev.amount || shortcut.amount || "50",
-      bankId: prev.bankId && banks.some(b=>b.id===prev.bankId) ? prev.bankId :
-              shortcut.bankId && banks.some(b=>b.id===shortcut.bankId) ? shortcut.bankId : (banks[0]?.id || ""),
+      amount: shortcut.amount || "50",
+      bankId: shortcut.bankId && banks.some(b=>b.id===shortcut.bankId) ? shortcut.bankId : (banks[0]?.id || ""),
       note: ""
     });
   };
@@ -550,10 +535,6 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
     });
 
     if (success !== false) {
-      // Save last used values for next time
-      if (quickForm.shortcutId) {
-        lastUsed.current[quickForm.shortcutId] = { amount: quickForm.amount, bankId: quickForm.bankId };
-      }
       setQuickForm(null); 
       setTab("dashboard");
     }
@@ -608,9 +589,9 @@ function BottomNav({ tab, setTab, expCats, banks, onAdd, currency, bankBalance, 
             <span style={{fontSize:16, fontWeight:700, color:C.text}}>{expCats.find(c=>c.id===quickForm.catId)?.name}</span>
           </div>
           <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={quickForm.amount} onChange={e=>setQuickForm({...quickForm, amount:e.target.value})} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
-          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Account</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer"}}>{b.name}</button>)}</div></div>
-          <Input label="Note" placeholder="Add a note..." value={quickForm.note} onChange={e=>setQuickForm({...quickForm, note:e.target.value})}/>
-          <Btn full onClick={handleQuickSave}>Save</Btn>
+          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Source Ledger</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer"}}>{b.name}</button>)}</div></div>
+          <Input label="Annotation / Note" placeholder="Add annotation..." value={quickForm.note} onChange={e=>setQuickForm({...quickForm, note:e.target.value})}/>
+          <Btn full onClick={handleQuickSave}>Confirm Settlement</Btn>
         </Modal>
       )}
       {showQuick && <div onClick={()=>setShowQuick(false)} style={{position:"fixed", inset:0, zIndex:40}} />}
@@ -636,15 +617,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   const totalIncome = txns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
   const totalExp = txns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
 
-  // Month-over-month comparison
   const currentMonthStr = new Date().toISOString().slice(0,7);
-  const getPrevMonth = (m) => { const [y,mo]=m.split("-"); const d=new Date(+y,+mo-2,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; };
-  const prevMonth = filterMonth==="all" ? null : getPrevMonth(filterMonth);
-  const prevTxns = prevMonth ? txnsAll.filter(t=>t.date.startsWith(prevMonth)) : [];
-  const prevIncome = prevTxns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
-  const prevExp = prevTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
-  const incomeDiff = prevIncome>0 ? Math.round(((totalIncome-prevIncome)/prevIncome)*100) : null;
-  const expDiff = prevExp>0 ? Math.round(((totalExp-prevExp)/prevExp)*100) : null;
   const isCurrentMonth = filterMonth === currentMonthStr || filterMonth === "all";
   
   const billsForMonth = isCurrentMonth ? currentMonthStr : filterMonth;
@@ -679,7 +652,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
       <Card style={{padding:"16px 18px",marginBottom:10,background:"linear-gradient(135deg,#1e1e28 0%,#23232f 100%)",borderColor:C.faint}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Total Balance</div>
+            <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Net Balance</div>
             <div style={{color:C.text,fontSize:30,fontWeight:800,letterSpacing:-1}}>{hideTotal?"••••••":fmt(totalBalance)}</div>
           </div>
           <button onClick={()=>setHideTotal(v=>!v)} style={{background:C.border,border:"none",color:C.muted,width:36,height:36,borderRadius:99,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{hideTotal?"🙈":"🐵"}</button>
@@ -702,24 +675,8 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
       </div>
       
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-        <Card style={{padding:"14px 14px 12px"}}>
-          <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div>
-          <div style={{color:C.accent,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalIncome)}</div>
-          {incomeDiff!==null && !hideTotal && (
-            <div style={{fontSize:10,fontWeight:700,color:incomeDiff>=0?C.accent:C.red}}>
-              {incomeDiff>=0?"▲":"▼"} {Math.abs(incomeDiff)}% vs last month
-            </div>
-          )}
-        </Card>
-        <Card style={{padding:"14px 14px 12px"}}>
-          <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div>
-          <div style={{color:C.red,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalExp)}</div>
-          {expDiff!==null && !hideTotal && (
-            <div style={{fontSize:10,fontWeight:700,color:expDiff<=0?C.accent:C.red}}>
-              {expDiff<=0?"▼":"▲"} {Math.abs(expDiff)}% vs last month
-            </div>
-          )}
-        </Card>
+        <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div><div style={{color:C.accent,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalIncome)}</div></Card>
+        <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800}}>{hideTotal?"••••":fmt(totalExp)}</div></Card>
       </div>
 
       {bills.length > 0 && (
@@ -747,25 +704,17 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
               const spent = txnsAll.filter(t => t.type === "expense" && t.date.startsWith(currentMonthStr) && bdg.cats.includes(t.catId)).reduce((a,t) => a+t.amount, 0);
               const remaining = Math.max(0, bdg.amount - spent);
               const safeDaily = remaining / daysLeft;
-              const pct = bdg.amount > 0 ? Math.min(100, Math.round((spent/bdg.amount)*100)) : 0;
-              const barColor = pct >= 90 ? C.red : pct >= 70 ? C.yellow : C.accent;
               return (
-                <Card key={bdg.id} onClick={()=>onOpenBudget(bdg)} className="interactive-card" style={{padding:"14px", cursor:"pointer", transition:"transform 0.1s ease"}}>
-                  {/* Title + % pill */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span>
-                    <Pill color={barColor}>{pct}%</Pill>
+                <Card key={bdg.id} onClick={()=>onOpenBudget(bdg)} className="interactive-card" style={{padding:"14px", cursor: "pointer", transition: "transform 0.1s ease"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}><div style={{width:8,height:8,borderRadius:99,background:C.accent}}/><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:10}}>
+                    <div>
+                      <div style={{color:C.accent,fontSize:20,fontWeight:800,lineHeight:1}}>{hideTotal?"••••":fmt(remaining)}</div>
+                      <div style={{color:C.muted,fontSize:11,fontWeight:500,marginTop:5}}>Safe Daily: {fmt(safeDaily)}</div>
+                    </div>
+                    <div style={{color:C.muted,fontSize:12}}>of {fmt(bdg.amount)}</div>
                   </div>
-                  {/* Spent of budget */}
-                  <div style={{color:C.muted,fontSize:11,marginBottom:6}}>
-                    Spent <span style={{color:C.text,fontWeight:700}}>{hideTotal?"••••":fmt(spent)}</span> of {hideTotal?"••••":fmt(bdg.amount)}
-                  </div>
-                  {/* Remaining + safe daily */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{color:remaining===0?C.red:C.accent,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(remaining)} left</span>
-                    <span style={{color:C.muted,fontSize:11}}>Daily Budget: {fmt(safeDaily)}</span>
-                  </div>
-                  <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
+                  <ProgressBar value={spent} max={bdg.amount} color={C.accent}/>
                 </Card>
               );
             })}
@@ -799,7 +748,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Spending</div>
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Expense Breakdown</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         {groups.map(g=>{
           const total=txns.filter(t=>t.type==="expense"&&g.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0);
@@ -816,56 +765,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
           );
         })}
       </div>
-
-      {/* ── Insights Widget ── */}
-      {txns.length > 0 && (()=>{
-        const curM = new Date().toISOString().slice(0,7);
-        const activeM = filterMonth==="all" ? curM : filterMonth;
-        const mTxns = txns.filter(t=>t.date.startsWith(activeM));
-        const mInc = mTxns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
-        const mExp = mTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
-        const ratio = mInc>0 ? Math.min(100,Math.round((mExp/mInc)*100)) : 0;
-        const [py,pmo] = activeM.split("-");
-        const prev = new Date(+py,+pmo-2,1);
-        const prevM = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,"0")}`;
-        const prevTxns = txns.filter(t=>t.date.startsWith(prevM));
-        const catTotals = expCats.map(c=>({
-          c, cur:mTxns.filter(t=>t.type==="expense"&&t.catId===c.id).reduce((a,t)=>a+t.amount,0),
-          prev:prevTxns.filter(t=>t.type==="expense"&&t.catId===c.id).reduce((a,t)=>a+t.amount,0)
-        })).filter(x=>x.cur>0).sort((a,b)=>b.cur-a.cur).slice(0,2);
-        const barColor = ratio>=90?C.red:ratio>=70?C.yellow:C.accent;
-        return (
-          <div onClick={onOpenInsights} style={{marginBottom:20,background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"14px 16px",cursor:"pointer"}} onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{fontSize:15}}>📊</span>
-                <span style={{color:C.text,fontWeight:700,fontSize:14}}>Insights</span>
-              </div>
-              <span style={{color:C.muted,fontSize:12}}>View all ❯</span>
-            </div>
-            <div style={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                <span style={{color:C.muted,fontSize:11}}>Spent <span style={{color:barColor,fontWeight:700}}>{ratio}%</span> of income</span>
-                <span style={{color:C.muted,fontSize:11}}>{hideTotal?"••••":fmt(mExp)} / {hideTotal?"••••":fmt(mInc)}</span>
-              </div>
-              <div style={{height:5,background:C.border,borderRadius:99,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${ratio}%`,background:barColor,borderRadius:99,transition:"width .5s"}}/>
-              </div>
-            </div>
-            {catTotals.map(({c,cur,prev})=>{
-              const diff = prev>0?Math.round(((cur-prev)/prev)*100):null;
-              return (
-                <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
-                  <span style={{fontSize:14}}>{ICONS[c.icon]||"📌"}</span>
-                  <span style={{color:C.muted,fontSize:12,flex:1}}>{c.name}</span>
-                  <span style={{color:C.text,fontSize:12,fontWeight:700}}>{hideTotal?"••••":fmt(cur)}</span>
-                  {diff!==null && <span style={{color:diff>0?C.red:C.accent,fontSize:10,fontWeight:700,minWidth:36,textAlign:"right"}}>{diff>0?"▲":"▼"}{Math.abs(diff)}%</span>}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
 
       <div style={{marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Recent Transactions</div>
@@ -887,84 +786,10 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
 }
 
 // ─── Clean Deep History View (No Swipe Back, Big X Perfectly Aligned) ─────────
-function LedgerHeader({ type, data }) {
-  if (!type || !data) return null;
-
-  // BANK: big balance, green/red by value
-  if (type === "bank") {
-    const neg = data.balance < 0;
-    return (
-      <div style={{ marginBottom: 20, padding: "16px 18px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16 }}>
-        <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Account Balance</div>
-        <div style={{ color: neg ? C.red : C.accent, fontSize: 32, fontWeight: 800, letterSpacing: -1 }}>{fmt(data.balance)}</div>
-      </div>
-    );
-  }
-
-  // GROUP: total spent, muted label
-  if (type === "group") {
-    return (
-      <div style={{ marginBottom: 20, padding: "16px 18px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16 }}>
-        <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Total Spent</div>
-        <div style={{ color: data.color || C.purple, fontSize: 32, fontWeight: 800, letterSpacing: -1 }}>{fmt(data.spent)}</div>
-      </div>
-    );
-  }
-
-  // SAVING: saved big green, goal muted, progress bar
-  if (type === "saving") {
-    const pct = data.goal > 0 ? Math.min(100, Math.round((data.saved / data.goal) * 100)) : 0;
-    const left = Math.max(0, data.goal - data.saved);
-    return (
-      <div style={{ marginBottom: 20, padding: "16px 18px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-          <div>
-            <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Saved</div>
-            <div style={{ color: C.yellow, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>{fmt(data.saved)}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ color: C.faint, fontSize: 11, marginBottom: 4 }}>of {fmt(data.goal)}</div>
-            <div style={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>{fmt(left)} left</div>
-          </div>
-        </div>
-        <ProgressBar value={data.saved} max={data.goal} color={C.yellow} />
-        <div style={{ color: C.faint, fontSize: 10, fontWeight: 700, marginTop: 5, textAlign: "right" }}>{pct}% complete</div>
-      </div>
-    );
-  }
-
-  // BUDGET: spent red, remaining green, progress
-  if (type === "budget") {
-    const rem = Math.max(0, data.limit - data.spent);
-    const pct = data.limit > 0 ? Math.min(100, Math.round((data.spent / data.limit) * 100)) : 0;
-    const barColor = pct >= 90 ? C.red : pct >= 70 ? C.yellow : C.accent;
-    return (
-      <div style={{ marginBottom: 20, padding: "16px 18px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 10 }}>
-          <div>
-            <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Spent</div>
-            <div style={{ color: C.red, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>{fmt(data.spent)}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ color: C.faint, fontSize: 11, marginBottom: 4 }}>of {fmt(data.limit)}</div>
-            <div style={{ color: rem === 0 ? C.red : C.accent, fontSize: 15, fontWeight: 700 }}>{fmt(rem)} left</div>
-          </div>
-        </div>
-        <ProgressBar value={data.spent} max={data.limit} color={barColor} />
-        <div style={{ color: C.faint, fontSize: 10, fontWeight: 700, marginTop: 5, textAlign: "right" }}>{pct}% of budget used</div>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdate, banks, expCats, onClose }) {
+function DeepLedgerView({ title, subtitle, txns, onDelete, onUpdate, banks, expCats, onClose }) {
   const [filter, setFilter] = useState("all");
   const [confirmId, setConfirmId] = useState(null);
   const [editTxn, setEditTxn] = useState(null);
-
-  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const list = txns.filter(t => {
     if (filter === "in") return t.type === "income";
@@ -974,12 +799,12 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
 
   return (
     <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ color: C.text, fontWeight: 800, fontSize: 22 }}>{title}</span>
-        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 44, height: 44, borderRadius: 99, cursor: "pointer", fontSize: 20, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <span style={{ color: C.text, fontWeight: 800, fontSize: 24, margin: 0, padding: 0, display: "flex", alignItems: "center" }}>{title}</span>
+        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 44, height: 44, borderRadius: 99, cursor: "pointer", fontSize: 20, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, padding: 0, margin: 0 }}>✕</button>
       </div>
-
-      <LedgerHeader type={headerType} data={headerData} />
+      
+      <div style={{ color: C.accent, fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{subtitle}</div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
         {["all", "in", "out"].map(f => (
@@ -988,7 +813,7 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {list.length === 0 && <div style={{ padding: "40px 0", textAlign: "center", color: C.faint, fontSize: 13 }}>No transactions found.</div>}
+        {list.length === 0 && <div style={{ padding: "40px 0", textAlign: "center", color: C.faint, fontSize: 13 }}>No financial logs recorded under this section.</div>}
         {list.map(t => (
           <SwipeRow key={t.id} onEdit={() => setEditTxn(t)} onDelete={() => setConfirmId(t.id)}>
             <TxnRow txn={t} hideTotal={false} />
@@ -997,7 +822,7 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
       </div>
 
       {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
-      {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={expCats} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
+      {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={[]} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
     </div>
   );
 }
@@ -1060,10 +885,7 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
         <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
-      <div style={{marginBottom:14}}>
-        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark",WebkitAppearance:"none",appearance:"none",display:"block"}}/>
-      </div>
+      <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {type==="saving"?(savings.length>0?<Select label="Saving Goal" value={savingId} onChange={e=>setSavingId(e.target.value)}>{savings.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Select>:<div style={{color:C.muted,fontSize:13,marginBottom:14,padding:"10px 12px",background:C.card,borderRadius:10}}>No saving goals yet.</div>):(<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>)}
       <Input label="Note (optional)" placeholder="Add a note..." value={note} onChange={e=>setNote(e.target.value)}/>
@@ -1134,10 +956,7 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
         <input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
-      <div style={{marginBottom:14}}>
-        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark"}}/>
-      </div>
+      <Input label="Date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
       <Input label="Note (optional)" value={note} onChange={e=>setNote(e.target.value)}/>
@@ -1148,7 +967,6 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
 
 // ─── Savings Page ─────────────────────────────────────────────────────────────
 function SavingsPage({ savings, onSave, txns, onBack }) {
-  useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
@@ -1200,7 +1018,6 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
 
 // ─── Budgets Screen ───────────────────────────────────────────────────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
-  useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
   const [name, setName] = useState("");
@@ -1270,7 +1087,6 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
 
 // ─── Quick Actions Slots ──────────────────────────────────────────────────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
-  useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [editingId, setEditingId] = useState(null);
   const [catId, setCatId] = useState("");
   const [amount, setAmount] = useState("");
@@ -1338,7 +1154,7 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
             {expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]} {c.name}</option>)}
           </Select>
           <Input label="Default Fixed Amount" type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} />
-          <Select label="Default Account Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
+          <Select label="Default Source Ledger Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
             {banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
           </Select>
           <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Commit Shortcut Slot</Btn>
@@ -1366,17 +1182,14 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const availMonths = [...new Set([...bills.flatMap(b=>b.payments?.map(p=>p.month)||[]), defaultMonth])].sort().reverse();
 
   const isPaid = (bill) => bill.payments?.some(p=>p.month === filterMonth);
-
-  // Reminder logic: check if today is within reminderDays before dueDay
   const getReminderStatus = (bill) => {
     if (!bill.dueDay) return null;
-    const now = new Date();
-    const curMonth = now.toISOString().slice(0,7);
-    if (isPaid(bill) || filterMonth !== curMonth) return null;
-    const dueDate = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
-    const diffDays = Math.ceil((dueDate - now) / (1000*60*60*24));
-    if (diffDays < 0) return { overdue: true, days: Math.abs(diffDays) };
-    if (diffDays <= (bill.reminderDays || 2)) return { overdue: false, days: diffDays };
+    const now = new Date(); const curM = now.toISOString().slice(0,7);
+    if (isPaid(bill) || filterMonth !== curM) return null;
+    const due = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
+    const diff = Math.ceil((due - now)/(1000*60*60*24));
+    if (diff < 0) return { overdue:true, days:Math.abs(diff) };
+    if (diff <= (bill.reminderDays||2)) return { overdue:false, days:diff };
     return null;
   };
 
@@ -1385,8 +1198,8 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const handleSave=async()=>{
     const parsedAmt = parseFloat(amount);
     if(!name||!amount||isNaN(parsedAmt)||parsedAmt<=0)return;
-    const dd = Math.min(28, Math.max(1, parseInt(dueDay)||1));
-    const rd = Math.min(7, Math.max(0, parseInt(reminderDays)||2));
+    const dd=Math.min(28,Math.max(1,parseInt(dueDay)||1));
+    const rd=Math.min(7,Math.max(0,parseInt(reminderDays)||2));
     if(editItem) await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:parsedAmt,bankId,catId,dueDay:dd,reminderDays:rd}:b));
     else await onSave([...bills,{id:Date.now().toString(),name,amount:parsedAmt,bankId,catId,dueDay:dd,reminderDays:rd,payments:[]}]);
     setShowAdd(false);setEditItem(null);setName("");setAmount("");
@@ -1400,7 +1213,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
       type:"expense",amount:bill.amount,date:dateStr,
       bankId:bill.bankId,bankName:bank?.name,
       catId:bill.catId,catName:cat?.name||bill.name,catIcon:cat?.icon||"bills",
-      note: `Monthly Bill: ${bill.name}`
+      note: `Monthly Bill Settlement: ${bill.name}`
     });
 
     if (txnIdToken !== false) {
@@ -1444,53 +1257,44 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
       
       {bills.length===0&&<EmptyState icon="📋" message="No recurrent fixed monthly bill items configured yet." />}
       
-      <div style={{display:"flex",flexDirection:"column",gap:0,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
-        {bills.map((bill,idx)=>{
+      <div style={{display:"flex",flexDirection:"column", gap: 8}}>
+        {bills.map(bill=>{
           const paid=isPaid(bill);
           const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
-          const isLast=idx===bills.length-1;
           return (
             <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
-              <div style={{background:paid?C.accentDim+"55":C.card,boxSizing:"border-box",borderBottom:isLast?"none":`1px solid ${C.border}`}}>
-                {/* Row 1: icon + name + amount */}
-                {(()=>{ const rem=getReminderStatus(bill); return rem && (
-                  <div style={{background:rem.overdue?C.redDim:C.yellowDim,borderBottom:`1px solid ${rem.overdue?C.red:C.yellow}33`,padding:"5px 14px",display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:12}}>{rem.overdue?"🔴":"🟡"}</span>
-                    <span style={{color:rem.overdue?C.red:C.yellow,fontSize:11,fontWeight:700}}>
-                      {rem.overdue?`Overdue by ${rem.days} day${rem.days!==1?"s":""}`:`Due in ${rem.days} day${rem.days!==1?"s":""}`}
-                    </span>
+              <div style={{padding:"14px 16px", background:C.card, display: "flex", flexDirection:"column", gap: 12, boxSizing: "border-box"}}>
+                
+                <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%"}}>
+                  <div style={{minWidth: 0, flex: 1}}>
+                    <span style={{color:C.text, fontWeight:700, fontSize:15, display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{bill.name}</span>
+                    <div style={{color:C.muted, fontSize:11, fontWeight: 500, marginTop: 2}}>{bank?.name} · {cat?.name||"Bills"}</div>
                   </div>
-                ); })()}
-                <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px 6px"}}>
-                  <div style={{width:36,height:36,borderRadius:99,background:paid?C.accentDim:C.border+"88",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-                    {ICONS[cat?.icon]||"⚡"}
+                  <div style={{flexShrink: 0, paddingLeft: 12}}>
+                    <span style={{color:C.text, fontSize:17, fontWeight:800}}>{fmt(bill.amount)}</span>
                   </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{color:C.text,fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
-                    <div style={{color:C.muted,fontSize:11,marginTop:1}}>
-                      {bank?.name} · {cat?.name||"Bills"}
-                      {bill.dueDay && <span style={{color:C.faint}}> · Due {bill.dueDay}{bill.dueDay===1?"st":bill.dueDay===2?"nd":bill.dueDay===3?"rd":"th"}</span>}
-                    </div>
-                  </div>
-                  <div style={{color:paid?C.accent:C.red,fontSize:17,fontWeight:800,flexShrink:0}}>{fmt(bill.amount)}</div>
                 </div>
-                {/* Row 2: action buttons full width */}
-                <div style={{padding:"0 14px 12px",display:"flex",gap:8}}>
+
+                <div style={{width: "100%", display: "flex", marginTop: 2}}>
                   {!paid ? (
-                    <button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                      <span>✓</span> Pay Now
+                    <button onClick={()=>handlePay(bill)} 
+                            style={{background:"transparent", border:`1px solid ${C.accent}`, color:C.accent, borderRadius:10, width: "100%", height: 42, fontWeight:700, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap: 4}}>
+                      Pay Bill
                     </button>
                   ) : (
-                    <>
-                      <div style={{flex:1,background:C.accent,color:C.bg,borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                        ✓ Paid {filterMonth.slice(5)}
+                    <div style={{display: "flex", width: "100%", gap: 10, alignItems: "center"}}>
+                      <div style={{flex: 1, background: C.accent, color: C.bg, borderRadius: 10, height: 42, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 4}}>
+                        ✓ Paid ({filterMonth.slice(5)})
                       </div>
-                      <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                        ⟲ Undo
+                      <button onClick={()=>setConfirmUndo(bill)} 
+                              style={{background: C.card, border: `1px solid ${C.border}`, color: C.text, borderRadius: 10, height: 42, padding: "0 16px", fontSize: 14, fontWeight:700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6}} 
+                              title="Revert Status Node">
+                        Undo ⟲
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
+
               </div>
             </SwipeRow>
           );
@@ -1499,7 +1303,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
       
       {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}} center={false}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select><Btn full onClick={handleSave}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
       {confirmDelete&&<ConfirmModal title="Delete Permanent Record?" message="Remove this from your monthly template cycle entirely?" onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
-      {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This will mark "${confirmUndo.name}" as unpaid and remove its transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
+      {confirmUndo&&<ConfirmModal title="Revert Settlement status?" message={`This will flag "${confirmUndo.name}" as outstanding and automatically delete the ledger entry.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
     </div>
   );
 }
@@ -1544,8 +1348,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    const backupDate = new Date().toISOString().split("T")[0];
-    a.download = `Saver_Backup_${backupDate}.json`; 
+    a.download = "DeliveryDiary_Backup.json"; 
     a.click();
     const now = Date.now();
     await save(KEYS.lastBackup, now);
@@ -1577,7 +1380,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>Settings</div>
       
       <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-        {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."},{id:"groups",label:"📊 Groups"}].map(s=>(
+        {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."}].map(s=>(
           <button key={s.id} onClick={()=>setSection(s.id)} style={{whiteSpace:"nowrap",padding:"8px 14px",borderRadius:10,border:`1px solid ${section===s.id?C.accent:C.border}`,background:section===s.id?C.accentDim:"transparent",color:section===s.id?C.accent:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{s.label}</button>
         ))}
       </div>
@@ -1585,14 +1388,14 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
       {section==="profile"&&(
         <div>
           <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals Setup</span></div><span style={{color:C.muted}}>❯</span></div>
-          <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Monthly Budgets</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Monthly Budgets Controls</span></div><span style={{color:C.muted}}>❯</span></div>
           <div onClick={onOpenQuickActions} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.blue}}>⚡</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Quick Actions Slots</span></div><span style={{color:C.muted}}>❯</span></div>
           
-          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Profile Username</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Username configuration updated successfully!", color:C.accent});}}>Save Name</Btn></Card>
+          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Profile Username</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Username configuration updated successfully!", color:C.accent});}}>Commit Name</Btn></Card>
           
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Vault Ledger Backups</div>
           <Card style={{marginBottom:16}}>
-            <p style={{color:C.muted, fontSize:12, marginBottom:14, lineHeight:1.4}}>Download a backup or restore from a previous backup file.</p>
+            <p style={{color:C.muted, fontSize:12, marginBottom:14, lineHeight:1.4}}>Download backup payload files locally or restore previous metrics ledger logs data directly.</p>
             <div style={{ display:"flex", gap:10, width:"100%" }}>
               <Btn style={{ flex:1, whiteSpace:"nowrap", padding:"11px 5px" }} onClick={handleBackup} color={C.blue}>⬇️ Backup</Btn>
               <Btn style={{ flex:1, whiteSpace:"nowrap", padding:"11px 5px" }} onClick={()=>fileInputRef.current.click()} color={C.purple} outline>⬆️ Restore</Btn>
@@ -1604,285 +1407,153 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
 
       {section==="currency"&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>{CURRENCIES.map(cur=>(<button key={cur.code} onClick={()=>onCurrency(cur.code)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:currency===cur.code?C.accentDim:C.card,border:`1.5px solid ${currency===cur.code?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",textAlign:"left"}}><div><div style={{color:currency===cur.code?C.accent:C.text,fontWeight:700,fontSize:15}}>{cur.code}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>{cur.name}</div></div>{currency===cur.code&&<span style={{color:C.accent,fontSize:20}}>✓</span>}</button>))}</div>)}
       {section==="banks"&&(<><div style={{display:"flex",flexDirection:"column"}}>{banks.map(b=>(
-        <SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>canDelBank(b)?setConfirmDel({type:"bank",item:b}):setAppAlert({title:"Action Blocked", message:`Cannot delete "${b.name}" — it still has a balance of ${fmt(bankBalance(b.id))}. Clear balance first.`, color:C.red})}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:10,height:10,borderRadius:99,background:b.color}}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
-            <span style={{color:bankBalance(b.id)<0?C.red:C.muted,fontSize:13,fontWeight:700}}>{fmt(bankBalance(b.id))}</span>
-          </div>
+        <SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>canDelBank(b)?setConfirmDel({type:"bank",item:b}):setAppAlert({title:"Action Blocked", message:"⚠️ Clear balance statement fully first before node dropping.", color:C.red})}>
+          <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}        }><div style={{width:10,height:10,borderRadius:99,background:b.color,marginRight:10}}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
         </SwipeRow>
-      ))}</div><Btn outline full onClick={()=>openAdd("bank")} style={{marginTop:8}}>+ Add Account</Btn></>)}
+      ))}</div><Btn outline full onClick={()=>openAdd("bank")}>+ Add Account Node</Btn></>)}
       {section==="expCats"&&(<><div style={{display:"flex",flexDirection:"column"}}>{expCats.map(c=>(
         <SwipeRow key={c.id} onEdit={()=>openAdd("expCat",c)} onDelete={()=>setConfirmDel({type:"expCat",item:c})}>
           <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}}><span style={{fontSize:18,marginRight:10}}>{ICONS[c.icon]||"📌"}</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>{c.name}</span></div>
         </SwipeRow>
-      ))}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Category</Btn></>)}
-
-      {section==="groups"&&(<>
-        <div style={{display:"flex",flexDirection:"column",gap:0}}>
-          {groups.map(g=>(
-            <SwipeRow key={g.id} onEdit={()=>openAdd("group",g)} onDelete={()=>setConfirmDel({type:"group",item:g})}>
-              <div style={{padding:"12px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                  <div style={{width:10,height:10,borderRadius:99,background:g.color,flexShrink:0}}/>
-                  <span style={{color:C.text,fontWeight:700,fontSize:14}}>{g.name}</span>
-                </div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:5,paddingLeft:20}}>
-                  {g.cats.map(cid=>{
-                    const cat=expCats.find(c=>c.id===cid);
-                    return cat?<span key={cid} style={{background:g.color+"22",color:g.color,border:`1px solid ${g.color}44`,borderRadius:99,padding:"2px 8px",fontSize:11,fontWeight:700}}>{cat.name}</span>:null;
-                  })}
-                </div>
-              </div>
-            </SwipeRow>
-          ))}
-        </div>
-        <Btn outline full onClick={()=>openAdd("group")} style={{marginTop:8}}>+ Add Group</Btn>
-      </>)}
+      ))}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Expense Node</Btn></>)}
 
       {modal&&(
-        <Modal title={`${modal.item?"Edit":"Add"} ${modal.type==="bank"?"Account":modal.type==="expCat"?"Category":modal.type==="incCat"?"Income Category":"Spending Group"}`} onClose={()=>setModal(null)} center={false}>
-          <Input label="Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
+        <Modal title={`${modal.item?"Modify":"Append"} ${modal.type}`} onClose={()=>setModal(null)} center={false}>
+          <Input label="Label Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
           {modal.type==="bank"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Hex Tone Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>)}
           {modal.type==="expCat"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>System Glyphs Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
-          {modal.type==="expCat"&&(<Select label="Group Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
-          {modal.type==="group"&&(
-            <div style={{marginBottom:14}}>
-              <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Color</div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div>
-              <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Expense Categories</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
-                {expCats.map(c=>{
-                  const checked=groupCats.includes(c.id);
-                  return(
-                    <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"4px 0",userSelect:"none"}}>
-                      <div onClick={()=>setGroupCats(checked?groupCats.filter(x=>x!==c.id):[...groupCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        {checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}
-                      </div>
-                      <span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          <Btn full onClick={handleSave} style={{marginTop:8}}>Save</Btn>
+          {modal.type==="expCat"&&(<Select label="Group Allocation Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
+          <Btn full onClick={handleSave} style={{marginTop:8}}>Commit Settings</Btn>
         </Modal>
       )}
-      {confirmDel&&<ConfirmModal title="Delete?" message="Are you sure you want to delete this? This cannot be undone." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
+      {confirmDel&&<ConfirmModal title="Confirm Drop Operation?" message="Are you absolutely sure? Associated tracking nodes might mismatch." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
     </div>
   );
 }
 
 // ─── Insights Page ────────────────────────────────────────────────────────────
 function InsightsPage({ txns, banks, expCats, groups, savings, filterMonth, onBack }) {
-  const [activeMonth, setActiveMonth] = useState(() => {
-    if (filterMonth !== "all") return filterMonth;
-    return new Date().toISOString().slice(0,7);
-  });
-
+  const [activeMonth, setActiveMonth] = useState(() => filterMonth !== "all" ? filterMonth : new Date().toISOString().slice(0,7));
   useEffect(() => { window.scrollTo(0,0); }, []);
 
-  const getMonth = (offset=0) => {
-    const [y,m] = activeMonth.split("-");
-    const d = new Date(+y, +m-1+offset, 1);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-  };
+  const getMonth = (offset=0) => { const [y,m]=activeMonth.split("-"); const d=new Date(+y,+m-1+offset,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; };
+  const mTxns = txns.filter(t=>t.date.startsWith(activeMonth));
+  const mInc  = mTxns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
+  const mExp  = mTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
+  const mSav  = mTxns.filter(t=>t.type==="saving").reduce((a,t)=>a+t.amount,0);
+  const ratio = mInc>0?Math.min(100,Math.round((mExp/mInc)*100)):0;
 
-  const mTxns  = txns.filter(t=>t.date.startsWith(activeMonth));
-  const mInc   = mTxns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
-  const mExp   = mTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
-  const mSav   = mTxns.filter(t=>t.type==="saving").reduce((a,t)=>a+t.amount,0);
-  const ratio  = mInc>0 ? Math.min(100,Math.round((mExp/mInc)*100)) : 0;
-  const barColor = ratio>=90?C.red:ratio>=70?C.yellow:C.accent;
+  const last6 = Array.from({length:6},(_,i)=>{ const m=getMonth(i-5); const mt=txns.filter(t=>t.date.startsWith(m)); const [,mo]=m.split("-"); return { label:MONTHS[+mo-1], inc:mt.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0), exp:mt.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0) }; });
+  const maxBar = Math.max(...last6.map(d=>Math.max(d.inc,d.exp)),1);
 
-  // Last 6 months bar chart data
-  const last6 = Array.from({length:6},(_,i)=>{
-    const m = getMonth(i-5);
-    const mt = txns.filter(t=>t.date.startsWith(m));
-    const [y,mo] = m.split("-");
-    return {
-      label: MONTHS[+mo-1],
-      inc: mt.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0),
-      exp: mt.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0),
-    };
-  });
-  const maxBar = Math.max(...last6.map(d=>Math.max(d.inc,d.exp)), 1);
-
-  // Category breakdown - donut data
-  const catData = expCats.map(c => ({
-    c, amount: mTxns.filter(t=>t.type==="expense"&&t.catId===c.id).reduce((a,t)=>a+t.amount,0)
-  })).filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
+  const CAT_COLORS = [C.accent,C.blue,C.purple,C.yellow,"#fb923c","#f472b6"];
+  const catData = expCats.map(c=>({c,amount:mTxns.filter(t=>t.type==="expense"&&t.catId===c.id).reduce((a,t)=>a+t.amount,0)})).filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   const topCats = catData.slice(0,6);
-  const CAT_COLORS = [C.accent, C.blue, C.purple, C.yellow, "#fb923c", "#f472b6"];
 
-  // Donut SVG
-  const DonutChart = ({ data, total, size=140 }) => {
-    const r = 52, cx = size/2, cy = size/2;
-    const circumference = 2 * Math.PI * r;
-    let cumulative = 0;
-    const segments = data.map((d,i) => {
-      const pct = total>0 ? d.amount/total : 0;
-      const dash = pct * circumference;
-      const gap  = circumference - dash;
-      const offset = circumference - cumulative * circumference;
-      cumulative += pct;
-      return { dash, gap, offset, color: CAT_COLORS[i % CAT_COLORS.length], pct };
-    });
-    return (
-      <svg width={size} height={size} style={{display:"block"}}>
-        {/* Background ring */}
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke={C.border} strokeWidth={18}/>
-        {segments.map((s,i) => (
-          <circle key={i} cx={cx} cy={cy} r={r} fill="none"
-            stroke={s.color} strokeWidth={18}
-            strokeDasharray={`${s.dash} ${s.gap}`}
-            strokeDashoffset={s.offset}
-            strokeLinecap="butt"
-            style={{transform:"rotate(-90deg)",transformOrigin:"center",transition:"stroke-dasharray .5s"}}
-          />
-        ))}
-        {/* Center text */}
-        <text x={cx} y={cy-8} textAnchor="middle" fill={C.muted} fontSize="10" fontWeight="700" fontFamily="DM Sans,sans-serif">SPENT</text>
-        <text x={cx} y={cy+10} textAnchor="middle" fill={C.red} fontSize="13" fontWeight="800" fontFamily="DM Sans,sans-serif">{fmt(total)}</text>
-      </svg>
-    );
+  // Donut chart
+  const DonutChart = ({data,total,size=150}) => {
+    const r=54,cx=size/2,cy=size/2,circ=2*Math.PI*r; let cum=0;
+    const segs = data.map((d,i)=>{ const pct=total>0?d.amount/total:0; const dash=pct*circ; const off=circ-cum*circ; cum+=pct; return {dash,gap:circ-dash,offset:off,color:CAT_COLORS[i%CAT_COLORS.length]}; });
+    return (<svg width={size} height={size} style={{display:"block",flexShrink:0}}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={C.border} strokeWidth={20}/>
+      {segs.map((s,i)=>(<circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth={20} strokeDasharray={`${s.dash} ${s.gap}`} strokeDashoffset={s.offset} style={{transform:"rotate(-90deg)",transformOrigin:"center",transition:"stroke-dasharray .5s"}}/>))}
+      <text x={cx} y={cy-7} textAnchor="middle" fill={C.muted} fontSize="9" fontWeight="700" fontFamily="DM Sans,sans-serif" textTransform="uppercase">SPENT</text>
+      <text x={cx} y={cy+11} textAnchor="middle" fill={C.red} fontSize="12" fontWeight="800" fontFamily="DM Sans,sans-serif">{fmt(total)}</text>
+    </svg>);
   };
 
-  // Savings progress circles
-  const SavingCircle = ({ s }) => {
-    const saved = s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
-    const pct = s.goal>0 ? Math.min(100,(saved/s.goal)*100) : 0;
-    const r=28, circ=2*Math.PI*r;
-    return (
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-        <svg width={72} height={72}>
-          <circle cx={36} cy={36} r={r} fill="none" stroke={C.border} strokeWidth={6}/>
-          <circle cx={36} cy={36} r={r} fill="none" stroke={C.yellow} strokeWidth={6}
-            strokeDasharray={`${(pct/100)*circ} ${circ}`}
-            strokeDashoffset={circ*0.25}
-            strokeLinecap="round"
-            style={{transition:"stroke-dasharray .6s"}}
-          />
-          <text x={36} y={40} textAnchor="middle" fill={C.yellow} fontSize="12" fontWeight="800" fontFamily="DM Sans,sans-serif">{Math.round(pct)}%</text>
-        </svg>
-        <div style={{color:C.text,fontSize:10,fontWeight:700,textAlign:"center",maxWidth:70,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
-      </div>
-    );
-  };
+  // Saving circle
+  const SavingCircle = ({s}) => { const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0; const pct=s.goal>0?Math.min(100,(saved/s.goal)*100):0; const r=28,circ=2*Math.PI*r; return (<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}><svg width={70} height={70}><circle cx={35} cy={35} r={r} fill="none" stroke={C.border} strokeWidth={6}/><circle cx={35} cy={35} r={r} fill="none" stroke={C.yellow} strokeWidth={6} strokeDasharray={`${(pct/100)*circ} ${circ}`} strokeDashoffset={circ*0.25} strokeLinecap="round" style={{transition:"stroke-dasharray .6s"}}/><text x={35} y={40} textAnchor="middle" fill={C.yellow} fontSize="11" fontWeight="800" fontFamily="DM Sans,sans-serif">{Math.round(pct)}%</text></svg><div style={{color:C.muted,fontSize:10,fontWeight:600,textAlign:"center",maxWidth:68,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div></div>); };
 
   // Smart suggestions
-  const prevM   = getMonth(-1);
-  const prevTxns = txns.filter(t=>t.date.startsWith(prevM));
-  const prevExp  = prevTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
+  const prevM = getMonth(-1);
+  const pTxns = txns.filter(t=>t.date.startsWith(prevM));
+  const pExp  = pTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
   const suggestions = [];
-  if (mInc>0 && mExp/mInc > 0.9) suggestions.push({ icon:"⚠️", color:C.red, text:`You spent ${ratio}% of income — try to keep it under 80%` });
-  else if (mInc>0 && mExp < mInc*0.6) suggestions.push({ icon:"🎉", color:C.accent, text:`Great job! You spent only ${ratio}% of income this month` });
-  if (prevExp>0) {
-    const change = Math.round(((mExp-prevExp)/prevExp)*100);
-    if (change>15) suggestions.push({ icon:"📈", color:C.yellow, text:`Total spending up ${change}% vs last month` });
-    else if (change<-10) suggestions.push({ icon:"📉", color:C.accent, text:`Total spending down ${Math.abs(change)}% vs last month — nice!` });
-  }
-  catData.slice(0,3).forEach(({c,amount})=>{
-    const prevCatAmt = prevTxns.filter(t=>t.type==="expense"&&t.catId===c.id).reduce((a,t)=>a+t.amount,0);
-    if (prevCatAmt>0) {
-      const diff = Math.round(((amount-prevCatAmt)/prevCatAmt)*100);
-      if (diff>30) suggestions.push({ icon:"💸", color:C.red, text:`${c.name} spending up ${diff}% vs last month` });
-      else if (diff<-20) suggestions.push({ icon:"✅", color:C.accent, text:`${c.name} spending down ${Math.abs(diff)}% — good progress!` });
-    }
-  });
-  if (mSav>0 && mInc>0) suggestions.push({ icon:"🏦", color:C.yellow, text:`You saved ${fmt(mSav)} this month (${Math.round((mSav/mInc)*100)}% of income)` });
-  if (suggestions.length===0) suggestions.push({ icon:"💡", color:C.blue, text:"Keep tracking your spending to unlock smart insights!" });
+  if (mInc>0&&mExp/mInc>0.9) suggestions.push({icon:"⚠️",color:C.red,text:`You spent ${ratio}% of income — try to keep it under 80%`});
+  else if (mInc>0&&mExp<mInc*0.6) suggestions.push({icon:"🎉",color:C.accent,text:`Great job! You spent only ${ratio}% of income this month`});
+  if (pExp>0){const ch=Math.round(((mExp-pExp)/pExp)*100);if(ch>15)suggestions.push({icon:"📈",color:C.yellow,text:`Total spending up ${ch}% vs last month`});else if(ch<-10)suggestions.push({icon:"📉",color:C.accent,text:`Spending down ${Math.abs(ch)}% vs last month — nice!`});}
+  catData.slice(0,3).forEach(({c,amount})=>{const pa=pTxns.filter(t=>t.type==="expense"&&t.catId===c.id).reduce((a,t)=>a+t.amount,0);if(pa>0){const d=Math.round(((amount-pa)/pa)*100);if(d>30)suggestions.push({icon:"💸",color:C.red,text:`${c.name} up ${d}% vs last month`});else if(d<-20)suggestions.push({icon:"✅",color:C.accent,text:`${c.name} down ${Math.abs(d)}% — good progress!`});}});
+  if(mSav>0&&mInc>0)suggestions.push({icon:"🏦",color:C.yellow,text:`You saved ${fmt(mSav)} this month (${Math.round((mSav/mInc)*100)}% of income)`});
+  if(suggestions.length===0)suggestions.push({icon:"💡",color:C.blue,text:"Keep tracking to unlock smart insights!"});
 
-  const availMonths = [...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
+  const availMonths=[...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
+  const [,activeMo]=activeMonth.split("-");
 
   return (
     <div style={{padding:"24px 16px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
       {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={onBack} style={{background:"transparent",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"10px 15px 10px 0",display:"flex",alignItems:"center"}}>❮</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:4}}>
+          <button onClick={onBack} style={{background:"transparent",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"4px 12px 4px 0",display:"flex",alignItems:"center"}}>❮</button>
           <div style={{color:C.text,fontSize:22,fontWeight:800}}>Insights</div>
         </div>
-        <select value={activeMonth} onChange={e=>setActiveMonth(e.target.value)}
-          style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 12px",fontSize:13,fontWeight:700,outline:"none"}}>
+        <select value={activeMonth} onChange={e=>setActiveMonth(e.target.value)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 12px",fontSize:13,fontWeight:700,outline:"none"}}>
           {availMonths.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
         </select>
       </div>
 
-      {/* ── SECTION 1: Overview circles ── */}
-      <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:12,marginTop:8}}>Overview</div>
+      {/* ── 1. Overview — 3 circles ── */}
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:12}}>Overview</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
-        {[
-          {label:"Income",  value:mInc, color:C.accent},
-          {label:"Spent",   value:mExp, color:C.red},
-          {label:"Saved",   value:mSav, color:C.yellow},
-        ].map(({label,value,color})=>{
-          const r=32, circ=2*Math.PI*r;
-          const total = mInc||1;
-          const pct = Math.min(100,(value/total)*100);
-          return (
-            <div key={label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"14px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-              <svg width={80} height={80}>
-                <circle cx={40} cy={40} r={r} fill="none" stroke={C.border} strokeWidth={7}/>
-                <circle cx={40} cy={40} r={r} fill="none" stroke={color} strokeWidth={7}
-                  strokeDasharray={`${(pct/100)*circ} ${circ}`}
-                  strokeDashoffset={circ*0.25}
-                  strokeLinecap="round"
-                  style={{transition:"stroke-dasharray .6s"}}
-                />
-                <text x={40} y={44} textAnchor="middle" fill={color} fontSize="11" fontWeight="800" fontFamily="DM Sans,sans-serif">{Math.round(pct)}%</text>
-              </svg>
-              <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{label}</div>
-              <div style={{color:color,fontSize:13,fontWeight:800,letterSpacing:-0.5}}>{fmt(value)}</div>
-            </div>
-          );
+        {[{label:"Income",val:mInc,color:C.accent},{label:"Spent",val:mExp,color:C.red},{label:"Saved",val:mSav,color:C.yellow}].map(({label,val,color})=>{
+          const pct=mInc>0?Math.min(100,(val/(mInc||1))*100):0;
+          const r=30,circ=2*Math.PI*r;
+          return (<div key={label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"14px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <svg width={76} height={76}>
+              <circle cx={38} cy={38} r={r} fill="none" stroke={C.border} strokeWidth={7}/>
+              <circle cx={38} cy={38} r={r} fill="none" stroke={color} strokeWidth={7} strokeDasharray={`${(pct/100)*circ} ${circ}`} strokeDashoffset={circ*0.25} strokeLinecap="round" style={{transition:"stroke-dasharray .6s"}}/>
+              <text x={38} y={43} textAnchor="middle" fill={color} fontSize="11" fontWeight="800" fontFamily="DM Sans,sans-serif">{Math.round(pct)}%</text>
+            </svg>
+            <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8}}>{label}</div>
+            <div style={{color,fontSize:12,fontWeight:800}}>{fmt(val)}</div>
+          </div>);
         })}
       </div>
 
-      {/* ── SECTION 2: 6-month Bar Chart ── */}
+      {/* ── 2. 6-Month Bar Chart ── */}
       <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:12}}>6-Month Trend</div>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 12px",marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:8,height:8,borderRadius:2,background:C.accent}}/><span style={{color:C.muted,fontSize:10}}>Income</span></div>
-          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:8,height:8,borderRadius:2,background:C.red}}/><span style={{color:C.muted,fontSize:10}}>Expenses</span></div>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 14px",marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:14,marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:9,height:9,borderRadius:2,background:C.accent}}/><span style={{color:C.muted,fontSize:10,fontWeight:600}}>Income</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:9,height:9,borderRadius:2,background:C.red}}/><span style={{color:C.muted,fontSize:10,fontWeight:600}}>Expenses</span></div>
         </div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:100}}>
-          {last6.map((d,i)=>(
-            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,height:"100%",justifyContent:"flex-end"}}>
-              <div style={{width:"100%",display:"flex",gap:2,alignItems:"flex-end",height:"90%"}}>
-                <div style={{flex:1,background:C.accent,borderRadius:"3px 3px 0 0",height:`${maxBar>0?(d.inc/maxBar)*100:0}%`,minHeight:d.inc>0?4:0,transition:"height .5s"}}/>
-                <div style={{flex:1,background:C.red,borderRadius:"3px 3px 0 0",height:`${maxBar>0?(d.exp/maxBar)*100:0}%`,minHeight:d.exp>0?4:0,transition:"height .5s"}}/>
+        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:110}}>
+          {last6.map((d,i)=>{
+            const isActive=d.label===MONTHS[+activeMo-1];
+            return (<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,height:"100%",justifyContent:"flex-end"}}>
+              <div style={{width:"100%",display:"flex",gap:2,alignItems:"flex-end",height:"88%"}}>
+                <div style={{flex:1,background:isActive?C.accent:C.accent+"55",borderRadius:"3px 3px 0 0",height:`${(d.inc/maxBar)*100}%`,minHeight:d.inc>0?3:0,transition:"height .5s"}}/>
+                <div style={{flex:1,background:isActive?C.red:C.red+"55",borderRadius:"3px 3px 0 0",height:`${(d.exp/maxBar)*100}%`,minHeight:d.exp>0?3:0,transition:"height .5s"}}/>
               </div>
-              <div style={{color:d.label===MONTHS[+activeMonth.split("-")[1]-1]?C.text:C.faint,fontSize:9,fontWeight:700,textTransform:"uppercase"}}>{d.label}</div>
-            </div>
-          ))}
+              <div style={{color:isActive?C.text:C.faint,fontSize:9,fontWeight:700,textTransform:"uppercase"}}>{d.label}</div>
+            </div>);
+          })}
         </div>
       </div>
 
-      {/* ── SECTION 3: Spending Donut ── */}
-      {topCats.length > 0 && (<>
+      {/* ── 3. Spending Donut ── */}
+      {topCats.length>0&&(<>
         <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:12}}>Spending Breakdown</div>
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px",marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",gap:20}}>
-            <DonutChart data={topCats} total={mExp} />
-            <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <DonutChart data={topCats} total={mExp}/>
+            <div style={{flex:1,display:"flex",flexDirection:"column",gap:9}}>
               {topCats.map(({c,amount},i)=>{
-                const pct = mExp>0?Math.round((amount/mExp)*100):0;
-                return (
-                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:6}}>
-                    <div style={{width:8,height:8,borderRadius:99,background:CAT_COLORS[i%CAT_COLORS.length],flexShrink:0}}/>
-                    <span style={{color:C.muted,fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
-                    <span style={{color:CAT_COLORS[i%CAT_COLORS.length],fontSize:11,fontWeight:700}}>{pct}%</span>
-                  </div>
-                );
+                const pct=mExp>0?Math.round((amount/mExp)*100):0;
+                return (<div key={c.id} style={{display:"flex",alignItems:"center",gap:7}}>
+                  <div style={{width:8,height:8,borderRadius:99,background:CAT_COLORS[i%CAT_COLORS.length],flexShrink:0}}/>
+                  <span style={{color:C.muted,fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+                  <span style={{color:CAT_COLORS[i%CAT_COLORS.length],fontSize:11,fontWeight:700,flexShrink:0}}>{pct}%</span>
+                </div>);
               })}
             </div>
           </div>
         </div>
       </>)}
 
-      {/* ── SECTION 4: Savings Progress ── */}
-      {savings.length > 0 && (<>
+      {/* ── 4. Savings circles ── */}
+      {savings.length>0&&(<>
         <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:12}}>Savings Progress</div>
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px",marginBottom:20}}>
           <div style={{display:"flex",gap:16,flexWrap:"wrap",justifyContent:"center"}}>
@@ -1891,9 +1562,9 @@ function InsightsPage({ txns, banks, expCats, groups, savings, filterMonth, onBa
         </div>
       </>)}
 
-      {/* ── SECTION 5: Smart Suggestions ── */}
+      {/* ── 5. Smart Suggestions ── */}
       <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:12}}>Smart Suggestions</div>
-      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:30}}>
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:32}}>
         {suggestions.map((s,i)=>(
           <div key={i} style={{background:C.card,border:`1px solid ${s.color}33`,borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:10}}>
             <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
