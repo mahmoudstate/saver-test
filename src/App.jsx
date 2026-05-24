@@ -348,7 +348,6 @@ export default function App() {
   const [ledgerSaving, setLedgerSaving] = useState(null);
   const [ledgerBudget, setLedgerBudget] = useState(null);
 
-  // System Notification Permission Request on Startup
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
       Notification.requestPermission();
@@ -372,7 +371,6 @@ export default function App() {
       setReady(true);
       setTimeout(() => setShowSplash(false), 2700);
 
-      // Trigger System Notification for Bills if due
       if ("Notification" in window && Notification.permission === "granted" && bl.length > 0) {
         bl.forEach(bill => {
           if (!bill.dueDay) return;
@@ -404,12 +402,15 @@ export default function App() {
     const inc=txns.filter(t=>t.bankId===bankId&&t.type==="income").reduce((a,t)=>a+t.amount,0);
     const exp=txns.filter(t=>t.bankId===bankId&&t.type==="expense").reduce((a,t)=>a+t.amount,0);
     const sav=txns.filter(t=>t.bankId===bankId&&t.type==="saving").reduce((a,t)=>a+t.amount,0);
-    return inc-exp-sav;
+    const transferIn = txns.filter(t=>t.toBankId===bankId&&t.type==="transfer").reduce((a,t)=>a+t.amount,0);
+    const transferOut = txns.filter(t=>t.fromBankId===bankId&&t.type==="transfer").reduce((a,t)=>a+t.amount,0);
+    return inc - exp - sav + transferIn - transferOut;
   }, [txns]);
 
   const addTxn = async (t) => {
-    if (t.type === "expense" || t.type === "saving") {
-      const currentBal = bankBalance(t.bankId);
+    if (t.type === "expense" || t.type === "saving" || t.type === "transfer") {
+      const checkBankId = t.type === "transfer" ? t.fromBankId : t.bankId;
+      const currentBal = bankBalance(checkBankId);
       if (currentBal < t.amount) {
         setAppAlert({ title: "Insufficient Balance", message: "⚠️ Sorry, this account balance is insufficient for this transaction!", color: C.red });
         return false;
@@ -426,8 +427,9 @@ export default function App() {
   
   const updateTxn = async (id,data) => {
     const original = txns.find(t=>t.id===id);
-    if(data.amount && (original.type === "expense" || original.type === "saving")) {
-      const netBalWithoutThis = bankBalance(data.bankId) + original.amount;
+    if(data.amount && (original.type === "expense" || original.type === "saving" || original.type === "transfer")) {
+      const checkBankId = original.type === "transfer" ? original.fromBankId : original.bankId;
+      const netBalWithoutThis = bankBalance(checkBankId) + original.amount;
       if (netBalWithoutThis < data.amount) {
         setAppAlert({ title: "Insufficient Balance", message: "⚠️ Sorry, this account balance is insufficient for this modifications!", color: C.red });
         return false;
@@ -497,7 +499,7 @@ export default function App() {
       {!ledgerBank && !ledgerGroup && !ledgerSaving && !ledgerBudget ? (
         <>
           {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{ setDashScrollY(window.scrollY); setLedgerBank(b); }} onOpenGroup={(g)=>{ setDashScrollY(window.scrollY); setLedgerGroup(g); }} onOpenSaving={(s)=>{ setDashScrollY(window.scrollY); setLedgerSaving(s); }} onOpenBudget={(bdg)=>{ setDashScrollY(window.scrollY); setLedgerBudget(bdg); }} hideTotal={hideTotal} setHideTotal={setHideTotal} setTab={setTab} />}
-          {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance}/>}
+          {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>setTab("dashboard")} bankBalance={bankBalance} setAppAlert={setAppAlert}/>}
           {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
           
           {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>setTab("settings")}/>}
@@ -511,7 +513,7 @@ export default function App() {
         </>
       ) : (
         <>
-          {ledgerBank && <DeepLedgerView title={ledgerBank.name} headerType="bank" headerData={{balance: bankBalance(ledgerBank.id)}} txns={txns.filter(t=>t.bankId===ledgerBank.id)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerBank(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />}
+          {ledgerBank && <DeepLedgerView title={ledgerBank.name} headerType="bank" headerData={{balance: bankBalance(ledgerBank.id)}} txns={txns.filter(t=>t.bankId===ledgerBank.id || t.fromBankId===ledgerBank.id || t.toBankId===ledgerBank.id)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerBank(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />}
           {ledgerGroup && (()=>{ const spent=txns.filter(t=>t.type==="expense"&&ledgerGroup.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0); return <DeepLedgerView title={ledgerGroup.name} headerType="group" headerData={{spent, color:ledgerGroup.color}} txns={txns.filter(t=>t.type==="expense"&&ledgerGroup.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerGroup(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />; })()}
           {ledgerSaving && (()=>{ const saved=txns.filter(t=>t.type==="saving"&&t.catName===ledgerSaving.name).reduce((a,t)=>a+t.amount,0); return <DeepLedgerView title={ledgerSaving.name} headerType="saving" headerData={{saved, goal:ledgerSaving.goal}} txns={txns.filter(t=>t.type==="saving"&&t.catName===ledgerSaving.name)} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerSaving(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />; })()}
           {ledgerBudget && (()=>{ const spent=txns.filter(t=>t.type==="expense"&&ledgerBudget.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0); return <DeepLedgerView title={ledgerBudget.name} headerType="budget" headerData={{spent, limit:ledgerBudget.amount}} txns={txns.filter(t=>t.type==="expense"&&ledgerBudget.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} onClose={()=>{ setLedgerBudget(null); setTimeout(()=>window.scrollTo(0,dashScrollY),50); }} />; })()}
@@ -654,7 +656,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   const prevIncome = prevTxns.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
   const prevExp = prevTxns.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
   
-  // MoM Absolute Value Fix
   const incomeDiff = prevIncome>0 ? Math.round(((totalIncome-prevIncome)/prevIncome)*100) : null;
   const expDiff = prevExp>0 ? Math.round(((totalExp-prevExp)/prevExp)*100) : null;
   
@@ -708,7 +709,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
                   style={{padding:"14px 14px 12px", cursor: "pointer", transition: "transform 0.1s ease"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:99,background:b.color,flexShrink:0}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{b.name}</span></div>
-                {/* تنبيه الرصيد 🔻 */}
                 {b.lowBalanceThreshold && bal <= b.lowBalanceThreshold && bal >= 0 && <span style={{fontSize:14}} title="Low balance">🔻</span>}
                 {bal < 0 && <span style={{fontSize:14}} title="Negative balance">🔴</span>}
               </div>
@@ -970,35 +970,66 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
 }
 
 function TxnRow({ txn, hideTotal }) {
-  const isExp=txn.type==="expense", isInc=txn.type==="income";
+  const isExp = txn.type==="expense", isInc = txn.type==="income", isTrans = txn.type==="transfer";
   return (
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px", background: C.card}}>
       <div style={{display:"flex",gap:10,alignItems:"center"}}>
-        <div style={{width:36,height:36,borderRadius:10,background:isExp?C.redDim:isInc?C.accentDim:C.yellowDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{txn.type==="saving"?ICONS.saving:ICONS[txn.catIcon]||"📌"}</div>
-        <div><div style={{color:C.text,fontWeight:600,fontSize:14}}>{txn.catName||txn.type}</div><div style={{color:C.muted,fontSize:11}}>{txn.bankName} · {fmtDate(txn.date)}</div></div>
+        <div style={{width:36,height:36,borderRadius:10,background:isExp?C.redDim:isInc?C.accentDim:isTrans?C.blueDim:C.yellowDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>
+            {txn.type==="saving"?ICONS.saving:isTrans?ICONS.transfer:ICONS[txn.catIcon]||"📌"}
+        </div>
+        <div>
+            <div style={{color:C.text,fontWeight:600,fontSize:14}}>
+                {isTrans ? "Transfer" : (txn.catName||txn.type)}
+            </div>
+            <div style={{color:C.muted,fontSize:11}}>
+                {isTrans ? `${txn.bankName} ➔ ${txn.toBankName}` : txn.bankName} · {fmtDate(txn.date)}
+            </div>
+        </div>
       </div>
-      <div style={{color:isExp?C.red:isInc?C.accent:C.yellow,fontWeight:800,fontSize:15}}>{isExp?"−":"+"}{hideTotal?"••••":fmt(txn.amount)}</div>
+      <div style={{color:isExp?C.red:isInc?C.accent:isTrans?C.blue:C.yellow,fontWeight:800,fontSize:15}}>
+          {isExp?"−":isInc?"+":""}{hideTotal?"••••":fmt(txn.amount)}
+      </div>
     </div>
   );
 }
 
 // ─── Add Transaction Screen ───────────────────────────────────────────────────
-function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone, bankBalance }) {
+function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone, bankBalance, setAppAlert }) {
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today());
+  
   const [bankId, setBankId] = useState(banks[0]?.id||"");
+  const [toBankId, setToBankId] = useState(banks.length > 1 ? banks[1]?.id : banks[0]?.id || "");
+  
   const [catId, setCatId] = useState(expCats[0]?.id||"");
   const [note, setNote] = useState("");
   const [savingId, setSavingId] = useState(savings[0]?.id||"");
-  const cats=type==="expense"?expCats:type==="income"?incCats:[];
+  const cats = type==="expense" ? expCats : type==="income" ? incCats : [];
 
-  useEffect(()=>{if(type==="expense"&&expCats.length)setCatId(expCats[0].id);if(type==="income"&&incCats.length)setCatId(incCats[0].id);if(type==="saving"&&savings.length)setSavingId(savings[0].id);},[type]);
+  useEffect(()=>{
+    if(type==="expense"&&expCats.length) setCatId(expCats[0].id);
+    if(type==="income"&&incCats.length) setCatId(incCats[0].id);
+    if(type==="saving"&&savings.length) setSavingId(savings[0].id);
+  }, [type]);
 
-  const handleSubmit=async()=>{
+  const handleSubmit = async () => {
     const parsedAmt = parseFloat(amount);
-    if(!amount||isNaN(parsedAmt)||parsedAmt <= 0) return;
-    const bank=banks.find(b=>b.id===bankId);
+    if(!amount || isNaN(parsedAmt) || parsedAmt <= 0) return;
+    
+    if (type === "transfer") {
+        if (bankId === toBankId) {
+            setAppAlert({ title: "Invalid Transfer", message: "❌ You cannot transfer to the same account.", color: C.red });
+            return;
+        }
+        const fromBank = banks.find(b=>b.id===bankId);
+        const toBank = banks.find(b=>b.id===toBankId);
+        const success = await onAdd({type:"transfer", amount:parsedAmt, date, bankId:bankId, fromBankId:bankId, toBankId:toBankId, bankName:fromBank?.name, toBankName:toBank?.name, note});
+        if(success !== false) { setAmount(""); setNote(""); onDone(); }
+        return;
+    }
+
+    const bank = banks.find(b=>b.id===bankId);
     
     if(type==="saving"){
       if(!savingId)return; const sv=savings.find(s=>s.id===savingId); if(!sv)return;
@@ -1018,21 +1049,34 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
   return (
     <div style={{padding:"24px 16px 0"}}>
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:20}}>New Transaction</div>
+      
       <div style={{display:"flex",gap:8,marginBottom:20}}>
-        {[{v:"expense",label:"Expense",color:C.red},{v:"income",label:"Income",color:C.accent},{v:"saving",label:"Saving",color:C.yellow}].map(o=>(
-          <button key={o.v} onClick={()=>setType(o.v)} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1.5px solid ${type===o.v?o.color:C.border}`,background:type===o.v?o.color+"22":"transparent",color:type===o.v?o.color:C.muted,fontWeight:700,fontSize:13,cursor:"pointer"}}>{o.label}</button>
+        {[{v:"expense",label:"Expense",color:C.red},{v:"income",label:"Income",color:C.accent},{v:"saving",label:"Saving",color:C.yellow},{v:"transfer",label:"Transfer",color:C.blue}].map(o=>(
+          <button key={o.v} onClick={()=>setType(o.v)} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1.5px solid ${type===o.v?o.color:C.border}`,background:type===o.v?o.color+"22":"transparent",color:type===o.v?o.color:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{o.label}</button>
         ))}
       </div>
+
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
         <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
       </div>
+      
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
         <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark",WebkitAppearance:"none",appearance:"none",display:"block"}}/>
       </div>
-      <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
-      {type==="saving"?(savings.length>0?<Select label="Saving Goal" value={savingId} onChange={e=>setSavingId(e.target.value)}>{savings.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Select>:<div style={{color:C.muted,fontSize:13,marginBottom:14,padding:"10px 12px",background:C.card,borderRadius:10}}>No saving goals yet.</div>):(<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>)}
+      
+      {type === "transfer" ? (
+         <>
+           <Select label="From Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
+           <Select label="To Account" value={toBankId} onChange={e=>setToBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
+         </>
+      ) : (
+         <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
+      )}
+
+      {type==="saving"?(savings.length>0?<Select label="Saving Goal" value={savingId} onChange={e=>setSavingId(e.target.value)}>{savings.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Select>:<div style={{color:C.muted,fontSize:13,marginBottom:14,padding:"10px 12px",background:C.card,borderRadius:10}}>No saving goals yet.</div>): type==="transfer" ? null : (<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>)}
+      
       <Input label="Note (optional)" placeholder="Add a note..." value={note} onChange={e=>setNote(e.target.value)}/>
       <Btn full onClick={handleSubmit} style={{marginTop:8}}>Save Transaction</Btn>
     </div>
@@ -1059,7 +1103,7 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>History</div>
       <input placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:12}}/>
       <div style={{display:"flex",gap:8,marginBottom:14,overflowX:"auto"}}>
-        {["all","expense","income","saving"].map(f=>(<button key={f} onClick={()=>setFilterType(f)} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterType===f?C.accent:C.border}`,background:filterType===f?C.accentDim:"transparent",color:filterType===f?C.accent:C.muted,fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize"}}>{f}</button>))}
+        {["all","expense","income","saving","transfer"].map(f=>(<button key={f} onClick={()=>setFilterType(f)} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterType===f?C.accent:C.border}`,background:filterType===f?C.accentDim:"transparent",color:filterType===f?C.accent:C.muted,fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize"}}>{f}</button>))}
       </div>
       
       <div style={{marginBottom:16}}>
@@ -1069,7 +1113,7 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
       <div style={{display:"flex",flexDirection:"column"}}>
         {filtered.length===0&&<EmptyState icon="💸" message="No transactions found." />}
         {filtered.map(t=>(
-          <SwipeRow key={t.id} onEdit={()=>setEditTxn(t)} onDelete={()=>setConfirmId(t.id)}>
+          <SwipeRow key={t.id} onEdit={t.type!=="transfer"?()=>setEditTxn(t):null} onDelete={()=>setConfirmId(t.id)}>
             <TxnRow txn={t} hideTotal={false} />
           </SwipeRow>
         ))}
@@ -1359,8 +1403,6 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   const handlePay=async(bill)=>{
     const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
     const dateStr=today();
-    
-    // Formatting note without brackets
     const [y, mo] = filterMonth.split("-");
     const monthStr = `${MONTHS[+mo-1]} ${y}`;
     
@@ -1444,7 +1486,6 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
                       <div style={{flex:1,background:C.accent,color:C.bg,borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                         ✓ Paid {filterMonth.slice(5)}
                       </div>
-                      {/* Undo زر */}
                       <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
                         ⟲ Undo
                       </button>
