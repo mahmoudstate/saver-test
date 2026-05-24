@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 
 // ─── Palette & Global Helpers ──────────────────────────────────────────────────
 const C = {
@@ -231,66 +233,50 @@ function SwipeRow({ onEdit, onDelete, children }) {
   );
 }
 
-// ─── Touch Drag and Drop Reordering Engine (New Feature) ──────────────────────
+// ─── dnd-kit Sortable Components ──────────────────────────────────────────────
+function SortableItem({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(id) });
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 100 : "auto",
+    position: isDragging ? "relative" : "static",
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+}
+
 function SortableList({ items, onReorder, renderItem, grid }) {
-  const [dragging, setDragging] = useState(null);
-  const [dragOver, setDragOver] = useState(null);
-  const dragTimeout = useRef(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
 
-  const startDrag = (idx) => {
-    setDragging(idx);
-    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
-  };
-
-  const handleTouchStart = (idx) => {
-    dragTimeout.current = setTimeout(() => startDrag(idx), 400); // 400ms long press to activate
-  };
-
-  const handleTouchMove = (e) => {
-    if (dragging === null) {
-      clearTimeout(dragTimeout.current);
-      return;
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((i) => String(i.id) === String(active.id));
+      const newIndex = items.findIndex((i) => String(i.id) === String(over.id));
+      onReorder(arrayMove(items, oldIndex, newIndex));
     }
-    e.preventDefault(); // Lock scroll while rearranging
-    const touch = e.touches[0];
-    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-    const targetIdx = elem?.closest('[data-dnd-index]')?.getAttribute('data-dnd-index');
-    if (targetIdx !== null && targetIdx !== undefined) setDragOver(Number(targetIdx));
-  };
-
-  const handleTouchEnd = () => {
-    clearTimeout(dragTimeout.current);
-    if (dragging !== null && dragOver !== null && dragging !== dragOver) {
-      const newItems = [...items];
-      const [moved] = newItems.splice(dragging, 1);
-      newItems.splice(dragOver, 0, moved);
-      onReorder(newItems);
-    }
-    setDragging(null);
-    setDragOver(null);
   };
 
   return (
-    <div style={{ display: grid ? "grid" : "flex", gridTemplateColumns: grid ? "1fr 1fr" : "none", flexDirection: grid ? "row" : "column", gap: 10, touchAction: dragging !== null ? "none" : "auto" }}>
-      {items.map((item, idx) => (
-        <div key={item.id || idx} data-dnd-index={idx}
-             draggable
-             onDragStart={()=>setDragging(idx)}
-             onDragOver={(e)=>{ e.preventDefault(); setDragOver(idx); }}
-             onDrop={handleTouchEnd}
-             onTouchStart={()=>handleTouchStart(idx)}
-             onTouchMove={handleTouchMove}
-             onTouchEnd={handleTouchEnd}
-             style={{
-               opacity: dragging === idx ? 0.6 : 1,
-               transform: dragOver === idx && dragging !== idx ? "scale(1.03)" : "scale(1)",
-               transition: "transform 0.2s, opacity 0.2s",
-               cursor: "grab", userSelect: "none", WebkitUserSelect: "none", height: "100%"
-             }}>
-          {renderItem(item, idx)}
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={items.map(i => String(i.id))} strategy={grid ? rectSortingStrategy : verticalListSortingStrategy}>
+        <div style={{ display: grid ? "grid" : "flex", gridTemplateColumns: grid ? "1fr 1fr" : "none", flexDirection: grid ? "row" : "column", gap: 10 }}>
+          {items.map((item, idx) => (
+            <SortableItem key={item.id} id={item.id}>
+              {renderItem(item, idx)}
+            </SortableItem>
+          ))}
         </div>
-      ))}
-    </div>
+      </SortableContext>
+    </DndContext>
   );
 }
 
@@ -328,7 +314,7 @@ function SplashScreen() {
 // ─── Main Application Logic ───────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("dashboard");
-  const [scrollState, setScrollState] = useState({ y: 0, restore: false }); // Scroll Logic Management
+  const [scrollState, setScrollState] = useState({ y: 0, restore: false });
   const [txns, setTxns] = useState([]);
   const [banks, setBanks] = useState(DEFAULT_BANKS);
   const [expCats, setExpCats] = useState(DEFAULT_EXP_CATS);
@@ -637,6 +623,8 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   const daysLeft = Math.max(1, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate() + 1);
   const recentsFiltered = txns.filter(t => { if (recentFilter === "expenses") return t.type === "expense"; if (recentFilter === "income") return t.type === "income"; return true; }).slice(0, 5);
 
+  const spendingGroups = groups.filter(g=>{const t=txns.filter(tx=>tx.type==="expense"&&g.cats.includes(tx.catId)).reduce((a,tx)=>a+tx.amount,0); return t>0;});
+
   return (
     <div style={{padding:"24px 16px 0"}}>
       {username && (
@@ -661,7 +649,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </div>
       </Card>
       
-      {/* Draggable Banks Grid */}
       <div style={{marginBottom:20}}>
         <SortableList grid items={banks} onReorder={onBanks} renderItem={(b) => {
           const bal = bankBalance(b.id);
@@ -776,25 +763,29 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         </>
       )}
 
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Spending</div>
-      <div style={{marginBottom:20}}>
-        <SortableList grid items={groups.filter(g=>{const t=txns.filter(tx=>tx.type==="expense"&&g.cats.includes(tx.catId)).reduce((a,tx)=>a+tx.amount,0); return t>0;})} onReorder={(orderedGroups) => {
-           const merged = [...groups]; // Update only those currently shown while preserving others
-           orderedGroups.forEach((og, i) => { const idx = merged.findIndex(g=>g.id===og.id); if(idx>-1) { merged.splice(idx,1); merged.splice(i,0,og); } });
-           onGroups(merged);
-        }} renderItem={(g) => {
-          const total=txns.filter(t=>t.type==="expense"&&g.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0);
-          const pct=totalExp?Math.round((total/totalExp)*100):0;
-          return (
-            <Card onClick={()=>onOpenGroup(g)} className="interactive-card" style={{padding:"14px 14px 12px", cursor:"pointer", transition:"transform 0.1s ease", height:"100%", boxSizing:"border-box"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:g.color}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{g.name}</span></div>
-              <div style={{color:g.color,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div>
-              <ProgressBar value={total} max={totalExp} color={g.color}/>
-              <div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div>
-            </Card>
-          );
-        }}/>
-      </div>
+      {spendingGroups.length > 0 && (
+        <>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Spending</div>
+          <div style={{marginBottom:20}}>
+            <SortableList grid items={spendingGroups} onReorder={(orderedGroups) => {
+               const merged = [...groups];
+               orderedGroups.forEach((og, i) => { const idx = merged.findIndex(g=>g.id===og.id); if(idx>-1) { merged.splice(idx,1); merged.splice(i,0,og); } });
+               onGroups(merged);
+            }} renderItem={(g) => {
+              const total=txns.filter(t=>t.type==="expense"&&g.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0);
+              const pct=totalExp?Math.round((total/totalExp)*100):0;
+              return (
+                <Card onClick={()=>onOpenGroup(g)} className="interactive-card" style={{padding:"14px 14px 12px", cursor:"pointer", transition:"transform 0.1s ease", height:"100%", boxSizing:"border-box"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:8,height:8,borderRadius:99,background:g.color}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>{g.name}</span></div>
+                  <div style={{color:g.color,fontSize:17,fontWeight:800,marginBottom:6}}>{hideTotal?"••••":fmt(total)}</div>
+                  <ProgressBar value={total} max={totalExp} color={g.color}/>
+                  <div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div>
+                </Card>
+              );
+            }}/>
+          </div>
+        </>
+      )}
 
       <div style={{marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Recent Transactions</div>
@@ -829,6 +820,10 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
   const [filter, setFilter] = useState("all");
   const [confirmId, setConfirmId] = useState(null);
   const [editTxn, setEditTxn] = useState(null);
+
+  useEffect(() => {
+    requestAnimationFrame(() => { window.scrollTo(0, 0); });
+  }, [title]);
 
   const list = txns.filter(t => {
     if (filter === "in") return t.type === "income";
@@ -892,6 +887,7 @@ function TxnRow({ txn, hideTotal }) {
 
 // ─── Add Transaction Screen ───────────────────────────────────────────────────
 function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone, bankBalance, setAppAlert }) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today());
@@ -982,6 +978,7 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
 
 // ─── History Screen ───────────────────────────────────────────────────────────
 function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, availMonths }) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
@@ -1258,9 +1255,7 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
 
 // ─── Monthly Bills Screen ─────────────────────────────────────────────────────
 function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
-  
   useEffect(() => { window.scrollTo(0, 0); }, []);
-
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -1412,6 +1407,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
 
 // ─── Settings Screen ──────────────────────────────────────────────────────────
 function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onOpenBudgets, onOpenQuickActions, setLastBackup, txns, bills, savings, budgets, onRestore, setAppAlert }) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [section, setSection] = useState("profile");
   const [modal, setModal] = useState(null);
   const [inputName, setInputName] = useState("");
