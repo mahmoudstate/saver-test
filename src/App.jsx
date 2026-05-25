@@ -9,12 +9,15 @@ const vibrate = (pattern) => {
   }
 };
 const HAPTICS = {
-  light: () => vibrate(10),                 // Swipe snap
-  medium: () => vibrate(20),                // Quick actions open
-  heavy: () => vibrate(50),                 // Drag start / Drag end
-  success: () => vibrate([30, 50, 30]),     // Save / Pay success
-  warning: () => vibrate(100),              // Delete confirm / Insufficient balance
+  light: () => vibrate(10),
+  medium: () => vibrate(20),
+  heavy: () => vibrate(50),
+  success: () => vibrate([30, 50, 30]),
+  warning: () => vibrate(100),
 };
+
+// Global flag to prevent click after drag
+let isGlobalDragging = false;
 
 // ─── Palette & Global Helpers ──────────────────────────────────────────────────
 const C = {
@@ -85,7 +88,7 @@ const KEYS = {
   txns:"et_txns", banks:"et_banks", expCats:"et_expCats", incCats:"et_incCats", 
   groups:"et_groups", savings:"et_savings", currency:"et_currency", 
   username:"et_username", lastBackup:"et_lastBackup", bills:"et_bills", 
-  budgets:"et_budgets", quickActions: "et_quick_actions"
+  budgets:"et_budgets", quickActions: "et_quick_actions", seenWelcome: "et_seenWelcome"
 };
 
 async function load(key, fallback) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } }
@@ -93,7 +96,13 @@ async function save(key, val) { try { localStorage.setItem(key, JSON.stringify(v
 
 // ─── Shared UI Components ──────────────────────────────────────────────────────
 function Pill({ color, children, style }) { return <span style={{ background:color+"22", color, border:`1px solid ${color}44`, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:700, letterSpacing:0.5, ...style }}>{children}</span>; }
-function Card({ children, style, ...props }) { return <div {...props} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>{children}</div>; }
+function Card({ children, style, onClick, ...props }) { 
+  return (
+    <div {...props} onClick={(e) => { if (!isGlobalDragging && onClick) onClick(e); }} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>
+      {children}
+    </div>
+  ); 
+}
 
 function Modal({ title, onClose, children, center }) {
   const alignVal = center ? "center" : "flex-end";
@@ -272,6 +281,7 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
   );
 
   const handleDragStart = () => { 
+    isGlobalDragging = true;
     HAPTICS.heavy(); 
     document.body.style.overflow = "hidden";
     document.body.style.touchAction = "none";
@@ -281,6 +291,9 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
     HAPTICS.heavy();
     document.body.style.overflow = "";
     document.body.style.touchAction = "";
+    
+    // Prevent immediate click execution after drop
+    setTimeout(() => { isGlobalDragging = false; }, 100);
 
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -312,17 +325,192 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
   );
 }
 
-function EmptyState({ icon, message }) {
+// ─── Welcome Screen ───────────────────────────────────────────────────────────
+function WelcomeScreen({ onStart, onManual }) {
   return (
-    <div style={{ textAlign:"center", padding:"70px 20px", opacity:0.45 }}>
-      <div style={{ fontSize:32, marginBottom:10, filter:"grayscale(100%) opacity(50%)" }}>{icon}</div>
-      <div style={{ color:C.text, fontSize:14, fontWeight:500, letterSpacing:0.3, marginBottom:4 }}>Easy come, easy go.</div>
-      <div style={{ color:C.muted, fontSize:12 }}>{message}</div>
+    <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto"}}>
+      <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"center"}}>
+        <div style={{textAlign:"center", marginBottom:30}}>
+          <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Logo" style={{width:100,height:100,borderRadius:24,boxShadow:"0 10px 30px rgba(0,0,0,0.5)", marginBottom:20}}/>
+          <h1 style={{color:C.text, fontSize:28, fontWeight:800, margin:"0 0 10px 0"}}>Welcome to Saver</h1>
+          <h2 style={{color:C.accent, fontSize:16, fontWeight:600, margin:0}}>Your Personal Finance, Mastered.</h2>
+        </div>
+        
+        <p style={{color:C.muted, fontSize:15, lineHeight:1.6, marginBottom:24, textAlign:"center"}}>
+          Enjoy a simple, fast way to track your daily earnings and expenses. Your privacy is our top priority—all your data is securely stored directly on your phone.
+        </p>
+
+        <div style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:20, marginBottom:30}}>
+          <div style={{display:"flex", alignItems:"flex-start", gap:12, marginBottom:16}}>
+            <span style={{fontSize:20, background:C.accentDim, color:C.accent, padding:8, borderRadius:10}}>⚡</span>
+            <div><strong style={{color:C.text, fontSize:15}}>Lightning Fast</strong><div style={{color:C.muted, fontSize:13, marginTop:4}}>Log your expenses in seconds using Quick Actions.</div></div>
+          </div>
+          <div style={{display:"flex", alignItems:"flex-start", gap:12, marginBottom:16}}>
+            <span style={{fontSize:20, background:C.blueDim, color:C.blue, padding:8, borderRadius:10}}>🔒</span>
+            <div><strong style={{color:C.text, fontSize:15}}>100% Offline & Private</strong><div style={{color:C.muted, fontSize:13, marginTop:4}}>No clouds, no accounts. Your data never leaves your phone.</div></div>
+          </div>
+          <div style={{display:"flex", alignItems:"flex-start", gap:12}}>
+            <span style={{fontSize:20, background:C.yellowDim, color:C.yellow, padding:8, borderRadius:10}}>🎨</span>
+            <div><strong style={{color:C.text, fontSize:15}}>Fully Customizable</strong><div style={{color:C.muted, fontSize:13, marginTop:4}}>Drag, drop, and personalize your dashboard natively.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"flex", flexDirection:"column", gap:12, marginTop:"auto"}}>
+        <Btn full onClick={onStart} style={{padding:"14px", fontSize:16}}>Start Using Saver</Btn>
+        <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px", fontSize:16}}>Read Manual Guide</Btn>
+      </div>
     </div>
   );
 }
 
-// ─── Splash Screen (Cinematic with Real Logo) ─────────────────────────────────
+// ─── User Manual / Guide Page ──────────────────────────────────────────────────
+function UserManual({ onBack }) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  };
+
+  return (
+    <div style={{padding:"24px 16px 130px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 12}}>
+        <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
+        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Manual Guide</div>
+      </div>
+      
+      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 16}}>
+        Welcome to Saver! Learn how to navigate and make the most out of your financial tracker using the interactive hints below. Everything is stored locally on your device.
+        <br/><br/>
+        ✉️ Support & Feedback: <strong style={{color:C.accent}}>Saverapp1@outlook.com</strong>
+      </p>
+
+      {/* Smart Table of Contents */}
+      <div style={{display:"flex", gap:8, marginBottom:30, overflowX:"auto", paddingBottom: 10, WebkitOverflowScrolling: "touch"}}>
+        {["Home Screen", "Adding (+)", "Bills", "History", "Settings", "Pro Tips"].map((item, idx) => (
+          <button key={item} onClick={() => scrollToSection(`guide-sec-${idx}`)} style={{ whiteSpace:"nowrap", padding:"8px 16px", borderRadius:20, border:`1px solid ${C.border}`, background:C.card, color:C.text, fontWeight:600, fontSize:12, cursor:"pointer" }}>
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes float-up { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes float-left { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
+        .guide-pointer-up { animation: float-up 1.5s infinite ease-in-out; font-size: 24px; text-align: center; margin-top: 8px; }
+        .guide-pointer-left { animation: float-left 1.5s infinite ease-in-out; font-size: 24px; display: inline-block; margin-left: 12px; }
+        .guide-box { padding: 16px; background: #17171f; border-radius: 16px; border: 1px dashed #444460; margin-top: 14px; }
+      `}</style>
+
+      {/* 0. Home Screen */}
+      <div id="guide-sec-0" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.blueDim, color:C.blue, padding:"4px 8px", borderRadius:8, fontSize:16}}>◈</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Home Screen</h3>
+        </div>
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Your Dashboard gives you a complete overview. See your Total Balance, Monthly Income/Expenses, Accounts, and Spending Groups.</p>
+        
+        <div className="guide-box">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center", background:C.card, padding:"12px", borderRadius:12}}>
+             <div><div style={{color:C.muted,fontSize:10,fontWeight:700}}>Total Balance</div><div style={{color:C.text,fontSize:20,fontWeight:800}}>••••••</div></div>
+             <span style={{fontSize:20}}>🐵</span>
+          </div>
+          <div className="guide-pointer-up" style={{color: C.accent}}>👆</div>
+          <div style={{textAlign: "center", color: C.accent, fontSize: 11, fontWeight: 700}}>Privacy Mode: Tap the monkey icon to hide/show balances.</div>
+        </div>
+      </div>
+
+      {/* 1. Adding Transactions */}
+      <div id="guide-sec-1" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.accentDim, color:C.accent, padding:"4px 8px", borderRadius:8, fontSize:16}}>＋</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Adding Transactions</h3>
+        </div>
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Tap the center <strong>(+)</strong> button to add Income, Expense, Transfer, or Saving. <br/><strong style={{color:C.red}}>Protection:</strong> The app blocks transactions if your account balance is insufficient.</p>
+        
+        <div className="guide-box" style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
+           <div style={{ width:68, height:68, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:36, display:"flex", alignItems:"center", justifyContent:"center" }}>+</div>
+           <div className="guide-pointer-up" style={{color: C.yellow}}>👆</div>
+           <div style={{textAlign: "center", color: C.yellow, fontSize: 11, fontWeight: 700}}>Quick Add: Long press this button anywhere to open your 4 Fast Shortcut Slots.</div>
+        </div>
+      </div>
+
+      {/* 2. Bills */}
+      <div id="guide-sec-2" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.redDim, color:C.red, padding:"4px 8px", borderRadius:8, fontSize:16}}>☷</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Managing Bills</h3>
+        </div>
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Set up recurring monthly bills. Assign a Due Day and Reminder Days to receive System Push Notifications automatically before they are due.</p>
+        
+        <div className="guide-box">
+            <div style={{background: C.card, padding: "12px", borderRadius: 12}}>
+               <div style={{display: "flex", justifyContent: "space-between"}}>
+                 <span style={{fontWeight: 700, fontSize: 14}}>Internet Bill</span>
+                 <span style={{color: C.red, fontWeight: 800}}>{fmt(400)}</span>
+               </div>
+               <div style={{color: C.yellow, fontSize: 10, fontWeight: 700, marginTop: 6}}>🟡 Due in 2 days</div>
+               <div style={{background:C.accentDim, color:C.accent, borderRadius:8, padding:"8px", marginTop:8, textAlign:"center", fontWeight:700, fontSize:12}}>✓ Pay Now</div>
+            </div>
+            <div style={{textAlign: "center", color: C.muted, fontSize: 11, fontWeight: 700, marginTop:10}}>Paid by mistake? You can always hit "Undo" to reverse it.</div>
+        </div>
+      </div>
+
+      {/* 3. History */}
+      <div id="guide-sec-3" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.purpleDim, color:C.purple, padding:"4px 8px", borderRadius:8, fontSize:16}}>☰</span><h3 style={{color:C.text, margin:0, fontSize:18}}>History & Records</h3>
+        </div>
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Review all past transactions. Use the search bar to find specific notes or categories, and use the chips to filter by Income, Expense, or Transfer.</p>
+      </div>
+
+      {/* 4. Settings */}
+      <div id="guide-sec-4" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.surface, border:`1px solid ${C.border}`, color:C.text, padding:"4px 8px", borderRadius:8, fontSize:16}}>⚙</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Settings & Setup</h3>
+        </div>
+        <ul style={{color:C.muted, fontSize:13, lineHeight:1.6, paddingLeft:20, margin:0}}>
+          <li><strong>Profile:</strong> Set your name and navigate to sub-pages (Savings, Budgets, Quick Actions).</li>
+          <li><strong>Currency:</strong> Change your default app currency anytime.</li>
+          <li><strong>Accounts (Banks):</strong> Add accounts and set a <em>Low Balance Alert</em> (shows a 🔻 on the dashboard).</li>
+          <li><strong>Categories & Groups:</strong> Fully customize icons, colors, and group assignments.</li>
+          <li><strong style={{color:C.accent}}>Backup & Restore:</strong> Download your data to a JSON file. The app warns you if you haven't backed up in 3 days!</li>
+        </ul>
+      </div>
+
+      {/* 5. Pro Tips */}
+      <div id="guide-sec-5" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.yellowDim, color:C.yellow, padding:"4px 8px", borderRadius:8, fontSize:16}}>💡</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Pro Tips & Gestures</h3>
+        </div>
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5, marginBottom:16}}>Master the app with these native gestures built for speed.</p>
+        
+        <div className="guide-box" style={{marginBottom:15}}>
+           <div style={{display: "flex", alignItems: "center"}}>
+             <div style={{flex: 1}}>
+                <SwipeRow>
+                  <TxnRow txn={{type:"expense", amount:120, catName:"Coffee", catIcon:"coffee", bankName:"Cash", date:today()}} hideTotal={false} />
+                </SwipeRow>
+             </div>
+             <div className="guide-pointer-left" style={{color: C.blue}}>👈</div>
+           </div>
+           <div style={{textAlign: "center", color: C.blue, fontSize: 11, fontWeight: 700, marginTop: 8}}>Swipe horizontally on any transaction or bill to Edit/Delete.</div>
+        </div>
+
+        <div className="guide-box">
+          <Card style={{padding:"14px 14px 12px", pointerEvents: "none", opacity: 0.8}}>
+             <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:99,background:C.accent,flexShrink:0}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>Bank Card</span></div>
+             <div style={{color:C.text,fontSize:17,fontWeight:800}}>{fmt(12500)}</div>
+          </Card>
+          <div className="guide-pointer-up" style={{color: C.accent}}>👆</div>
+          <div style={{textAlign: "center", color: C.accent, fontSize: 11, fontWeight: 700}}>Long press to Drag & Drop cards in the Dashboard!</div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+// ─── Splash Screen ────────────────────────────────────────────────────────────
 function SplashScreen() {
   const [phase, setPhase] = useState(0);
   useEffect(() => {
@@ -358,6 +546,7 @@ export default function App() {
   const [quickActions, setQuickActions] = useState(DEFAULT_QUICK_ACTIONS);
   const [ready, setReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenWelcome, setHasSeenWelcome] = useState(true);
   const [filterMonth, setFilterMonth] = useState("all");
   const [currency, setCurrencyState] = useState("EGP");
   const [username, setUsernameState] = useState("");
@@ -375,15 +564,15 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [t,b,ec,ic,g,s,cur,uname,bl,bdg,lb,qa] = await Promise.all([
+      const [t,b,ec,ic,g,s,cur,uname,bl,bdg,lb,qa,seen] = await Promise.all([
         load(KEYS.txns,[]), load(KEYS.banks,DEFAULT_BANKS), load(KEYS.expCats,DEFAULT_EXP_CATS),
         load(KEYS.incCats,DEFAULT_INC_CATS), load(KEYS.groups,DEFAULT_GROUPS), load(KEYS.savings,[]),
         load(KEYS.currency,"EGP"), load(KEYS.username,""), load(KEYS.bills,[]), load(KEYS.budgets,[]), 
-        load(KEYS.lastBackup, null), load(KEYS.quickActions, DEFAULT_QUICK_ACTIONS)
+        load(KEYS.lastBackup, null), load(KEYS.quickActions, DEFAULT_QUICK_ACTIONS), load(KEYS.seenWelcome, false)
       ]);
       setTxns(t); setBanks(b); setExpCats(ec); setIncCats(ic); setGroups(g); setSavings(s);
       setCurrencyState(cur); setCurrency(cur); setUsernameState(uname); setBills(bl); setBudgets(bdg); setLastBackup(lb);
-      setQuickActions(qa);
+      setQuickActions(qa); setHasSeenWelcome(seen);
       const curMonth = new Date().toISOString().slice(0,7);
       const hasCurMonth = t.some(tx => tx.date.startsWith(curMonth));
       setFilterMonth(hasCurMonth ? curMonth : "all");
@@ -489,7 +678,19 @@ export default function App() {
     }
   };
 
+  const completeWelcome = () => {
+    save(KEYS.seenWelcome, true);
+    setHasSeenWelcome(true);
+  };
+
   if (showSplash) return <SplashScreen />;
+  
+  if (!hasSeenWelcome) return (
+    <WelcomeScreen 
+       onStart={completeWelcome} 
+       onManual={() => { completeWelcome(); navigateTo("manual"); }} 
+    />
+  );
 
   const allCats=[...expCats,...incCats];
   const filteredTxns=filterMonth==="all"?txns:txns.filter(t=>t.date.startsWith(filterMonth));
@@ -1305,124 +1506,6 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   );
 }
 
-// ─── User Manual / Guide Page ──────────────────────────────────────────────────
-function UserManual({ onBack }) {
-  useEffect(() => { window.scrollTo(0, 0); }, []);
-
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); }
-  };
-
-  return (
-    <div style={{padding:"24px 16px 40px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 12}}>
-        <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
-        <div style={{color:C.text,fontSize:22,fontWeight:800}}>User Guide</div>
-      </div>
-      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 20}}>
-        Welcome to Saver! Learn how to navigate and make the most out of your financial tracker using the interactive hints below.
-      </p>
-
-      {/* Smart Table of Contents */}
-      <div style={{display:"flex", gap:8, marginBottom:30, overflowX:"auto", paddingBottom: 10, WebkitOverflowScrolling: "touch"}}>
-        {["Reorder Cards", "Swipe Actions", "Quick Add", "Bills & Alerts"].map((item, idx) => (
-          <button key={item} onClick={() => scrollToSection(`guide-sec-${idx}`)} style={{ whiteSpace:"nowrap", padding:"8px 16px", borderRadius:20, border:`1px solid ${C.border}`, background:C.card, color:C.text, fontWeight:600, fontSize:12, cursor:"pointer" }}>
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes float-up { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        @keyframes float-left { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
-        .guide-pointer-up { animation: float-up 1.5s infinite ease-in-out; font-size: 24px; text-align: center; margin-top: 8px; }
-        .guide-pointer-left { animation: float-left 1.5s infinite ease-in-out; font-size: 24px; display: inline-block; margin-left: 12px; }
-      `}</style>
-
-      {/* Guide Section 0: Reorder */}
-      <div id="guide-sec-0" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 12}}>
-          <span style={{background:C.accentDim, color:C.accent, padding:"4px 8px", borderRadius:8, fontSize:16}}>👆</span>
-          <h3 style={{color:C.text, margin:0, fontSize:18}}>Reorder Cards</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5, marginBottom:16}}>You can customize your Dashboard. <strong style={{color:C.text}}>Long press and hold</strong> any account, budget, or goal card until it pops up, then drag it to your preferred position.</p>
-        
-        {/* Real component used as visual hint */}
-        <div style={{position: "relative", padding: "10px", background: C.surface, borderRadius: 16, border: `1px dashed ${C.faint}`}}>
-          <Card style={{padding:"14px 14px 12px", pointerEvents: "none", opacity: 0.8}}>
-             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-               <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:99,background:C.blue,flexShrink:0}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>Main Account</span></div>
-             </div>
-             <div style={{color:C.text,fontSize:17,fontWeight:800}}>{fmt(12500)}</div>
-          </Card>
-          <div className="guide-pointer-up" style={{color: C.accent}}>👆</div>
-          <div style={{textAlign: "center", color: C.accent, fontSize: 11, fontWeight: 700}}>Press & Hold to Drag</div>
-        </div>
-      </div>
-
-      {/* Guide Section 1: Swiping */}
-      <div id="guide-sec-1" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 12}}>
-          <span style={{background:C.blueDim, color:C.blue, padding:"4px 8px", borderRadius:8, fontSize:16}}>↔️</span>
-          <h3 style={{color:C.text, margin:0, fontSize:18}}>Swipe Actions</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5, marginBottom:16}}>Need to edit or delete a record? <strong style={{color:C.text}}>Swipe left or right</strong> on any transaction, bill, or saving goal to reveal quick actions.</p>
-        
-        {/* Real SwipeRow component used as an interactive example! */}
-        <div style={{padding: "10px", background: C.surface, borderRadius: 16, border: `1px dashed ${C.faint}`}}>
-           <div style={{display: "flex", alignItems: "center"}}>
-             <div style={{flex: 1}}>
-                <SwipeRow>
-                  <TxnRow txn={{type:"expense", amount:120, catName:"Coffee", catIcon:"coffee", bankName:"Cash", date:today()}} hideTotal={false} />
-                </SwipeRow>
-             </div>
-             <div className="guide-pointer-left" style={{color: C.blue}}>👈</div>
-           </div>
-           <div style={{textAlign: "center", color: C.blue, fontSize: 11, fontWeight: 700, marginTop: 4}}>Try swiping this card!</div>
-        </div>
-      </div>
-
-      {/* Guide Section 2: Quick Actions */}
-      <div id="guide-sec-2" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 12}}>
-          <span style={{background:C.yellowDim, color:C.yellow, padding:"4px 8px", borderRadius:8, fontSize:16}}>⚡</span>
-          <h3 style={{color:C.text, margin:0, fontSize:18}}>Quick Actions</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5, marginBottom:16}}>Record your frequent expenses instantly. <strong style={{color:C.text}}>Long press the (+) button</strong> on the bottom menu to open your 4 custom quick slots.</p>
-        
-        <div style={{padding: "20px", background: C.surface, borderRadius: 16, border: `1px dashed ${C.faint}`, display: "flex", flexDirection: "column", alignItems: "center"}}>
-           <div style={{ width:68, height:68, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:36, display:"flex", alignItems:"center", justifyContent:"center" }}>+</div>
-           <div className="guide-pointer-up" style={{color: C.yellow}}>👆</div>
-           <div style={{textAlign: "center", color: C.yellow, fontSize: 11, fontWeight: 700}}>Press & Hold the Menu Add Button</div>
-        </div>
-      </div>
-
-      {/* Guide Section 3: Monthly Bills */}
-      <div id="guide-sec-3" style={{marginBottom: 20}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 12}}>
-          <span style={{background:C.redDim, color:C.red, padding:"4px 8px", borderRadius:8, fontSize:16}}>📅</span>
-          <h3 style={{color:C.text, margin:0, fontSize:18}}>Bills & Reminders</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5, marginBottom:16}}>Set up your recurring bills in the <strong style={{color:C.text}}>Bills Tab</strong>. Choose a Due Day and Reminder Days to get System Notifications before a bill is due.</p>
-        
-        <div style={{padding: "10px", background: C.surface, borderRadius: 16, border: `1px dashed ${C.faint}`}}>
-            <div style={{background: C.card, padding: "12px", borderRadius: 12}}>
-               <div style={{display: "flex", justifyContent: "space-between"}}>
-                 <span style={{fontWeight: 700, fontSize: 14}}>Internet Bill</span>
-                 <span style={{color: C.red, fontWeight: 800}}>{fmt(400)}</span>
-               </div>
-               <div style={{color: C.yellow, fontSize: 10, fontWeight: 700, marginTop: 6}}>🟡 Due in 2 days</div>
-            </div>
-            <div className="guide-pointer-up" style={{color: C.red, fontSize: 20}}>👆</div>
-            <div style={{textAlign: "center", color: C.red, fontSize: 11, fontWeight: 700}}>Notifications happen automatically</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Monthly Bills Screen ─────────────────────────────────────────────────────
 function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -1627,6 +1710,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     const now = Date.now();
     await save(KEYS.lastBackup, now);
     setLastBackup(now);
+    HAPTICS.success();
     setAppAlert({ title: "Backup Complete", message: "🔄 Backup payload file saved! Check your Downloads folder.", color: C.accent });
   };
 
@@ -1639,6 +1723,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
         const parsed = JSON.parse(evt.target.result);
         await onRestore(parsed);
       } catch {
+        HAPTICS.warning();
         setAppAlert({ title: "Import Error", message: "❌ Failed parsing JSON file. Check payload validity.", color: C.red });
       }
     };
