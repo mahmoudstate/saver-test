@@ -2,6 +2,20 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 
+// ─── Haptic Feedback Engine ────────────────────────────────────────────────────
+const vibrate = (pattern) => {
+  if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+    try { window.navigator.vibrate(pattern); } catch(e){}
+  }
+};
+const HAPTICS = {
+  light: () => vibrate(10),                 // Swipe snap
+  medium: () => vibrate(20),                // Quick actions open
+  heavy: () => vibrate(50),                 // Drag start / Drag end
+  success: () => vibrate([30, 50, 30]),     // Save / Pay success
+  warning: () => vibrate(100),              // Delete confirm / Insufficient balance
+};
+
 // ─── Palette & Global Helpers ──────────────────────────────────────────────────
 const C = {
   bg: "#0f0f13", surface: "#17171f", card: "#1e1e28", border: "#2a2a38",
@@ -105,7 +119,7 @@ function ConfirmModal({ title, message, onConfirm, onClose, confirmColor }) {
       <p style={{ color:C.muted, marginBottom:20, lineHeight:1.6, fontSize:14 }}>{message}</p>
       <div style={{ display:"flex", gap:10 }}>
         <Btn outline color={C.muted} full onClick={onClose}>Cancel</Btn>
-        <Btn color={confirmColor||C.red} full onClick={onConfirm}>Confirm</Btn>
+        <Btn color={confirmColor||C.red} full onClick={() => { HAPTICS.warning(); onConfirm(); }}>Confirm</Btn>
       </div>
     </Modal>
   );
@@ -209,8 +223,8 @@ function SwipeRow({ onEdit, onDelete, children }) {
     const handleTouchEnd = () => {
       if (isVertical.current) return;
       el.style.transition = "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15)";
-      if (slide < -35) { setSlide(-85); currentX.current = -85; el.style.transform = `translateX(-85px)`; globalActiveSwipeClose = closeSwipe; } 
-      else if (slide > 35) { setSlide(85); currentX.current = 85; el.style.transform = `translateX(85px)`; globalActiveSwipeClose = closeSwipe; } 
+      if (slide < -35) { setSlide(-85); currentX.current = -85; el.style.transform = `translateX(-85px)`; HAPTICS.light(); globalActiveSwipeClose = closeSwipe; } 
+      else if (slide > 35) { setSlide(85); currentX.current = 85; el.style.transform = `translateX(85px)`; HAPTICS.light(); globalActiveSwipeClose = closeSwipe; } 
       else { setSlide(0); currentX.current = 0; el.style.transform = `translateX(0px)`; if (globalActiveSwipeClose === closeSwipe) globalActiveSwipeClose = null; }
     };
 
@@ -239,9 +253,10 @@ function SortableItem({ id, children }) {
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.6 : 1,
     zIndex: isDragging ? 100 : "auto",
     position: isDragging ? "relative" : "static",
+    touchAction: isDragging ? "none" : "auto", // Prevents scroll conflict while active
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
@@ -256,7 +271,10 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
+  const handleDragStart = () => { HAPTICS.heavy(); };
+
   const handleDragEnd = (event) => {
+    HAPTICS.heavy();
     const { active, over } = event;
     if (over && active.id !== over.id) {
       const oldIndex = items.findIndex((i) => String(i.id) === String(active.id));
@@ -266,7 +284,7 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
   };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <SortableContext items={items.map(i => String(i.id))} strategy={grid ? rectSortingStrategy : verticalListSortingStrategy}>
         <div style={{ display: grid ? "grid" : "flex", gridTemplateColumns: grid ? "1fr 1fr" : "none", flexDirection: grid ? "row" : "column", gap }}>
           {items.map((item, idx) => (
@@ -399,11 +417,14 @@ export default function App() {
       const checkBankId = t.type === "transfer" ? t.fromBankId : t.bankId;
       const currentBal = bankBalance(checkBankId);
       if (currentBal < t.amount) {
+        HAPTICS.warning();
         setAppAlert({ title: "Insufficient Balance", message: "⚠️ Sorry, this account balance is insufficient for this transaction!", color: C.red }); return false;
       }
     }
     const generatedId = Date.now().toString();
-    const next=[{...t,id:generatedId},...txns]; setTxns(next); await persist(KEYS.txns,next); return generatedId; 
+    const next=[{...t,id:generatedId},...txns]; setTxns(next); await persist(KEYS.txns,next); 
+    HAPTICS.success();
+    return generatedId; 
   };
   
   const delTxn = async (id) => { const next=txns.filter(t=>t.id!==id); setTxns(next); await persist(KEYS.txns,next); return next; };
@@ -414,6 +435,7 @@ export default function App() {
       const checkBankId = original.type === "transfer" ? original.fromBankId : original.bankId;
       const netBalWithoutThis = bankBalance(checkBankId) + original.amount;
       if (netBalWithoutThis < data.amount) {
+        HAPTICS.warning();
         setAppAlert({ title: "Insufficient Balance", message: "⚠️ Sorry, this account balance is insufficient for this modifications!", color: C.red }); return false;
       }
     }
@@ -445,8 +467,12 @@ export default function App() {
       if(importedData.currency) { setCurrencyState(importedData.currency); setCurrency(importedData.currency); await persist(KEYS.currency, importedData.currency); }
       if(importedData.username) { setUsernameState(importedData.username); await persist(KEYS.username, importedData.username); }
       const now = Date.now(); await save(KEYS.lastBackup, now); setLastBackup(now);
+      HAPTICS.success();
       setAppAlert({ title: "Restore Successful", message: "🔄 Backup restored successfully! ✅", color: C.accent });
-    } catch { setAppAlert({ title: "Restore Failed", message: "❌ Invalid or corrupted backup file structure detected.", color: C.red }); }
+    } catch { 
+      HAPTICS.warning();
+      setAppAlert({ title: "Restore Failed", message: "❌ Invalid or corrupted backup file structure detected.", color: C.red }); 
+    }
   };
 
   if (showSplash) return <SplashScreen />;
@@ -502,8 +528,18 @@ function BottomNav({ tab, navigateTo, expCats, banks, onAdd, currency, bankBalan
   const lastUsed = useRef({});
   const activeShortcuts = quickActions.filter(q => q.catId);
 
-  const handlePressStart = (e) => { e.preventDefault(); pressTimer.current = setTimeout(() => setShowQuick(true), 450); };
-  const handlePressEnd = (e) => { e.preventDefault(); clearTimeout(pressTimer.current); if(!showQuick && !quickForm) navigateTo("add"); };
+  const handlePressStart = (e) => { 
+    e.preventDefault(); 
+    pressTimer.current = setTimeout(() => {
+      HAPTICS.medium();
+      setShowQuick(true);
+    }, 450); 
+  };
+  const handlePressEnd = (e) => { 
+    e.preventDefault(); 
+    clearTimeout(pressTimer.current); 
+    if(!showQuick && !quickForm) navigateTo("add"); 
+  };
 
   const handleQuickSelect = (shortcut) => {
     setShowQuick(false); const prev = lastUsed.current[shortcut.id] || {};
@@ -912,6 +948,7 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
     
     if (type === "transfer") {
         if (bankId === toBankId) {
+            HAPTICS.warning();
             setAppAlert({ title: "Invalid Transfer", message: "❌ You cannot transfer to the same account.", color: C.red });
             return;
         }
@@ -1309,6 +1346,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
     });
 
     if (txnIdToken !== false) {
+      HAPTICS.success();
       await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:filterMonth,date:dateStr,txnId:txnIdToken}]}:b));
     }
   };
