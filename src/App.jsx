@@ -190,6 +190,16 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
+// ─── Empty State ─────────────────────────────────────────────────────────────
+function EmptyState({ icon, message }) {
+  return (
+    <div style={{ textAlign:"center", padding:"60px 20px", opacity:0.5 }}>
+      <div style={{ fontSize:38, marginBottom:12 }}>{icon}</div>
+      <div style={{ color:C.muted, fontSize:14, fontWeight:500 }}>{message}</div>
+    </div>
+  );
+}
+
 // ─── Native Magnetic Swipe Engine ──────────────────────────────────────────────
 let globalActiveSwipeClose = null;
 function SwipeRow({ onEdit, onDelete, children }) {
@@ -438,20 +448,29 @@ function UserManual({ onBack }) {
       {/* 2. Bills */}
       <div id="guide-sec-2" style={{marginBottom: 40}}>
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.redDim, color:C.red, padding:"4px 8px", borderRadius:8, fontSize:16}}>☷</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Managing Bills</h3>
+          <span style={{background:C.redDim, color:C.red, padding:"4px 8px", borderRadius:8, fontSize:16}}>☷</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Monthly Bills</h3>
         </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Set up recurring monthly bills. Assign a Due Day and Reminder Days to receive System Push Notifications automatically before they are due.</p>
-        
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Add your recurring monthly bills once and they reset automatically each month. Set a <strong style={{color:C.text}}>Due Day</strong> (which day of the month it's due) and a <strong style={{color:C.text}}>Remind Before</strong> (how many days in advance to show a warning).</p>
         <div className="guide-box">
-            <div style={{background: C.card, padding: "12px", borderRadius: 12}}>
-               <div style={{display: "flex", justifyContent: "space-between"}}>
-                 <span style={{fontWeight: 700, fontSize: 14}}>Internet Bill</span>
-                 <span style={{color: C.red, fontWeight: 800}}>{fmt(400)}</span>
-               </div>
-               <div style={{color: C.yellow, fontSize: 10, fontWeight: 700, marginTop: 6}}>🟡 Due in 2 days</div>
-               <div style={{background:C.accentDim, color:C.accent, borderRadius:8, padding:"8px", marginTop:8, textAlign:"center", fontWeight:700, fontSize:12}}>✓ Pay Now</div>
+          <div style={{background: C.card, padding: "12px", borderRadius: 12, marginBottom:8}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <div>
+                <div style={{fontWeight:700, fontSize:14, color:C.text}}>Netflix</div>
+                <div style={{color:C.muted, fontSize:11, marginTop:2}}>CIB · Subscriptions · Due 5th</div>
+                <div style={{color:C.yellow, fontSize:10, fontWeight:700, marginTop:4}}>🟡 Due in 2 days</div>
+              </div>
+              <span style={{color:C.red, fontWeight:800, fontSize:16}}>{fmt(250)}</span>
             </div>
-            <div style={{textAlign: "center", color: C.muted, fontSize: 11, fontWeight: 700, marginTop:10}}>Paid by mistake? You can always hit "Undo" to reverse it.</div>
+            <div style={{display:"flex", gap:8, marginTop:10}}>
+              <div style={{flex:1, background:C.accentDim, border:`1px solid ${C.accent}`, color:C.accent, borderRadius:8, padding:"8px", textAlign:"center", fontWeight:700, fontSize:12}}>✓ Pay Now</div>
+            </div>
+          </div>
+          <ul style={{color:C.muted, fontSize:12, lineHeight:1.7, paddingLeft:16, margin:0}}>
+            <li>🟡 Yellow warning = due soon · 🔴 Red = overdue</li>
+            <li>Tap <strong>Pay Now</strong> → auto-records an Expense transaction</li>
+            <li>Paid by mistake? Hit <strong style={{color:C.yellow}}>⟲ Undo</strong> to reverse it</li>
+            <li>Swipe left to Edit or Delete any bill</li>
+          </ul>
         </div>
       </div>
 
@@ -460,21 +479,45 @@ function UserManual({ onBack }) {
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
           <span style={{background:C.purpleDim, color:C.purple, padding:"4px 8px", borderRadius:8, fontSize:16}}>☰</span><h3 style={{color:C.text, margin:0, fontSize:18}}>History & Records</h3>
         </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Review all past transactions. Use the search bar to find specific notes or categories, and use the chips to filter by Income, Expense, or Transfer.</p>
+        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>A full log of every transaction. Use the <strong style={{color:C.text}}>search bar</strong> to find by name, note, or category. Filter by type (Expense, Income, Transfer, Saving) or by month using the month selector.</p>
+        <div className="guide-box">
+          <ul style={{color:C.muted, fontSize:12, lineHeight:1.7, paddingLeft:16, margin:0}}>
+            <li>Swipe left on any row to <strong style={{color:C.blue}}>Edit</strong> or <strong style={{color:C.red}}>Delete</strong></li>
+            <li>Transfer transactions show the route: Account A ➔ Account B</li>
+            <li>Deleted transactions update your balance instantly</li>
+          </ul>
+        </div>
       </div>
 
       {/* 4. Settings */}
       <div id="guide-sec-4" style={{marginBottom: 40}}>
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.surface, border:`1px solid ${C.border}`, color:C.text, padding:"4px 8px", borderRadius:8, fontSize:16}}>⚙</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Settings & Setup</h3>
+          <span style={{background:C.surface, border:`1px solid ${C.border}`, color:C.text, padding:"4px 8px", borderRadius:8, fontSize:16}}>⚙</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Settings & Customization</h3>
         </div>
-        <ul style={{color:C.muted, fontSize:13, lineHeight:1.6, paddingLeft:20, margin:0}}>
-          <li><strong>Profile:</strong> Set your name and navigate to sub-pages (Savings, Budgets, Quick Actions).</li>
-          <li><strong>Currency:</strong> Change your default app currency anytime.</li>
-          <li><strong>Accounts (Banks):</strong> Add accounts and set a <em>Low Balance Alert</em> (shows a 🔻 on the dashboard).</li>
-          <li><strong>Categories & Groups:</strong> Fully customize icons, colors, and group assignments.</li>
-          <li><strong style={{color:C.accent}}>Backup & Restore:</strong> Download your data to a JSON file. The app warns you if you haven't backed up in 3 days!</li>
-        </ul>
+        <div className="guide-box">
+          <ul style={{color:C.muted, fontSize:13, lineHeight:1.8, paddingLeft:18, margin:0}}>
+            <li><strong style={{color:C.text}}>General:</strong> Set your display name, manage Savings Goals, Budgets, and Quick Actions shortcuts.</li>
+            <li><strong style={{color:C.text}}>Currency:</strong> Switch between EGP, GBP, USD, EUR, SAR, AED anytime.</li>
+            <li><strong style={{color:C.text}}>Accounts:</strong> Add/edit banks. Set a <em style={{color:C.yellow}}>Low Balance Alert</em> — a 🔻 icon appears when balance drops below your limit.</li>
+            <li><strong style={{color:C.text}}>Exp. Categories:</strong> Customize icons and assign categories to spending groups.</li>
+            <li><strong style={{color:C.text}}>Groups:</strong> Create dashboard groups to cluster related categories (e.g. "Daily Life" = Food + Coffee + Transport).</li>
+            <li><strong style={{color:C.accent}}>Backup & Restore:</strong> Download all your data as a JSON file. The app reminds you every 3 days!</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* 4b. Savings, Budgets, Quick Actions */}
+      <div id="guide-sec-4b" style={{marginBottom: 40}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
+          <span style={{background:C.yellowDim, color:C.yellow, padding:"4px 8px", borderRadius:8, fontSize:16}}>◎</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Savings, Budgets & Quick Actions</h3>
+        </div>
+        <div className="guide-box">
+          <ul style={{color:C.muted, fontSize:13, lineHeight:1.8, paddingLeft:18, margin:0}}>
+            <li><strong style={{color:C.yellow}}>Savings Goals:</strong> Set a target amount and contribute to it anytime using the "Saving" transaction type. Track progress with a live percentage bar.</li>
+            <li><strong style={{color:C.accent}}>Budgets:</strong> Set a monthly spending limit for a group of categories. The dashboard shows you how much is left and your daily safe-to-spend amount.</li>
+            <li><strong style={{color:C.blue}}>Quick Actions:</strong> Configure up to 4 shortcuts for your most frequent expenses. Long-press the + button to access them instantly.</li>
+          </ul>
+        </div>
       </div>
 
       {/* 5. Pro Tips */}
@@ -514,19 +557,37 @@ function UserManual({ onBack }) {
 function SplashScreen() {
   const [phase, setPhase] = useState(0);
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 600);
-    const t2 = setTimeout(() => setPhase(2), 2000);
+    const t1 = setTimeout(() => setPhase(1), 700);
+    const t2 = setTimeout(() => setPhase(2), 2100);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
   return (
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"#1c1f26",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none"}}>
-      <style>{`@keyframes logoIn{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}} @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}} @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:0.25}40%{transform:translateY(-7px);opacity:1}}`}</style>
-      <div style={{animation:"logoIn 1.5s cubic-bezier(0.175,0.885,0.32,1.275) both",marginBottom:28}}>
-        <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Logo" style={{width:130,height:130,borderRadius:30,boxShadow:"0 10px 30px rgba(0,0,0,0.5)"}}/>
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"#0f0f13",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none",fontFamily:"'DM Sans','Segoe UI',sans-serif"}}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+      <style>{`
+        @keyframes saverLogoIn{0%{transform:scale(0.75) translateY(10px);opacity:0}60%{transform:scale(1.05) translateY(-3px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+        @keyframes saverFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes saverGlow{0%,100%{box-shadow:0 0 0 0 #6ee7b700}50%{box-shadow:0 0 40px 10px #6ee7b722}}
+        @keyframes saverBounce{0%,80%,100%{transform:translateY(0);opacity:0.3}40%{transform:translateY(-7px);opacity:1}}
+      `}</style>
+      {/* Logo */}
+      <div style={{animation:"saverLogoIn 1.0s cubic-bezier(0.175,0.885,0.32,1.275) both, saverGlow 2.5s ease 1s infinite",marginBottom:24,borderRadius:28}}>
+        <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Saver Logo" style={{width:120,height:120,borderRadius:28,display:"block"}}/>
       </div>
-      <div style={{color:"#e8e8f0",fontSize:34,fontWeight:800,letterSpacing:8,textTransform:"uppercase",marginBottom:8,animation:"fadeUp 0.9s 0.3s both"}}>SAVER</div>
-      <div style={{color:"#8888a8",fontSize:13,fontWeight:400,letterSpacing:2,fontStyle:"italic",opacity:phase>=1?1:0,animation:phase>=1?"fadeUp 0.6s ease forwards":"none",marginBottom:70}}>Easy come, easy go.</div>
-      <div style={{display:"flex",gap:7,position:"absolute",bottom:54}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:99,background:"#6ee7b7",animation:`bounce 1.3s ease ${i*0.22}s infinite`}}/>)}</div>
+      {/* App Name */}
+      <div style={{color:"#e8e8f0",fontSize:32,fontWeight:800,letterSpacing:10,textTransform:"uppercase",marginBottom:6,animation:"saverLogoIn 1.0s 0.15s both",fontFamily:"'DM Sans',sans-serif"}}>
+        SAVER
+      </div>
+      {/* Tagline */}
+      <div style={{color:"#6ee7b7",fontSize:12,fontWeight:500,letterSpacing:3,opacity:phase>=1?1:0,animation:phase>=1?"saverFadeUp 0.6s ease forwards":"none",marginBottom:80,fontFamily:"'DM Sans',sans-serif"}}>
+        Easy come, easy go.
+      </div>
+      {/* Loading dots */}
+      <div style={{display:"flex",gap:7,position:"absolute",bottom:52}}>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{width:5,height:5,borderRadius:99,background:"#6ee7b7",animation:`saverBounce 1.3s ease ${i*0.22}s infinite`}}/>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1107,7 +1168,7 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
         ))}
       </div>
 
-      {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
+      {confirmId && <ConfirmModal title="Delete Transaction?" message="This action cannot be undone." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
       {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={expCats} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
     </div>
   );
@@ -1331,7 +1392,7 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
       </div>
-      {savings.length===0&&<EmptyState icon="◎" message="No saving goals configured yet." />}
+      {savings.length===0&&<EmptyState icon="◎" message="No saving goals yet." />}
       <div style={{marginBottom:20}}>
         <SortableList items={savings} onReorder={onSave} renderItem={(s) => {
           const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
@@ -1385,7 +1446,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
       </div>
-      {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
+      {budgets.length===0&&<EmptyState icon="📊" message="No budgets set yet." />}
       
       <div style={{marginBottom:20}}>
         <SortableList items={budgets} onReorder={onSave} renderItem={(b) => (
@@ -1395,18 +1456,18 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
                 <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
                 <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
               </div>
-              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Monitoring {b.cats.length} expense nodes</div>
+              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Tracking {b.cats.length} categories</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,5).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}</div>
             </div>
           </SwipeRow>
         )} />
       </div>
 
-      {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
-        <Input label="Budget Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
-        <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+      {showAdd&&(<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
+        <Input label="Budget Name" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label={`Monthly Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
         <div style={{marginBottom:14}}>
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div>
           <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
             {expCats.map(c=>{
               const checked=selectedCats.includes(c.id);
@@ -1419,14 +1480,14 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
             })}
           </div>
         </div>
-        <Btn full onClick={handleAdd}>Commit Limit</Btn>
+        <Btn full onClick={handleAdd}>Save Budget</Btn>
       </Modal>)}
-      {confirmId&&<ConfirmModal title="Remove Envelope Budget?" message="This drops the limit tracking profile without dropping historical expenses." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
+      {confirmId&&<ConfirmModal title="Delete Budget?" message="This removes the budget limit only. Your transactions will not be affected." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
     </div>
   );
 }
 
-// ─── Quick Actions Slots ──────────────────────────────────────────────────────
+// ─── Quick Actions ──────────────────────────────────────────────────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [editingId, setEditingId] = useState(null);
@@ -1466,10 +1527,10 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
     <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
       <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 20}}>
         <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
-        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions Slots</div>
+        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions</div>
       </div>
 
-      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 responsive shortcuts available globally when long pressing the navigation action node.</p>
+      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 quick shortcuts. Long press the + button to access them anytime.</p>
       
       <div style={{display:"flex", flexDirection:"column", gap:12}}>
         {quickActions.map((q, idx) => {
@@ -1478,8 +1539,8 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
           return (
             <Card key={q.id} style={{padding: "14px 16px", display: "flex", justifyContent:"space-between", alignItems:"center"}}>
               <div>
-                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Disabled / Empty"}</div>
-                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Amount: {fmt(parseFloat(q.amount))} · Ledger: {bank?.name}</div>}
+                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Empty Slot"}</div>
+                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Default Amount: {fmt(parseFloat(q.amount))} · Account: {bank?.name}</div>}
               </div>
               <div style={{display: "flex", gap: 8}}>
                 <Btn small onClick={()=>openConfigure(q)} color={C.blue} outline>Setup</Btn>
@@ -1491,15 +1552,15 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
       </div>
 
       {editingId && (
-        <Modal title="Configure Fast Shortcut Slot" onClose={()=>setEditingId(null)} center={false}>
+        <Modal title="Configure Shortcut" onClose={()=>setEditingId(null)} center={false}>
           <Select label="Expense Category" value={catId} onChange={e=>setCatId(e.target.value)}>
             {expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]} {c.name}</option>)}
           </Select>
           <Input label="Default Fixed Amount" type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} />
-          <Select label="Default Account Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
+          <Select label="Default Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
             {banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
           </Select>
-          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Commit Shortcut Slot</Btn>
+          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Save Shortcut</Btn>
         </Modal>
       )}
     </div>
@@ -1601,7 +1662,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
         </div>
       )}
       
-      {bills.length===0&&<EmptyState icon="📋" message="No recurrent fixed monthly bill items configured yet." />}
+      {bills.length===0&&<EmptyState icon="📋" message="No monthly bills added yet." />}
       
       {bills.length > 0 && (
         <div style={{border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
@@ -1655,7 +1716,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
             <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Remind Before</div><input type="number" min="0" max="7" value={reminderDays} onChange={e=>setReminderDays(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Days before due (0–7)</div></div>
           </div>
           <Btn full onClick={handleSave} style={{marginTop:12}}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
-      {confirmDelete&&<ConfirmModal title="Delete Permanent Record?" message="Remove this from your monthly template cycle entirely?" onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
+      {confirmDelete&&<ConfirmModal title="Delete Bill?" message="This will remove the bill from your monthly list." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
       {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This will mark "${confirmUndo.name}" as unpaid and remove its transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
     </div>
   );
@@ -1711,7 +1772,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     await save(KEYS.lastBackup, now);
     setLastBackup(now);
     HAPTICS.success();
-    setAppAlert({ title: "Backup Complete", message: "🔄 Backup payload file saved! Check your Downloads folder.", color: C.accent });
+    setAppAlert({ title: "Backup Complete", message: "🔄 Backup file saved to your Downloads folder.", color: C.accent });
   };
 
   const handleFileChange = (e) => {
@@ -1749,13 +1810,13 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
 
       {section==="profile"&&(
         <div>
-          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals Setup</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenSavings} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.yellow}}>◎</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Savings Goals</span></div><span style={{color:C.muted}}>❯</span></div>
           <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Monthly Budgets</span></div><span style={{color:C.muted}}>❯</span></div>
-          <div onClick={onOpenQuickActions} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.blue}}>⚡</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Quick Actions Slots</span></div><span style={{color:C.muted}}>❯</span></div>
+          <div onClick={onOpenQuickActions} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.blue}}>⚡</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Quick Actions</span></div><span style={{color:C.muted}}>❯</span></div>
           
-          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Profile Username</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Username configuration updated successfully!", color:C.accent});}}>Commit Name</Btn></Card>
+          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Your Name</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Name updated successfully!", color:C.accent});}}>Save Name</Btn></Card>
           
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Vault Ledger Backups</div>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Backup & Restore</div>
           <Card style={{marginBottom:16}}>
             <p style={{color:C.muted, fontSize:12, marginBottom:14, lineHeight:1.4}}>Download a backup or restore from a previous backup file.</p>
             <div style={{ display:"flex", gap:10, width:"100%" }}>
@@ -1780,7 +1841,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
         <SwipeRow key={c.id} onEdit={()=>openAdd("expCat",c)} onDelete={()=>setConfirmDel({type:"expCat",item:c})}>
           <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}}><span style={{fontSize:18,marginRight:10}}>{ICONS[c.icon]||"📌"}</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>{c.name}</span></div>
         </SwipeRow>
-      ))}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Expense Node</Btn></>)}
+      ))}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Category</Btn></>)}
 
       {section==="groups"&&(<>
         <div style={{display:"flex",flexDirection:"column",gap:0}}>
@@ -1803,12 +1864,12 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
 
       {modal&&(
         <Modal title={`${modal.item?"Modify":"Append"} ${modal.type}`} onClose={()=>setModal(null)} center={false}>
-          <Input label="Label Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
+          <Input label="Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
           {modal.type==="bank"&&(<>
             <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>
             <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Low Balance Alert</div><input type="number" min="0" placeholder="e.g. 200" value={inputThreshold} onChange={e=>setInputThreshold(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:11,marginTop:4}}>Show 🔻 when balance falls below this amount (0 = disabled)</div></div>
           </>)}
-          {modal.type==="expCat"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>System Glyphs Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
+          {modal.type==="expCat"&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
           {modal.type==="expCat"&&(<Select label="Group Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
           {modal.type==="group"&&(<>
             <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>
@@ -1817,7 +1878,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
           <Btn full onClick={handleSave} style={{marginTop:8}}>Save</Btn>
         </Modal>
       )}
-      {confirmDel&&<ConfirmModal title="Confirm Drop Operation?" message="Are you absolutely sure? Associated tracking nodes might mismatch." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
+      {confirmDel&&<ConfirmModal title="Delete?" message="This action cannot be undone." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
     </div>
   );
 }
