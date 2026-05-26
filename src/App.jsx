@@ -359,8 +359,27 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
   );
 }
 
+function InstallBanner({ onClose }) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  return (
+    <Modal title="Install Saver" onClose={onClose} center={true}>
+      <div style={{ textAlign: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        <p style={{ color: C.text, fontSize: 15 }}>لتحويل التطبيق لشكل Native:</p>
+        <div style={{ margin: "20px 0", fontSize: 20, color: C.text }}>
+          {isIOS ? (
+             <>1. اضغط زرار <strong>Share</strong> بالأسفل 📤<br/>2. اختر <strong>Add to Home Screen</strong> ➕</>
+          ) : (
+             <>اضغط على النقاط الثلاث بالأعلى واختر <strong>Install App</strong> 📥</>
+          )}
+        </div>
+        <Btn full onClick={onClose}>Got it!</Btn>
+      </div>
+    </Modal>
+  );
+}
+
 // ─── Welcome Screen ───────────────────────────────────────────────────────────
-function WelcomeScreen({ onStart, onManual }) {
+function WelcomeScreen({showInstall && <InstallBanner onClose={() => { onStart(); setShowInstall(false); }} />}) {
   return (
     <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto", fontFamily:"'DM Sans', sans-serif"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
