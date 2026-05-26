@@ -99,11 +99,9 @@ const DEFAULT_INC_CATS = [
   { id: "other_income", name: "Other Income", icon: "other_income" }
 ];
 const DEFAULT_GROUPS = [
-  { id: "daily", name: "Daily Life", color: C.accent, cats: ["food", "coffee", "transport", "parking", "fuel", "laundry", "personal"] },
-  { id: "fixed", name: "Fixed Costs", color: C.red, cats: ["bills", "rent", "car_repair"] },
-  { id: "lifestyle", name: "Lifestyle", color: C.purple, cats: ["shopping", "entertainment", "travel", "gaming", "tech"] },
-  { id: "health", name: "Health & Well-being", color: C.blue, cats: ["health", "pharmacy", "gym", "barber"] },
-  { id: "growth", name: "Self Growth", color: C.yellow, cats: ["education", "tuition"] }
+  { id:"daily", name:"Daily Life", color:C.accent, cats:["food","coffee","transport"] },
+  { id:"fixed", name:"Fixed Costs", color:C.red, cats:["bills"] },
+  { id:"lifestyle", name:"Lifestyle", color:C.purple, cats:["shopping","entertainment"] }
 ];
 
 const DEFAULT_QUICK_ACTIONS = [
@@ -219,6 +217,7 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
+// ─── Empty State ─────────────────────────────────────────────────────────────
 function EmptyState({ icon, message }) {
   return (
     <div style={{ textAlign:"center", padding:"60px 20px", opacity:0.5 }}>
@@ -366,7 +365,7 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
 // ─── Welcome Screen ───────────────────────────────────────────────────────────
 function WelcomeScreen({ onStart, onManual }) {
   return (
-    <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto", fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"}}>
+    <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto"}}>
       <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"center"}}>
         <div style={{textAlign:"center", marginBottom:30}}>
           <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Logo" style={{width:100,height:100,borderRadius:24,boxShadow:"0 10px 30px rgba(0,0,0,0.5)", marginBottom:20}}/>
@@ -527,7 +526,7 @@ function UserManual({ onBack }) {
             <li><strong style={{color:C.text}}>General:</strong> Set your display name, manage Savings Goals, Budgets, and Quick Actions shortcuts.</li>
             <li><strong style={{color:C.text}}>Currency:</strong> Switch between EGP, GBP, USD, EUR, SAR, AED anytime.</li>
             <li><strong style={{color:C.text}}>Accounts:</strong> Add/edit banks. Set a <em style={{color:C.yellow}}>Low Balance Alert</em> — a 🔻 icon appears when balance drops below your limit.</li>
-            <li><strong style={{color:C.text}}>Categories:</strong> Add, edit, or remove Income and Expense categories, choosing their colors and icons natively.</li>
+            <li><strong style={{color:C.text}}>Exp. Categories:</strong> Customize icons and assign categories to spending groups.</li>
             <li><strong style={{color:C.text}}>Groups:</strong> Create dashboard groups to cluster related categories (e.g. "Daily Life" = Food + Coffee + Transport).</li>
             <li><strong style={{color:C.accent}}>Backup & Restore:</strong> Download all your data as a JSON file. The app reminds you every 3 days!</li>
           </ul>
@@ -590,7 +589,7 @@ function SplashScreen() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
   return (
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"#0f0f13",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none",fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"}}>
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"#0f0f13",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none",fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"}}>
       <style>{`
         @keyframes saverLogoIn{0%{transform:scale(0.75) translateY(10px);opacity:0}60%{transform:scale(1.05) translateY(-3px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
         @keyframes saverFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -676,9 +675,9 @@ export default function App() {
             const due = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
             const diff = Math.ceil((due - now)/(1000*60*60*24));
             if (diff >= 0 && diff <= (bill.reminderDays || 2)) {
-              new Notification("Saver: Bill Reminder", { body: `Reminder: Bill ${bill.name} is due in ${diff} days.`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
+              new Notification("Saver: Bill Reminder", { body: `تذكير: فاتورة ${bill.name} تستحق الدفع خلال ${diff} أيام.`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
             } else if (diff < 0) {
-              new Notification("Saver: Bill Overdue", { body: `Alert: Bill ${bill.name} is overdue!`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
+              new Notification("Saver: Bill Overdue", { body: `تنبيه: فاتورة ${bill.name} متأخرة الدفع!`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
             }
           }
         });
@@ -787,7 +786,7 @@ export default function App() {
   const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || ledgerBudget || tab === "savings" || tab === "budgets" || tab === "quickactions" || tab === "manual";
 
   return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative", userSelect:"none", WebkitUserSelect:"none"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative", userSelect:"none", WebkitUserSelect:"none"}}>
       
       {showBackupAlert && tab==="dashboard" && !isSubPageActive && (
         <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
@@ -1082,8 +1081,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div>
           <div style={{marginBottom:20}}>
             <SortableList items={savings} onReorder={onSavings} renderItem={(s) => {
-              const contributions = s.contributions || [];
-              const saved = contributions.reduce((a,c)=>a+(c.amount||0),0);
+              const saved = s.contributions?.reduce((a,c)=>a+c.amount,0) || 0;
               const pct = s.goal ? Math.min(100, Math.round((saved/s.goal)*100)) : 0;
               return (
                 <Card onClick={()=>onOpenSaving(s)} className="interactive-card" style={{padding:"14px 14px 12px", cursor: "pointer", transition: "transform 0.1s ease"}}>
@@ -1195,7 +1193,7 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
         ))}
       </div>
 
-      {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
+      {confirmId && <ConfirmModal title="Delete Transaction?" message="This action cannot be undone." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
       {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={expCats} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
     </div>
   );
@@ -1419,11 +1417,10 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
       </div>
-      {(!savings || savings.length === 0) && <EmptyState icon="◎" message="No saving goals configured yet." />}
+      {savings.length===0&&<EmptyState icon="◎" message="No saving goals yet." />}
       <div style={{marginBottom:20}}>
-        <SortableList items={savings || []} onReorder={onSave} renderItem={(s) => {
-          const contributions = s.contributions || [];
-          const saved=contributions.reduce((a,c)=>a+(c.amount||0),0);
+        <SortableList items={savings} onReorder={onSave} renderItem={(s) => {
+          const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
           const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;
           return (
             <SwipeRow key={s.id} onEdit={()=>startEdit(s)} onDelete={()=>setConfirmId(s.id)}>
@@ -1474,7 +1471,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
       </div>
-      {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
+      {budgets.length===0&&<EmptyState icon="📊" message="No budgets set yet." />}
       
       <div style={{marginBottom:20}}>
         <SortableList items={budgets} onReorder={onSave} renderItem={(b) => (
@@ -1484,18 +1481,18 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
                 <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
                 <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
               </div>
-              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Monitoring {b.cats.length} expense nodes</div>
+              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Tracking {b.cats.length} categories</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,5).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}</div>
             </div>
           </SwipeRow>
         )} />
       </div>
 
-      {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
-        <Input label="Budget Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
-        <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+      {showAdd&&(<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
+        <Input label="Budget Name" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label={`Monthly Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
         <div style={{marginBottom:14}}>
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div>
           <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
             {expCats.map(c=>{
               const checked=selectedCats.includes(c.id);
@@ -1508,14 +1505,14 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
             })}
           </div>
         </div>
-        <Btn full onClick={handleAdd}>Commit Limit</Btn>
+        <Btn full onClick={handleAdd}>Save Budget</Btn>
       </Modal>)}
-      {confirmId&&<ConfirmModal title="Remove Envelope Budget?" message="This drops the limit tracking profile without dropping historical expenses." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
+      {confirmId&&<ConfirmModal title="Delete Budget?" message="This removes the budget limit only. Your transactions will not be affected." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
     </div>
   );
 }
 
-// ─── Quick Actions Slots ──────────────────────────────────────────────────────
+// ─── Quick Actions ──────────────────────────────────────────────────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [editingId, setEditingId] = useState(null);
@@ -1555,10 +1552,10 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
     <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
       <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 20}}>
         <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
-        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions Slots</div>
+        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions</div>
       </div>
 
-      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 responsive shortcuts available globally when long pressing the navigation action node.</p>
+      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 quick shortcuts. Long press the + button to access them anytime.</p>
       
       <div style={{display:"flex", flexDirection:"column", gap:12}}>
         {quickActions.map((q, idx) => {
@@ -1567,8 +1564,8 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
           return (
             <Card key={q.id} style={{padding: "14px 16px", display: "flex", justifyContent:"space-between", alignItems:"center"}}>
               <div>
-                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Disabled / Empty"}</div>
-                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Amount: {fmt(parseFloat(q.amount))} · Ledger: {bank?.name}</div>}
+                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Empty Slot"}</div>
+                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Default Amount: {fmt(parseFloat(q.amount))} · Account: {bank?.name}</div>}
               </div>
               <div style={{display: "flex", gap: 8}}>
                 <Btn small onClick={()=>openConfigure(q)} color={C.blue} outline>Setup</Btn>
@@ -1580,253 +1577,172 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
       </div>
 
       {editingId && (
-        <Modal title="Configure Fast Shortcut Slot" onClose={()=>setEditingId(null)} center={false}>
+        <Modal title="Configure Shortcut" onClose={()=>setEditingId(null)} center={false}>
           <Select label="Expense Category" value={catId} onChange={e=>setCatId(e.target.value)}>
             {expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]} {c.name}</option>)}
           </Select>
           <Input label="Default Fixed Amount" type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} />
-          <Select label="Default Account Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
+          <Select label="Default Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
             {banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
           </Select>
-          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Commit Shortcut Slot</Btn>
+          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Save Shortcut</Btn>
         </Modal>
       )}
     </div>
   );
 }
 
-// ─── User Manual / Guide Page ──────────────────────────────────────────────────
-function UserManual({ onBack }) {
+// ─── Monthly Bills Screen ─────────────────────────────────────────────────────
+function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmUndo, setConfirmUndo] = useState(null); 
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [bankId, setBankId] = useState(banks[0]?.id||"");
+  const [catId, setCatId] = useState(expCats[0]?.id||"");
+  const [dueDay, setDueDay] = useState("1");
+  const [reminderDays, setReminderDays] = useState("2");
+  
+  const defaultMonth = new Date().toISOString().slice(0,7);
+  const [filterMonth, setFilterMonth] = useState(defaultMonth);
+  const availMonths = [...new Set([...bills.flatMap(b=>b.payments?.map(p=>p.month)||[]), defaultMonth])].sort().reverse();
 
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  const isPaid = (bill) => bill.payments?.some(p=>p.month === filterMonth);
+  const getReminderStatus = (bill) => {
+    if (!bill.dueDay) return null;
+    const now = new Date(); const curM = now.toISOString().slice(0,7);
+    if (isPaid(bill) || filterMonth !== curM) return null;
+    const due = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
+    const diff = Math.ceil((due - now)/(1000*60*60*24));
+    if (diff < 0) return { overdue:true, days:Math.abs(diff) };
+    if (diff <= (bill.reminderDays||2)) return { overdue:false, days:diff };
+    return null;
   };
 
+  const openAdd=(item=null)=>{setEditItem(item);setName(item?.name||"");setAmount(item?.amount?String(item.amount):"");setBankId(item?.bankId||banks[0]?.id||"");setCatId(item?.catId||expCats[0]?.id||"");setDueDay(item?.dueDay?String(item.dueDay):"1");setReminderDays(item?.reminderDays?String(item.reminderDays):"2");setShowAdd(true);};
+  
+  const handleSave=async()=>{
+    const parsedAmt = parseFloat(amount);
+    if(!name||!amount||isNaN(parsedAmt)||parsedAmt<=0)return;
+    const dd=Math.min(28,Math.max(1,parseInt(dueDay)||1));
+    const rd=Math.min(7,Math.max(0,parseInt(reminderDays)||2));
+    if(editItem) await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:parsedAmt,bankId,catId,dueDay:dd,reminderDays:rd}:b));
+    else await onSave([...bills,{id:Date.now().toString(),name,amount:parsedAmt,bankId,catId,dueDay:dd,reminderDays:rd,payments:[]}]);
+    setShowAdd(false);setEditItem(null);setName("");setAmount("");
+  };
+
+  const handlePay=async(bill)=>{
+    const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
+    const dateStr=today();
+    const [y, mo] = filterMonth.split("-");
+    const monthStr = `${MONTHS[+mo-1]} ${y}`;
+    
+    const txnIdToken = await onAddTxn({
+      type:"expense",amount:bill.amount,date:dateStr,
+      bankId:bill.bankId,bankName:bank?.name,
+      catId:bill.catId,catName:cat?.name||bill.name,catIcon:cat?.icon||"bills",
+      note: `Monthly Bill: ${bill.name} ${monthStr}`
+    });
+
+    if (txnIdToken !== false) {
+      HAPTICS.success();
+      await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:filterMonth,date:dateStr,txnId:txnIdToken}]}:b));
+    }
+  };
+
+  const handleUndoConfirm = async () => {
+    if(!confirmUndo) return;
+    const payment = confirmUndo.payments.find(p=>p.month === filterMonth);
+    if(payment && payment.txnId) {
+      await delTxn(payment.txnId); 
+    }
+    await onSave(bills.map(b=>b.id===confirmUndo.id?{...b,payments:b.payments.filter(p=>p.month!==filterMonth)}:b));
+    setConfirmUndo(null);
+  };
+
+  const paidCount=bills.filter(b=>isPaid(b)).length;
+  const totalMonthly=bills.reduce((a,b)=>a+b.amount,0);
+  const paidAmount=bills.filter(b=>isPaid(b)).reduce((a,b)=>a+b.amount,0);
+
   return (
-    <div style={{padding:"24px 16px 130px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 12}}>
-        <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
-        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Manual Guide</div>
+    <div style={{padding:"24px 16px 0"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Monthly Bills</div>
+        <Btn small onClick={()=>openAdd()}>+ Add Bill</Btn>
+      </div>
+
+      <div style={{marginBottom:16}}>
+         <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} />
       </div>
       
-      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 16}}>
-        Welcome to Saver! Learn how to navigate and make the most out of your financial tracker using the interactive hints below. Everything is stored locally on your device.
-        <br/><br/>
-        ✉️ Support & Feedback: <strong style={{color:C.accent}}>Saverapp1@outlook.com</strong>
-      </p>
-
-      <div style={{display:"flex", gap:8, marginBottom:30, overflowX:"auto", paddingBottom: 10, WebkitOverflowScrolling: "touch"}}>
-        {["Home Screen", "Adding (+)", "Bills", "History", "Settings", "Pro Tips"].map((item, idx) => (
-          <button key={item} onClick={() => scrollToSection(`guide-sec-${idx}`)} style={{ whiteSpace:"nowrap", padding:"8px 16px", borderRadius:20, border:`1px solid ${C.border}`, background:C.card, color:C.text, fontWeight:600, fontSize:12, cursor:"pointer" }}>
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes float-up { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        @keyframes float-left { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
-        .guide-pointer-up { animation: float-up 1.5s infinite ease-in-out; font-size: 24px; text-align: center; margin-top: 8px; }
-        .guide-pointer-left { animation: float-left 1.5s infinite ease-in-out; font-size: 24px; display: inline-block; margin-left: 12px; }
-        .guide-box { padding: 16px; background: #17171f; border-radius: 16px; border: 1px dashed #444460; margin-top: 14px; }
-      `}</style>
-
-      {/* 0. Home Screen */}
-      <div id="guide-sec-0" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.blueDim, color:C.blue, padding:"4px 8px", borderRadius:8, fontSize:16}}>◈</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Home Screen</h3>
+      <div style={{color:C.muted,fontSize:13,marginBottom:16}}>{paidCount}/{bills.length} paid in selected month</div>
+      
+      {bills.length>0&&(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+          <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Total Monthly</div><div style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(totalMonthly)}</div></Card>
+          <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Paid Selected</div><div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(paidAmount)}</div></Card>
         </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Your Dashboard gives you a complete overview. See your Total Balance, Monthly Income/Expenses, Accounts, and Spending Groups.</p>
-        
-        <div className="guide-box">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center", background:C.card, padding:"12px", borderRadius:12}}>
-             <div><div style={{color:C.muted,fontSize:10,fontWeight:700}}>Total Balance</div><div style={{color:C.text,fontSize:20,fontWeight:800}}>••••••</div></div>
-             <span style={{fontSize:20}}>🐵</span>
+      )}
+      
+      {bills.length===0&&<EmptyState icon="📋" message="No monthly bills added yet." />}
+      
+      {bills.length > 0 && (
+        <div style={{border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
+          <SortableList gap={0} items={bills} onReorder={onSave} renderItem={(bill, idx) => {
+            const paid=isPaid(bill);
+            const bank=banks.find(b=>b.id===bill.bankId); const cat=expCats.find(c=>c.id===bill.catId);
+            const isLast=idx===bills.length-1;
+            return (
+              <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
+                <div style={{background:paid?C.accentDim+"55":C.card,boxSizing:"border-box",borderBottom:isLast?"none":`1px solid ${C.border}`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px 6px"}}>
+                    <div style={{width:36,height:36,borderRadius:99,background:paid?C.accentDim:C.border+"88",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+                      {ICONS[cat?.icon]||"⚡"}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:C.text,fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
+                      <div style={{color:C.muted,fontSize:11,marginTop:1}}>
+                        {bank?.name} · {cat?.name||"Bills"}
+                        {bill.dueDay?<span style={{color:C.faint}}> · Due {bill.dueDay}{bill.dueDay===1?"st":bill.dueDay===2?"nd":bill.dueDay===3?"rd":"th"}</span>:null}
+                      </div>
+                      {(()=>{const r=getReminderStatus(bill);return r?<div style={{color:r.overdue?C.red:C.yellow,fontSize:10,fontWeight:700,marginTop:3}}>{r.overdue?"🔴 Overdue by "+r.days+" day"+(r.days!==1?"s":""):"🟡 Due in "+r.days+" day"+(r.days!==1?"s":"")}</div>:null;})()}
+                    </div>
+                    <div style={{color:paid?C.accent:C.red,fontSize:17,fontWeight:800,flexShrink:0}}>{fmt(bill.amount)}</div>
+                  </div>
+                  <div style={{padding:"0 14px 12px",display:"flex",gap:8}}>
+                    {!paid ? (
+                      <button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                        <span>✓</span> Pay Now
+                      </button>
+                    ) : (
+                      <>
+                        <div style={{flex:1,background:C.accent,color:C.bg,borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                          ✓ Paid {filterMonth.slice(5)}
+                        </div>
+                        <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                          ⟲ Undo
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </SwipeRow>
+            );
+          }} />
+        </div>
+      )}
+      
+      {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}} center={false}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:4}}>
+            <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Due Day</div><input type="number" min="1" max="28" value={dueDay} onChange={e=>setDueDay(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Day of month (1–28)</div></div>
+            <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Remind Before</div><input type="number" min="0" max="7" value={reminderDays} onChange={e=>setReminderDays(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Days before due (0–7)</div></div>
           </div>
-          <div className="guide-pointer-up" style={{color: C.accent}}>👆</div>
-          <div style={{textAlign: "center", color: C.accent, fontSize: 11, fontWeight: 700}}>Privacy Mode: Tap the monkey icon to hide/show balances.</div>
-        </div>
-      </div>
-
-      {/* 1. Adding Transactions */}
-      <div id="guide-sec-1" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.accentDim, color:C.accent, padding:"4px 8px", borderRadius:8, fontSize:16}}>＋</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Adding Transactions</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Tap the center <strong>(+)</strong> button to add Income, Expense, Transfer, or Saving. <br/><strong style={{color:C.red}}>Protection:</strong> The app blocks transactions if your account balance is insufficient.</p>
-        
-        <div className="guide-box" style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
-           <div style={{ width:68, height:68, borderRadius:"50%", background:C.accent, color:C.bg, fontSize:36, display:"flex", alignItems:"center", justifyContent:"center" }}>+</div>
-           <div className="guide-pointer-up" style={{color: C.yellow}}>👆</div>
-           <div style={{textAlign: "center", color: C.yellow, fontSize: 11, fontWeight: 700}}>Quick Add: Long press this button anywhere to open your 4 Fast Shortcut Slots.</div>
-        </div>
-      </div>
-
-      {/* 2. Bills */}
-      <div id="guide-sec-2" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.redDim, color:C.red, padding:"4px 8px", borderRadius:8, fontSize:16}}>☷</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Monthly Bills</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>Add your recurring monthly bills once and they reset automatically each month. Set a <strong style={{color:C.text}}>Due Day</strong> (which day of the month it's due) and a <strong style={{color:C.text}}>Remind Before</strong> (how many days in advance to show a warning).</p>
-        <div className="guide-box">
-          <div style={{background: C.card, padding: "12px", borderRadius: 12, marginBottom:8}}>
-            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-              <div>
-                <div style={{fontWeight:700, fontSize:14, color:C.text}}>Netflix</div>
-                <div style={{color:C.muted, fontSize:11, marginTop:2}}>CIB · Subscriptions · Due 5th</div>
-                <div style={{color:C.yellow, fontSize:10, fontWeight:700, marginTop:4}}>🟡 Due in 2 days</div>
-              </div>
-              <span style={{color:C.red, fontWeight:800, fontSize:16}}>{fmt(250)}</span>
-            </div>
-            <div style={{display:"flex", gap:8, marginTop:10}}>
-              <div style={{flex:1, background:C.accentDim, border:`1px solid ${C.accent}`, color:C.accent, borderRadius:8, padding:"8px", textAlign:"center", fontWeight:700, fontSize:12}}>✓ Pay Now</div>
-            </div>
-          </div>
-          <ul style={{color:C.muted, fontSize:12, lineHeight:1.7, paddingLeft:16, margin:0}}>
-            <li>🟡 Yellow warning = due soon · 🔴 Red = overdue</li>
-            <li>Tap <strong>Pay Now</strong> → auto-records an Expense transaction</li>
-            <li>Paid by mistake? Hit <strong style={{color:C.yellow}}>⟲ Undo</strong> to reverse it</li>
-            <li>Swipe left to Edit or Delete any bill</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* 3. History */}
-      <div id="guide-sec-3" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.purpleDim, color:C.purple, padding:"4px 8px", borderRadius:8, fontSize:16}}>☰</span><h3 style={{color:C.text, margin:0, fontSize:18}}>History & Records</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5}}>A full log of every transaction. Use the <strong style={{color:C.text}}>search bar</strong> to find by name, note, or category. Filter by type (Expense, Income, Transfer, Saving) or by month using the month selector.</p>
-        <div className="guide-box">
-          <ul style={{color:C.muted, fontSize:12, lineHeight:1.7, paddingLeft:16, margin:0}}>
-            <li>Swipe left on any row to <strong style={{color:C.blue}}>Edit</strong> or <strong style={{color:C.red}}>Delete</strong></li>
-            <li>Transfer transactions show the route: Account A ➔ Account B</li>
-            <li>Deleted transactions update your balance instantly</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* 4. Settings */}
-      <div id="guide-sec-4" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.surface, border:`1px solid ${C.border}`, color:C.text, padding:"4px 8px", borderRadius:8, fontSize:16}}>⚙</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Settings & Customization</h3>
-        </div>
-        <div className="guide-box">
-          <ul style={{color:C.muted, fontSize:13, lineHeight:1.8, paddingLeft:18, margin:0}}>
-            <li><strong style={{color:C.text}}>General:</strong> Set your display name, manage Savings Goals, Budgets, and Quick Actions shortcuts.</li>
-            <li><strong style={{color:C.text}}>Currency:</strong> Switch between EGP, GBP, USD, EUR, SAR, AED anytime.</li>
-            <li><strong style={{color:C.text}}>Accounts:</strong> Add/edit banks. Set a <em style={{color:C.yellow}}>Low Balance Alert</em> — a 🔻 icon appears when balance drops below your limit.</li>
-            <li><strong style={{color:C.text}}>Categories:</strong> Add, edit, or remove Income and Expense categories, choosing their colors and icons natively.</li>
-            <li><strong style={{color:C.text}}>Groups:</strong> Create dashboard groups to cluster related categories (e.g. "Daily Life" = Food + Coffee + Transport).</li>
-            <li><strong style={{color:C.accent}}>Backup & Restore:</strong> Download all your data as a JSON file. The app reminds you every 3 days!</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* 5. Pro Tips */}
-      <div id="guide-sec-5" style={{marginBottom: 40}}>
-        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom: 8}}>
-          <span style={{background:C.yellowDim, color:C.yellow, padding:"4px 8px", borderRadius:8, fontSize:16}}>💡</span><h3 style={{color:C.text, margin:0, fontSize:18}}>Pro Tips & Gestures</h3>
-        </div>
-        <p style={{color:C.muted, fontSize:13, lineHeight:1.5, marginBottom:16}}>Master the app with these native gestures built for speed.</p>
-        
-        <div className="guide-box" style={{marginBottom:15}}>
-           <div style={{display: "flex", alignItems: "center"}}>
-             <div style={{flex: 1}}>
-                <SwipeRow>
-                  <TxnRow txn={{type:"expense", amount:120, catName:"Coffee", catIcon:"coffee", bankName:"Cash", date:today()}} hideTotal={false} />
-                </SwipeRow>
-             </div>
-             <div className="guide-pointer-left" style={{color: C.blue}}>👈</div>
-           </div>
-           <div style={{textAlign: "center", color: C.blue, fontSize: 11, fontWeight: 700, marginTop: 8}}>Swipe horizontally on any transaction or bill to Edit/Delete.</div>
-        </div>
-
-        <div className="guide-box">
-          <Card style={{padding:"14px 14px 12px", pointerEvents: "none", opacity: 0.8}}>
-             <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:99,background:C.accent,flexShrink:0}}/><span style={{color:C.muted,fontSize:12,fontWeight:600}}>Bank Card</span></div>
-             <div style={{color:C.text,fontSize:17,fontWeight:800}}>{fmt(12500)}</div>
-          </Card>
-          <div className="guide-pointer-up" style={{color: C.accent}}>👆</div>
-          <div style={{textAlign: "center", color: C.accent, fontSize: 11, fontWeight: 700}}>Long press to Drag & Drop cards in the Dashboard!</div>
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
-// ─── Welcome Screen ───────────────────────────────────────────────────────────
-function WelcomeScreen({ onStart, onManual }) {
-  return (
-    <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"}}>
-      <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"center"}}>
-        <div style={{textAlign:"center", marginBottom:30}}>
-          <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Logo" style={{width:100,height:100,borderRadius:24,boxShadow:"0 10px 30px rgba(0,0,0,0.5)", marginBottom:20}}/>
-          <h1 style={{color:C.text, fontSize:28, fontWeight:800, margin:"0 0 10px 0"}}>Welcome to Saver</h1>
-          <h2 style={{color:C.accent, fontSize:16, fontWeight:600, margin:0}}>Your Personal Finance, Mastered.</h2>
-        </div>
-        
-        <p style={{color:C.muted, fontSize:15, lineHeight:1.6, marginBottom:24, textAlign:"center"}}>
-          Enjoy a simple, fast way to track your daily earnings and expenses. Your privacy is our top priority—all your data is securely stored directly on your phone.
-        </p>
-
-        <div style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:20, marginBottom:30}}>
-          <div style={{display:"flex", alignItems:"flex-start", gap:12, marginBottom:16}}>
-            <span style={{fontSize:20, background:C.accentDim, color:C.accent, padding:8, borderRadius:10}}>⚡</span>
-            <div><strong style={{color:C.text, fontSize:15}}>Lightning Fast</strong><div style={{color:C.muted, fontSize:13, marginTop:4}}>Log your expenses in seconds using Quick Actions.</div></div>
-          </div>
-          <div style={{display:"flex", alignItems:"flex-start", gap:12, marginBottom:16}}>
-            <span style={{fontSize:20, background:C.blueDim, color:C.blue, padding:8, borderRadius:10}}>🔒</span>
-            <div><strong style={{color:C.text, fontSize:15}}>100% Offline & Private</strong><div style={{color:C.muted, fontSize:13, marginTop:4}}>No clouds, no accounts. Your data never leaves your phone.</div></div>
-          </div>
-          <div style={{display:"flex", alignItems:"flex-start", gap:12}}>
-            <span style={{fontSize:20, background:C.yellowDim, color:C.yellow, padding:8, borderRadius:10}}>🎨</span>
-            <div><strong style={{color:C.text, fontSize:15}}>Fully Customizable</strong><div style={{color:C.muted, fontSize:13, marginTop:4}}>Drag, drop, and personalize your dashboard natively.</div></div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{display:"flex", flexDirection:"column", gap:12, marginTop:"auto"}}>
-        <Btn full onClick={onStart} style={{padding:"14px", fontSize:16}}>Start Using Saver</Btn>
-        <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px", fontSize:16}}>Read Manual Guide</Btn>
-      </div>
-    </div>
-  );
-}
-
-// ─── Splash Screen ────────────────────────────────────────────────────────────
-function SplashScreen() {
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 700);
-    const t2 = setTimeout(() => setPhase(2), 2100);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-  return (
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"#0f0f13",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none",fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"}}>
-      <style>{`
-        @keyframes saverLogoIn{0%{transform:scale(0.75) translateY(10px);opacity:0}60%{transform:scale(1.05) translateY(-3px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
-        @keyframes saverFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes saverGlow{0%,100%{box-shadow:0 0 0 0 #6ee7b700}50%{box-shadow:0 0 40px 10px #6ee7b722}}
-        @keyframes saverBounce{0%,80%,100%{transform:translateY(0);opacity:0.3}40%{transform:translateY(-7px);opacity:1}}
-      `}</style>
-      <div style={{animation:"saverLogoIn 1.0s cubic-bezier(0.175,0.885,0.32,1.275) both, saverGlow 2.5s ease 1s infinite",marginBottom:24,borderRadius:28}}>
-        <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Saver Logo" style={{width:120,height:120,borderRadius:28,display:"block"}}/>
-      </div>
-      <div style={{color:"#e8e8f0",fontSize:32,fontWeight:800,letterSpacing:10,textTransform:"uppercase",marginBottom:6,animation:"saverLogoIn 1.0s 0.15s both"}}>
-        SAVER
-      </div>
-      <div style={{color:"#6ee7b7",fontSize:12,fontWeight:500,letterSpacing:3,opacity:phase>=1?1:0,animation:phase>=1?"saverFadeUp 0.6s ease forwards":"none",marginBottom:80}}>
-        Easy come, easy go.
-      </div>
-      <div style={{display:"flex",gap:7,position:"absolute",bottom:52}}>
-        {[0,1,2].map(i=>(
-          <div key={i} style={{width:5,height:5,borderRadius:99,background:"#6ee7b7",animation:`saverBounce 1.3s ease ${i*0.22}s infinite`}}/>
-        ))}
-      </div>
+          <Btn full onClick={handleSave} style={{marginTop:12}}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
+      {confirmDelete&&<ConfirmModal title="Delete Bill?" message="This will remove the bill from your monthly list." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
+      {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This will mark "${confirmUndo.name}" as unpaid and remove its transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
     </div>
   );
 }
@@ -1952,7 +1868,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
         <SwipeRow key={c.id} onEdit={()=>openAdd("expCat",c)} onDelete={()=>setConfirmDel({type:"expCat",item:c})}>
           <div style={{display:"flex",alignItems:"center",padding:"14px 16px"}}><span style={{fontSize:18,marginRight:10}}>{ICONS[c.icon]||"📌"}</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>{c.name}</span></div>
         </SwipeRow>
-      ))}</div><Btn outline full onClick={()=>openAdd("expCat")}>+ Add Expense Category</Btn></>)}
+      ))}</div><Btn outline full onClick={()=>openAdd("expCat")} style={{marginTop:8}}>+ Add Expense Category</Btn></>)}
 
       {section==="incCats"&&(<><div style={{display:"flex",flexDirection:"column"}}>{incCats.map(c=>(
         <SwipeRow key={c.id} onEdit={()=>openAdd("incCat",c)} onDelete={()=>setConfirmDel({type:"incCat",item:c})}>
@@ -1999,7 +1915,3 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
     </div>
   );
 }
-
-// ─── Monthly Bills Screen ─────────────────────────────────────────────────────
-// Note: Brought down here slightly out of order to ensure it fits the structure without missing components
-// ... (The MonthlyBills component code remains identical to the previously provided robust version)
