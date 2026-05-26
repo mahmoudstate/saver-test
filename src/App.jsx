@@ -16,7 +16,6 @@ const HAPTICS = {
   warning: () => vibrate(100),
 };
 
-// Global flag to prevent click after drag
 let isGlobalDragging = false;
 
 // ─── Palette & Global Helpers ──────────────────────────────────────────────────
@@ -66,36 +65,22 @@ const ICONS = {
 
 const DEFAULT_BANKS = [{ id:"b1", name:"CIB", color:C.blue }, { id:"b2", name:"NBE", color:C.accent }, { id:"b3", name:"Cash", color:C.yellow }];
 const DEFAULT_EXP_CATS = [
-  { id: "food", name: "Food", icon: "food", group: "daily" },
-  { id: "coffee", name: "Coffee", icon: "coffee", group: "daily" },
-  { id: "transport", name: "Transport", icon: "transport", group: "daily" },
-  { id: "bills", name: "Bills", icon: "bills", group: "fixed" },
-  { id: "shopping", name: "Shopping", icon: "shopping", group: "lifestyle" },
-  { id: "entertainment", name: "Fun", icon: "entertainment", group: "lifestyle" },
-  { id: "personal", name: "Personal", icon: "personal", group: "daily" },
-  { id: "health", name: "Health", icon: "health", group: "daily" },
-  { id: "rent", name: "Rent", icon: "rent", group: "fixed" },
-  { id: "education", name: "Education", icon: "education", group: "growth" },
-  { id: "tech", name: "Tech", icon: "tech", group: "lifestyle" },
-  { id: "parking", name: "Parking", icon: "parking", group: "daily" },
-  { id: "fuel", name: "Fuel", icon: "fuel", group: "daily" },
-  { id: "car_repair", name: "Car Repair", icon: "car_repair", group: "fixed" },
-  { id: "takeaway", name: "Takeaway", icon: "takeaway", group: "daily" },
-  { id: "barber", name: "Barber", icon: "barber", group: "personal" },
-  { id: "pets", name: "Pets", icon: "pets", group: "personal" },
-  { id: "travel", name: "Travel", icon: "travel", group: "lifestyle" },
-  { id: "gaming", name: "Gaming", icon: "gaming", group: "lifestyle" },
-  { id: "pharmacy", name: "Pharmacy", icon: "pharmacy", group: "health" },
-  { id: "laundry", name: "Laundry", icon: "laundry", group: "daily" },
-  { id: "tuition", name: "Tuition", icon: "tuition", group: "growth" },
-  { id: "gym", name: "Gym", icon: "gym", group: "health" },
-  { id: "others", name: "Others", icon: "others", group: "other" }
+  { id: "food", name: "Food", icon: "food", group: "daily" }, { id: "coffee", name: "Coffee", icon: "coffee", group: "daily" },
+  { id: "transport", name: "Transport", icon: "transport", group: "daily" }, { id: "bills", name: "Bills", icon: "bills", group: "fixed" },
+  { id: "shopping", name: "Shopping", icon: "shopping", group: "lifestyle" }, { id: "entertainment", name: "Fun", icon: "entertainment", group: "lifestyle" },
+  { id: "personal", name: "Personal", icon: "personal", group: "daily" }, { id: "health", name: "Health", icon: "health", group: "daily" },
+  { id: "rent", name: "Rent", icon: "rent", group: "fixed" }, { id: "education", name: "Education", icon: "education", group: "growth" },
+  { id: "tech", name: "Tech", icon: "tech", group: "lifestyle" }, { id: "parking", name: "Parking", icon: "parking", group: "daily" },
+  { id: "fuel", name: "Fuel", icon: "fuel", group: "daily" }, { id: "car_repair", name: "Car Repair", icon: "car_repair", group: "fixed" },
+  { id: "takeaway", name: "Takeaway", icon: "takeaway", group: "daily" }, { id: "barber", name: "Barber", icon: "barber", group: "personal" },
+  { id: "pets", name: "Pets", icon: "pets", group: "personal" }, { id: "travel", name: "Travel", icon: "travel", group: "lifestyle" },
+  { id: "gaming", name: "Gaming", icon: "gaming", group: "lifestyle" }, { id: "pharmacy", name: "Pharmacy", icon: "pharmacy", group: "health" },
+  { id: "laundry", name: "Laundry", icon: "laundry", group: "daily" }, { id: "tuition", name: "Tuition", icon: "tuition", group: "growth" },
+  { id: "gym", name: "Gym", icon: "gym", group: "health" }, { id: "others", name: "Others", icon: "others", group: "other" }
 ];
 const DEFAULT_INC_CATS = [
-  { id: "salary", name: "Salary", icon: "salary" },
-  { id: "freelance", name: "Freelance", icon: "freelance" },
-  { id: "gift", name: "Gift", icon: "gift" },
-  { id: "investment", name: "Investment", icon: "investment" },
+  { id: "salary", name: "Salary", icon: "salary" }, { id: "freelance", name: "Freelance", icon: "freelance" },
+  { id: "gift", name: "Gift", icon: "gift" }, { id: "investment", name: "Investment", icon: "investment" },
   { id: "other_income", name: "Other Income", icon: "other_income" }
 ];
 const DEFAULT_GROUPS = [
@@ -105,10 +90,8 @@ const DEFAULT_GROUPS = [
 ];
 
 const DEFAULT_QUICK_ACTIONS = [
-  { id: "q1", catId: "coffee", amount: "50", bankId: "b3" },
-  { id: "q2", catId: "transport", amount: "50", bankId: "b3" },
-  { id: "q3", catId: "", amount: "", bankId: "" },
-  { id: "q4", catId: "", amount: "", bankId: "" }
+  { id: "q1", catId: "coffee", amount: "50", bankId: "b3" }, { id: "q2", catId: "transport", amount: "50", bankId: "b3" },
+  { id: "q3", catId: "", amount: "", bankId: "" }, { id: "q4", catId: "", amount: "", bankId: "" }
 ];
 
 const KEYS = { 
@@ -136,7 +119,7 @@ function Modal({ title, onClose, children, center }) {
   const radiusVal = center ? "20px" : "20px 20px 0 0";
   const animVal = center ? "popCenter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)" : "slideUp 0.3s ease-out";
   return (
-    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:alignVal, justifyContent:"center", padding:center?"0 20px":"0" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:100, display:"flex", alignItems:alignVal, justifyContent:"center", padding:center?"0 20px":"0", fontFamily: "'DM Sans', sans-serif" }} onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:radiusVal, width:"100%", maxWidth:520, maxHeight:"85vh", overflow:"auto", padding:24, animation:animVal }}>
         <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } } @keyframes popCenter { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }`}</style>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
@@ -176,7 +159,7 @@ function Input({ label, ...props }) {
   return (
     <div style={{ marginBottom:14 }}>
       {label && <div style={{ color:C.muted, fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:6, textTransform:"uppercase" }}>{label}</div>}
-      <input {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", ...props.style }} />
+      <input {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif", ...props.style }} />
     </div>
   );
 }
@@ -185,7 +168,7 @@ function MonthSelect({ value, onChange, availMonths }) {
   const options = availMonths.length > 0 ? availMonths : [new Date().toISOString().slice(0,7)];
   return (
     <div style={{ position:"relative", display:"inline-block" }}>
-      <select value={value} onChange={onChange} style={{ background:C.card, border:`1px solid ${C.border}`, color:C.text, borderRadius:10, padding:"8px 32px 8px 12px", fontSize:13, fontWeight:600, outline:"none", appearance:"none", cursor:"pointer" }}>
+      <select value={value} onChange={onChange} style={{ background:C.card, border:`1px solid ${C.border}`, color:C.text, borderRadius:10, padding:"8px 32px 8px 12px", fontSize:13, fontWeight:600, outline:"none", appearance:"none", cursor:"pointer", fontFamily: "'DM Sans', sans-serif" }}>
         <option value="all">All Time</option>
         {options.map(m=>{const[y,mo]=m.split("-");return<option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>;})}
       </select>
@@ -198,14 +181,14 @@ function Select({ label, children, ...props }) {
   return (
     <div style={{ marginBottom:14 }}>
       {label && <div style={{ color:C.muted, fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>{label}</div>}
-      <select {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", ...props.style }}>{children}</select>
+      <select {...props} style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif", ...props.style }}>{children}</select>
     </div>
   );
 }
 
 function Btn({ children, color=C.accent, outline, full, small, ...props }) {
   return (
-    <button {...props} style={{ background:outline?"transparent":color, border:`1.5px solid ${color}`, color:outline?color:C.bg, borderRadius:10, padding:small?"7px 14px":"11px 20px", fontWeight:700, fontSize:small?13:15, cursor:"pointer", width:full?"100%":"auto", transition:"opacity .15s", ...props.style }}
+    <button {...props} style={{ background:outline?"transparent":color, border:`1.5px solid ${color}`, color:outline?color:C.bg, borderRadius:10, padding:small?"7px 14px":"11px 20px", fontWeight:700, fontSize:small?13:15, cursor:"pointer", width:full?"100%":"auto", transition:"opacity .15s", fontFamily: "'DM Sans', sans-serif", ...props.style }}
       onMouseOver={e=>e.currentTarget.style.opacity=".8"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
       {children}
     </button>
@@ -217,7 +200,6 @@ function ProgressBar({ value, max, color }) {
   return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
-// ─── Empty State ─────────────────────────────────────────────────────────────
 function EmptyState({ icon, message }) {
   return (
     <div style={{ textAlign:"center", padding:"60px 20px", opacity:0.5 }}>
@@ -283,8 +265,8 @@ function SwipeRow({ onEdit, onDelete, children }) {
   return (
     <div style={{ position:"relative", overflow:"hidden", borderRadius:12, marginBottom:8, userSelect:"none", WebkitUserSelect:"none" }}>
       <div style={{ position:"absolute", inset:0, display:"flex", justifyContent:"space-between", zIndex:0 }}>
-        <button onClick={()=>{closeSwipe(); onEdit&&onEdit();}} style={{ width:85, background:C.blueDim, border:"none", color:C.blue, fontSize:14, fontWeight:700, cursor:"pointer" }}>✎ Edit</button>
-        <button onClick={()=>{closeSwipe(); onDelete&&onDelete();}} style={{ width:85, background:C.redDim, border:"none", color:C.red, fontSize:14, fontWeight:700, cursor:"pointer" }}>🗑 Delete</button>
+        <button onClick={()=>{closeSwipe(); onEdit&&onEdit();}} style={{ width:85, background:C.blueDim, border:"none", color:C.blue, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily: "'DM Sans', sans-serif" }}>✎ Edit</button>
+        <button onClick={()=>{closeSwipe(); onDelete&&onDelete();}} style={{ width:85, background:C.redDim, border:"none", color:C.red, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily: "'DM Sans', sans-serif" }}>🗑 Delete</button>
       </div>
       <div ref={rowRef} style={{ touchAction: slide !== 0 ? "none" : "pan-y", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, position:"relative", zIndex:1, width:"100%", boxSizing:"border-box" }}>
         {children}
@@ -293,7 +275,7 @@ function SwipeRow({ onEdit, onDelete, children }) {
   );
 }
 
-// ─── dnd-kit Sortable Components ──────────────────────────────────────────────
+// ─── dnd-kit Sortable Components (WITH DRAG BUG FIX) ─────────────────────────
 function SortableItem({ id, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(id) });
   const style = {
@@ -324,13 +306,15 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
     document.body.style.touchAction = "none";
   };
 
-  const handleDragEnd = (event) => {
-    HAPTICS.heavy();
+  const cleanupDrag = () => {
     document.body.style.overflow = "";
     document.body.style.touchAction = "";
-    
-    // Prevent immediate click execution after drop
     setTimeout(() => { isGlobalDragging = false; }, 100);
+  };
+
+  const handleDragEnd = (event) => {
+    HAPTICS.heavy();
+    cleanupDrag();
 
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -338,6 +322,10 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
       const newIndex = items.findIndex((i) => String(i.id) === String(over.id));
       onReorder(arrayMove(items, oldIndex, newIndex));
     }
+  };
+
+  const handleDragCancel = () => {
+    cleanupDrag();
   };
 
   useEffect(() => {
@@ -348,7 +336,7 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
   }, []);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
       <SortableContext items={items.map(i => String(i.id))} strategy={grid ? rectSortingStrategy : verticalListSortingStrategy}>
         <div style={{ display: grid ? "grid" : "flex", gridTemplateColumns: grid ? "1fr 1fr" : "none", flexDirection: grid ? "row" : "column", gap }}>
           {items.map((item, idx) => (
@@ -365,7 +353,8 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
 // ─── Welcome Screen ───────────────────────────────────────────────────────────
 function WelcomeScreen({ onStart, onManual }) {
   return (
-    <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto"}}>
+    <div style={{position:"fixed",inset:0,zIndex:900,background:C.bg,display:"flex",flexDirection:"column",padding:"40px 24px",boxSizing:"border-box",overflow:"auto", fontFamily:"'DM Sans', sans-serif"}}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"center"}}>
         <div style={{textAlign:"center", marginBottom:30}}>
           <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Logo" style={{width:100,height:100,borderRadius:24,boxShadow:"0 10px 30px rgba(0,0,0,0.5)", marginBottom:20}}/>
@@ -410,6 +399,10 @@ function UserManual({ onBack }) {
     if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); }
   };
 
+  const handleFeedback = () => {
+    window.location.href = "mailto:Saverapp1@outlook.com?subject=Saver%20App%20Feedback";
+  };
+
   return (
     <div style={{padding:"24px 16px 130px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
       {/* Header */}
@@ -420,14 +413,14 @@ function UserManual({ onBack }) {
       
       <p style={{color: C.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 16}}>
         Welcome to Saver! Learn how to navigate and make the most out of your financial tracker using the interactive hints below. Everything is stored locally on your device.
-        <br/><br/>
-        ✉️ Support & Feedback: <strong style={{color:C.accent}}>Saverapp1@outlook.com</strong>
       </p>
+
+      <Btn full outline color={C.accent} onClick={handleFeedback} style={{marginBottom: 24}}>🐞 Report a Bug / Suggestion</Btn>
 
       {/* Smart Table of Contents */}
       <div style={{display:"flex", gap:8, marginBottom:30, overflowX:"auto", paddingBottom: 10, WebkitOverflowScrolling: "touch"}}>
         {["Home Screen", "Adding (+)", "Bills", "History", "Settings", "Pro Tips"].map((item, idx) => (
-          <button key={item} onClick={() => scrollToSection(`guide-sec-${idx}`)} style={{ whiteSpace:"nowrap", padding:"8px 16px", borderRadius:20, border:`1px solid ${C.border}`, background:C.card, color:C.text, fontWeight:600, fontSize:12, cursor:"pointer" }}>
+          <button key={item} onClick={() => scrollToSection(`guide-sec-${idx}`)} style={{ whiteSpace:"nowrap", padding:"8px 16px", borderRadius:20, border:`1px solid ${C.border}`, background:C.card, color:C.text, fontWeight:600, fontSize:12, cursor:"pointer", fontFamily: "'DM Sans', sans-serif" }}>
             {item}
           </button>
         ))}
@@ -526,7 +519,7 @@ function UserManual({ onBack }) {
             <li><strong style={{color:C.text}}>General:</strong> Set your display name, manage Savings Goals, Budgets, and Quick Actions shortcuts.</li>
             <li><strong style={{color:C.text}}>Currency:</strong> Switch between EGP, GBP, USD, EUR, SAR, AED anytime.</li>
             <li><strong style={{color:C.text}}>Accounts:</strong> Add/edit banks. Set a <em style={{color:C.yellow}}>Low Balance Alert</em> — a 🔻 icon appears when balance drops below your limit.</li>
-            <li><strong style={{color:C.text}}>Exp. Categories:</strong> Customize icons and assign categories to spending groups.</li>
+            <li><strong style={{color:C.text}}>Categories:</strong> Add, edit, or remove Income and Expense categories, choosing their colors and icons natively.</li>
             <li><strong style={{color:C.text}}>Groups:</strong> Create dashboard groups to cluster related categories (e.g. "Daily Life" = Food + Coffee + Transport).</li>
             <li><strong style={{color:C.accent}}>Backup & Restore:</strong> Download all your data as a JSON file. The app reminds you every 3 days!</li>
           </ul>
@@ -589,26 +582,23 @@ function SplashScreen() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
   return (
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"#0f0f13",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none",fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"}}>
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"#0f0f13",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:phase===2?0:1,transition:phase===2?"opacity 0.7s ease":"none",userSelect:"none",fontFamily:"'DM Sans', sans-serif"}}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       <style>{`
         @keyframes saverLogoIn{0%{transform:scale(0.75) translateY(10px);opacity:0}60%{transform:scale(1.05) translateY(-3px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
         @keyframes saverFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes saverGlow{0%,100%{box-shadow:0 0 0 0 #6ee7b700}50%{box-shadow:0 0 40px 10px #6ee7b722}}
         @keyframes saverBounce{0%,80%,100%{transform:translateY(0);opacity:0.3}40%{transform:translateY(-7px);opacity:1}}
       `}</style>
-      {/* Logo */}
       <div style={{animation:"saverLogoIn 1.0s cubic-bezier(0.175,0.885,0.32,1.275) both, saverGlow 2.5s ease 1s infinite",marginBottom:24,borderRadius:28}}>
         <img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Saver Logo" style={{width:120,height:120,borderRadius:28,display:"block"}}/>
       </div>
-      {/* App Name */}
       <div style={{color:"#e8e8f0",fontSize:32,fontWeight:800,letterSpacing:10,textTransform:"uppercase",marginBottom:6,animation:"saverLogoIn 1.0s 0.15s both"}}>
         SAVER
       </div>
-      {/* Tagline */}
       <div style={{color:"#6ee7b7",fontSize:12,fontWeight:500,letterSpacing:3,opacity:phase>=1?1:0,animation:phase>=1?"saverFadeUp 0.6s ease forwards":"none",marginBottom:80}}>
         Easy come, easy go.
       </div>
-      {/* Loading dots */}
       <div style={{display:"flex",gap:7,position:"absolute",bottom:52}}>
         {[0,1,2].map(i=>(
           <div key={i} style={{width:5,height:5,borderRadius:99,background:"#6ee7b7",animation:`saverBounce 1.3s ease ${i*0.22}s infinite`}}/>
@@ -619,7 +609,7 @@ function SplashScreen() {
 }
 
 // ─── Main Application Logic ───────────────────────────────────────────────────
-export default function App() {
+function SaverApp() {
   const [tab, setTab] = useState("dashboard");
   const [scrollState, setScrollState] = useState({ y: 0, restore: false });
   const [txns, setTxns] = useState([]);
@@ -675,9 +665,9 @@ export default function App() {
             const due = new Date(now.getFullYear(), now.getMonth(), bill.dueDay);
             const diff = Math.ceil((due - now)/(1000*60*60*24));
             if (diff >= 0 && diff <= (bill.reminderDays || 2)) {
-              new Notification("Saver: Bill Reminder", { body: `تذكير: فاتورة ${bill.name} تستحق الدفع خلال ${diff} أيام.`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
+              new Notification("Saver: Bill Reminder", { body: `Reminder: Bill ${bill.name} is due in ${diff} days.`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
             } else if (diff < 0) {
-              new Notification("Saver: Bill Overdue", { body: `تنبيه: فاتورة ${bill.name} متأخرة الدفع!`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
+              new Notification("Saver: Bill Overdue", { body: `Alert: Bill ${bill.name} is overdue!`, icon: "https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" });
             }
           }
         });
@@ -786,7 +776,8 @@ export default function App() {
   const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || ledgerBudget || tab === "savings" || tab === "budgets" || tab === "quickactions" || tab === "manual";
 
   return (
-    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative", userSelect:"none", WebkitUserSelect:"none"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans', sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative", userSelect:"none", WebkitUserSelect:"none"}}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       
       {showBackupAlert && tab==="dashboard" && !isSubPageActive && (
         <div style={{background:C.yellowDim, color:C.yellow, padding:"10px 16px", fontSize:12, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
@@ -819,6 +810,34 @@ export default function App() {
       )}
       {appAlert && <AlertModal title={appAlert.title} message={appAlert.message} btnColor={appAlert.color} onClose={()=>setAppAlert(null)} />}
     </div>
+  );
+}
+
+// ─── Error Boundary Wrapper ───────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(error) { return { hasError: true }; }
+  componentDidCatch(error, errorInfo) { console.error("Saver App Error:", error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{padding: 40, textAlign: "center", color: C.text, background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", fontFamily: "'DM Sans', sans-serif"}}>
+          <div style={{fontSize: 50, marginBottom: 20}}>⚠️</div>
+          <h2 style={{margin: "0 0 10px 0"}}>Oops! Something went wrong.</h2>
+          <p style={{color: C.muted, marginBottom: 20}}>A technical glitch occurred. Don't worry, your data is safe.</p>
+          <Btn onClick={() => window.location.reload()}>Reload App</Btn>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <SaverApp />
+    </ErrorBoundary>
   );
 }
 
@@ -888,7 +907,7 @@ function BottomNav({ tab, navigateTo, expCats, banks, onAdd, currency, bankBalan
                 const cat = expCats.find(c=>c.id===q.catId);
                 return (
                   <button key={q.id} onClick={()=>handleQuickSelect(q)} 
-                          style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:90, height:90, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, cursor:"pointer", padding:"4px", boxSizing:"border-box" }}>
+                          style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:90, height:90, color:C.text, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, cursor:"pointer", padding:"4px", boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif" }}>
                     <span style={{fontSize:26, display:"block", lineHeight:1, marginBottom: 1}}>{ICONS[cat?.icon]||"📌"}</span>
                     <span style={{fontSize:10, fontWeight:700, color: C.text, textAlign: "center", width: "100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{cat?.name}</span>
                   </button>
@@ -905,8 +924,8 @@ function BottomNav({ tab, navigateTo, expCats, banks, onAdd, currency, bankBalan
             <span style={{fontSize:28}}>{ICONS[expCats.find(c=>c.id===quickForm.catId)?.icon] || "📌"}</span>
             <span style={{fontSize:16, fontWeight:700, color:C.text}}>{expCats.find(c=>c.id===quickForm.catId)?.name}</span>
           </div>
-          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={quickForm.amount} onChange={e=>setQuickForm({...quickForm, amount:e.target.value})} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div>
-          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Account</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer"}}>{b.name}</button>)}</div></div>
+          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={quickForm.amount} onChange={e=>setQuickForm({...quickForm, amount:e.target.value})} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/></div>
+          <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Account</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{banks.map(b=><button key={b.id} onClick={()=>setQuickForm({...quickForm, bankId:b.id})} style={{padding:"8px 14px", borderRadius:10, border:`1px solid ${quickForm.bankId===b.id?C.accent:C.border}`, background:quickForm.bankId===b.id?C.accentDim:"transparent", color:quickForm.bankId===b.id?C.accent:C.text, fontWeight:600, fontSize:13, cursor:"pointer", fontFamily: "'DM Sans', sans-serif"}}>{b.name}</button>)}</div></div>
           <Input label="Note" placeholder="Add a note..." value={quickForm.note} onChange={e=>setQuickForm({...quickForm, note:e.target.value})}/>
           <Btn full onClick={handleQuickSave}>Save</Btn>
         </Modal>
@@ -919,7 +938,7 @@ function BottomNav({ tab, navigateTo, expCats, banks, onAdd, currency, bankBalan
 function NavBtn({ id, icon, label, tab, navigateTo }) {
   const active = tab === id;
   return (
-    <button onClick={()=>navigateTo(id, false)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0", cursor:"pointer", transition:"color .2s", width:55 }}>
+    <button onClick={()=>navigateTo(id, false)} style={{ background:"none", border:"none", color:active?C.accent:C.muted, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0", cursor:"pointer", transition:"color .2s", width:55, fontFamily: "'DM Sans', sans-serif" }}>
       <span style={{fontSize:22}}>{icon}</span>
       <span style={{fontSize:10, fontWeight:700, letterSpacing:.5, textTransform:"uppercase"}}>{label}</span>
     </button>
@@ -1129,7 +1148,7 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Recent Transactions</div>
         <div style={{display:"flex", gap:4}}>
           {["all", "expenses", "income"].map(f => (
-            <button key={f} onClick={()=>setRecentFilter(f)} style={{background:"none", border:"none", padding:"2px 6px", color:recentFilter===f?C.accent:C.muted, fontSize:10, fontWeight:700, cursor:"pointer", textTransform:"uppercase"}}>{f}</button>
+            <button key={f} onClick={()=>setRecentFilter(f)} style={{background:"none", border:"none", padding:"2px 6px", color:recentFilter===f?C.accent:C.muted, fontSize:10, fontWeight:700, cursor:"pointer", textTransform:"uppercase", fontFamily: "'DM Sans', sans-serif"}}>{f}</button>
           ))}
         </div>
       </div>
@@ -1173,14 +1192,14 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
     <div style={{ padding: "24px 16px", minHeight: "100vh", background: C.bg, boxSizing: "border-box" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <span style={{ color: C.text, fontWeight: 800, fontSize: 22 }}>{title}</span>
-        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 44, height: 44, borderRadius: 99, cursor: "pointer", fontSize: 20, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
+        <button onClick={onClose} style={{ background: C.card, border: `1px solid ${C.border}`, color: C.muted, width: 44, height: 44, borderRadius: 99, cursor: "pointer", fontSize: 20, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily: "'DM Sans', sans-serif" }}>✕</button>
       </div>
 
       <LedgerHeader type={headerType} data={headerData} />
 
       <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
         {["all", "in", "out"].map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${filter === f ? C.accent : C.border}`, background: filter === f ? C.accentDim : "transparent", color: filter === f ? C.accent : C.muted, fontWeight: 700, fontSize: 11, cursor: "pointer", textTransform: "uppercase" }}>{f}</button>
+          <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${filter === f ? C.accent : C.border}`, background: filter === f ? C.accentDim : "transparent", color: filter === f ? C.accent : C.muted, fontWeight: 700, fontSize: 11, cursor: "pointer", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>{f}</button>
         ))}
       </div>
 
@@ -1193,7 +1212,7 @@ function DeepLedgerView({ title, headerType, headerData, txns, onDelete, onUpdat
         ))}
       </div>
 
-      {confirmId && <ConfirmModal title="Delete Transaction?" message="This action cannot be undone." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
+      {confirmId && <ConfirmModal title="Delete Transaction?" message="This drops the record and updates balances instantly." onClose={() => setConfirmId(null)} onConfirm={() => { onDelete(confirmId); setConfirmId(null); }} />}
       {editTxn && <EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={expCats} currency={_currency} onSave={async (data) => { const ok = await onUpdate(editTxn.id, data); if (ok) setEditTxn(null); }} onClose={() => setEditTxn(null)} />}
     </div>
   );
@@ -1284,18 +1303,18 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
       
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         {[{v:"expense",label:"Expense",color:C.red},{v:"income",label:"Income",color:C.accent},{v:"saving",label:"Saving",color:C.yellow},{v:"transfer",label:"Transfer",color:C.blue}].map(o=>(
-          <button key={o.v} onClick={()=>setType(o.v)} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1.5px solid ${type===o.v?o.color:C.border}`,background:type===o.v?o.color+"22":"transparent",color:type===o.v?o.color:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{o.label}</button>
+          <button key={o.v} onClick={()=>setType(o.v)} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1.5px solid ${type===o.v?o.color:C.border}`,background:type===o.v?o.color+"22":"transparent",color:type===o.v?o.color:C.muted,fontWeight:700,fontSize:12,cursor:"pointer", fontFamily: "'DM Sans', sans-serif"}}>{o.label}</button>
         ))}
       </div>
 
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
-        <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+        <input type="number" step="any" placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/>
       </div>
       
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark",WebkitAppearance:"none",appearance:"none",display:"block"}}/>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark",WebkitAppearance:"none",appearance:"none",display:"block", fontFamily: "'DM Sans', sans-serif"}}/>
       </div>
       
       {type === "transfer" ? (
@@ -1334,9 +1353,9 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
   return (
     <div style={{padding:"24px 16px 0"}}>
       <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>History</div>
-      <input placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:12}}/>
+      <input placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:12, fontFamily: "'DM Sans', sans-serif"}}/>
       <div style={{display:"flex",gap:8,marginBottom:14,overflowX:"auto"}}>
-        {["all","expense","income","saving","transfer"].map(f=>(<button key={f} onClick={()=>setFilterType(f)} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterType===f?C.accent:C.border}`,background:filterType===f?C.accentDim:"transparent",color:filterType===f?C.accent:C.muted,fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize"}}>{f}</button>))}
+        {["all","expense","income","saving","transfer"].map(f=>(<button key={f} onClick={()=>setFilterType(f)} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterType===f?C.accent:C.border}`,background:filterType===f?C.accentDim:"transparent",color:filterType===f?C.accent:C.muted,fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize", fontFamily: "'DM Sans', sans-serif"}}>{f}</button>))}
       </div>
       
       <div style={{marginBottom:16}}>
@@ -1376,11 +1395,11 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
     <Modal title="Edit Transaction" onClose={onClose} center={false}>
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount ({currency})</div>
-        <input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+        <input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/>
       </div>
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Date</div>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark"}}/>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",colorScheme:"dark", fontFamily: "'DM Sans', sans-serif"}}/>
       </div>
       <Select label="Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
       {cats.length>0&&<Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{cats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>}
@@ -1417,10 +1436,11 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setGoal("");setShowAdd(true);}}>+ New Goal</Btn>
       </div>
-      {savings.length===0&&<EmptyState icon="◎" message="No saving goals yet." />}
+      {(!savings || savings.length === 0) && <EmptyState icon="◎" message="No saving goals configured yet." />}
       <div style={{marginBottom:20}}>
-        <SortableList items={savings} onReorder={onSave} renderItem={(s) => {
-          const saved=s.contributions?.reduce((a,c)=>a+c.amount,0)||0;
+        <SortableList items={savings || []} onReorder={onSave} renderItem={(s) => {
+          const contributions = s.contributions || [];
+          const saved=contributions.reduce((a,c)=>a+(c.amount||0),0);
           const pct=s.goal?Math.min(100,Math.round((saved/s.goal)*100)):0;
           return (
             <SwipeRow key={s.id} onEdit={()=>startEdit(s)} onDelete={()=>setConfirmId(s.id)}>
@@ -1471,7 +1491,7 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
         </div>
         <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setShowAdd(true);}}>+ Add Budget</Btn>
       </div>
-      {budgets.length===0&&<EmptyState icon="📊" message="No budgets set yet." />}
+      {budgets.length===0&&<EmptyState icon="📊" message="Set custom budgeting categories for precise monthly guardrails." />}
       
       <div style={{marginBottom:20}}>
         <SortableList items={budgets} onReorder={onSave} renderItem={(b) => (
@@ -1481,18 +1501,18 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
                 <div style={{color:C.text,fontWeight:700,fontSize:17}}>{b.name}</div>
                 <div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(b.amount)}</div>
               </div>
-              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Tracking {b.cats.length} categories</div>
+              <div style={{color:C.muted,fontSize:12,marginBottom:10}}>Monitoring {b.cats.length} expense nodes</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{b.cats.slice(0,5).map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{fontSize:16}}>{ICONS[cat.icon]}</span>:null;})}</div>
             </div>
           </SwipeRow>
         )} />
       </div>
 
-      {showAdd&&(<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
-        <Input label="Budget Name" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
-        <Input label={`Monthly Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+      {showAdd&&(<Modal title={editId?"Modify Allocation":"Configure Budget Allocation"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
+        <Input label="Budget Descriptor" placeholder="e.g. Dining & Coffee Limits" value={name} onChange={e=>setName(e.target.value)}/>
+        <Input label={`Monthly Ceiling Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
         <div style={{marginBottom:14}}>
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div>
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Target Categories Grouping</div>
           <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
             {expCats.map(c=>{
               const checked=selectedCats.includes(c.id);
@@ -1505,14 +1525,14 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
             })}
           </div>
         </div>
-        <Btn full onClick={handleAdd}>Save Budget</Btn>
+        <Btn full onClick={handleAdd}>Commit Limit</Btn>
       </Modal>)}
-      {confirmId&&<ConfirmModal title="Delete Budget?" message="This removes the budget limit only. Your transactions will not be affected." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
+      {confirmId&&<ConfirmModal title="Remove Envelope Budget?" message="This drops the limit tracking profile without dropping historical expenses." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(budgets.filter(b=>b.id!==confirmId));setConfirmId(null);}}/>}
     </div>
   );
 }
 
-// ─── Quick Actions ──────────────────────────────────────────────────────
+// ─── Quick Actions Slots ──────────────────────────────────────────────────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [editingId, setEditingId] = useState(null);
@@ -1552,10 +1572,10 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
     <div style={{padding:"24px 16px", minHeight: "100vh", background: C.bg, boxSizing:"border-box"}}>
       <div style={{display:"flex",alignItems:"center",gap:8, marginBottom: 20}}>
         <button onClick={onBack} style={{background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"10px 15px 10px 0", display:"flex", alignItems:"center", marginRight: 4}}><span style={{display:"block", transform:"translateY(-1px)"}}>❮</span></button>
-        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions</div>
+        <div style={{color:C.text,fontSize:22,fontWeight:800}}>Quick Actions Slots</div>
       </div>
 
-      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 quick shortcuts. Long press the + button to access them anytime.</p>
+      <p style={{color: C.muted, fontSize: 13, lineHeight: 1.5, marginBottom: 18}}>Configure up to 4 responsive shortcuts available globally when long pressing the navigation action node.</p>
       
       <div style={{display:"flex", flexDirection:"column", gap:12}}>
         {quickActions.map((q, idx) => {
@@ -1564,8 +1584,8 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
           return (
             <Card key={q.id} style={{padding: "14px 16px", display: "flex", justifyContent:"space-between", alignItems:"center"}}>
               <div>
-                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Empty Slot"}</div>
-                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Default Amount: {fmt(parseFloat(q.amount))} · Account: {bank?.name}</div>}
+                <div style={{color: C.text, fontWeight: 700, fontSize: 15}}>Slot #{idx + 1}: {cat ? `${ICONS[cat.icon]} ${cat.name}` : "Disabled / Empty"}</div>
+                {cat && <div style={{color: C.muted, fontSize: 12, marginTop: 4}}>Amount: {fmt(parseFloat(q.amount))} · Ledger: {bank?.name}</div>}
               </div>
               <div style={{display: "flex", gap: 8}}>
                 <Btn small onClick={()=>openConfigure(q)} color={C.blue} outline>Setup</Btn>
@@ -1577,15 +1597,15 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
       </div>
 
       {editingId && (
-        <Modal title="Configure Shortcut" onClose={()=>setEditingId(null)} center={false}>
+        <Modal title="Configure Fast Shortcut Slot" onClose={()=>setEditingId(null)} center={false}>
           <Select label="Expense Category" value={catId} onChange={e=>setCatId(e.target.value)}>
             {expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]} {c.name}</option>)}
           </Select>
           <Input label="Default Fixed Amount" type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} />
-          <Select label="Default Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
+          <Select label="Default Account Account" value={bankId} onChange={e=>setBankId(e.target.value)}>
             {banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
           </Select>
-          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Save Shortcut</Btn>
+          <Btn full onClick={handleCommitShortcut} style={{marginTop:8}}>Commit Shortcut Slot</Btn>
         </Modal>
       )}
     </div>
@@ -1714,7 +1734,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
                   </div>
                   <div style={{padding:"0 14px 12px",display:"flex",gap:8}}>
                     {!paid ? (
-                      <button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                      <button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6, fontFamily: "'DM Sans', sans-serif"}}>
                         <span>✓</span> Pay Now
                       </button>
                     ) : (
@@ -1722,7 +1742,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
                         <div style={{flex:1,background:C.accent,color:C.bg,borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                           ✓ Paid {filterMonth.slice(5)}
                         </div>
-                        <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                        <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4, fontFamily: "'DM Sans', sans-serif"}}>
                           ⟲ Undo
                         </button>
                       </>
@@ -1735,10 +1755,10 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
         </div>
       )}
       
-      {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}} center={false}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>
+      {showAdd&&(<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}} center={false}><Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Amount ({currency})</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/></div><Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select><Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:4}}>
-            <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Due Day</div><input type="number" min="1" max="28" value={dueDay} onChange={e=>setDueDay(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Day of month (1–28)</div></div>
-            <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Remind Before</div><input type="number" min="0" max="7" value={reminderDays} onChange={e=>setReminderDays(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Days before due (0–7)</div></div>
+            <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Due Day</div><input type="number" min="1" max="28" value={dueDay} onChange={e=>setDueDay(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Day of month (1–28)</div></div>
+            <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Remind Before</div><input type="number" min="0" max="7" value={reminderDays} onChange={e=>setReminderDays(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/><div style={{color:C.faint,fontSize:10,marginTop:4}}>Days before due (0–7)</div></div>
           </div>
           <Btn full onClick={handleSave} style={{marginTop:12}}>{editItem?"Update Bill":"Add Bill"}</Btn></Modal>)}
       {confirmDelete&&<ConfirmModal title="Delete Bill?" message="This will remove the bill from your monthly list." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
@@ -1830,7 +1850,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
       
       <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
         {[{id:"profile",label:"👤 General"},{id:"currency",label:"💱 Currency"},{id:"banks",label:"🏦 Accounts"},{id:"expCats",label:"📤 Exp. Cat."}, {id:"incCats",label:"💰 Inc. Cat."}, {id:"groups",label:"📊 Groups"}].map(s=>(
-          <button key={s.id} onClick={()=>setSection(s.id)} style={{whiteSpace:"nowrap",padding:"8px 14px",borderRadius:10,border:`1px solid ${section===s.id?C.accent:C.border}`,background:section===s.id?C.accentDim:"transparent",color:section===s.id?C.accent:C.muted,fontWeight:700,fontSize:12,cursor:"pointer"}}>{s.label}</button>
+          <button key={s.id} onClick={()=>setSection(s.id)} style={{whiteSpace:"nowrap",padding:"8px 14px",borderRadius:10,border:`1px solid ${section===s.id?C.accent:C.border}`,background:section===s.id?C.accentDim:"transparent",color:section===s.id?C.accent:C.muted,fontWeight:700,fontSize:12,cursor:"pointer", fontFamily: "'DM Sans', sans-serif"}}>{s.label}</button>
         ))}
       </div>
 
@@ -1840,7 +1860,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
           <div onClick={onOpenBudgets} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.accent}}>📊</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Monthly Budgets</span></div><span style={{color:C.muted}}>❯</span></div>
           <div onClick={onOpenQuickActions} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18,color:C.blue}}>⚡</span><span style={{color:C.text,fontWeight:600,fontSize:14}}>Quick Actions</span></div><span style={{color:C.muted}}>❯</span></div>
           
-          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Your Name</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Name updated successfully!", color:C.accent});}}>Save Name</Btn></Card>
+          <Card style={{marginBottom:16}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Your Name</div><input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Enter name..." style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12, fontFamily: "'DM Sans', sans-serif"}}/><Btn full onClick={()=>{onUsername(nameInput.trim()); setAppAlert({title:"Profile Updated", message:"Name updated successfully!", color:C.accent});}}>Save Name</Btn></Card>
           
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Backup & Restore</div>
           <Card style={{marginBottom:16}}>
@@ -1854,7 +1874,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
         </div>
       )}
 
-      {section==="currency"&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>{CURRENCIES.map(cur=>(<button key={cur.code} onClick={()=>onCurrency(cur.code)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:currency===cur.code?C.accentDim:C.card,border:`1.5px solid ${currency===cur.code?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",textAlign:"left"}}><div><div style={{color:currency===cur.code?C.accent:C.text,fontWeight:700,fontSize:15}}>{cur.code}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>{cur.name}</div></div>{currency===cur.code&&<span style={{color:C.accent,fontSize:20}}>✓</span>}</button>))}</div>)}
+      {section==="currency"&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>{CURRENCIES.map(cur=>(<button key={cur.code} onClick={()=>onCurrency(cur.code)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:currency===cur.code?C.accentDim:C.card,border:`1.5px solid ${currency===cur.code?C.accent:C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",textAlign:"left", fontFamily: "'DM Sans', sans-serif"}}><div><div style={{color:currency===cur.code?C.accent:C.text,fontWeight:700,fontSize:15}}>{cur.code}</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>{cur.name}</div></div>{currency===cur.code&&<span style={{color:C.accent,fontSize:20}}>✓</span>}</button>))}</div>)}
       {section==="banks"&&(<><div style={{display:"flex",flexDirection:"column"}}>{banks.map(b=>(
         <SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>canDelBank(b)?setConfirmDel({type:"bank",item:b}):setAppAlert({title:"Action Blocked", message:`Cannot delete "${b.name}" — it still has a balance of ${fmt(bankBalance(b.id))}. Clear balance first.`, color:C.red})}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
@@ -1900,9 +1920,9 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
           <Input label="Name" value={inputName} onChange={e=>setInputName(e.target.value)}/>
           {modal.type==="bank"&&(<>
             <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>
-            <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Low Balance Alert</div><input type="number" min="0" placeholder="e.g. 200" value={inputThreshold} onChange={e=>setInputThreshold(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box"}}/><div style={{color:C.faint,fontSize:11,marginTop:4}}>Show 🔻 when balance falls below this amount (0 = disabled)</div></div>
+            <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Low Balance Alert</div><input type="number" min="0" placeholder="e.g. 200" value={inputThreshold} onChange={e=>setInputThreshold(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box", fontFamily: "'DM Sans', sans-serif"}}/><div style={{color:C.faint,fontSize:11,marginTop:4}}>Show 🔻 when balance falls below this amount (0 = disabled)</div></div>
           </>)}
-          {(modal.type==="expCat" || modal.type==="incCat")&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18}}>{ICONS[k]}</button>)}</div></div>)}
+          {(modal.type==="expCat" || modal.type==="incCat")&&(<div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{iconKeys.map(k=><button key={k} onClick={()=>setInputIcon(k)} style={{width:36,height:36,borderRadius:8,background:inputIcon===k?C.accentDim:C.bg,border:`1px solid ${inputIcon===k?C.accent:C.border}`,cursor:"pointer",fontSize:18, fontFamily: "'DM Sans', sans-serif"}}>{ICONS[k]}</button>)}</div></div>)}
           {modal.type==="expCat"&&(<Select label="Group Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
           {modal.type==="group"&&(<>
             <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>
