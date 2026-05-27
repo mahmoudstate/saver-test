@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
-import Privacy from './Privacy';
+import Privacy from './Privacy'; // استيراد صفحة الخصوصية الجديدة
 
 // ─── Haptic Feedback Engine ────────────────────────────────────────────────────
 const vibrate = (pattern) => {
