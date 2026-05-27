@@ -1,10 +1,8 @@
-// ─── Saver One V1.0 ───────────────────────────────────────────────────────────
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import Privacy from "./Privacy";
 
-// ─── Haptic Feedback Engine ────────────────────────────────────────────────────
 const vibrate = (pattern) => {
   if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
     try { window.navigator.vibrate(pattern); } catch(e){}
@@ -18,10 +16,8 @@ const HAPTICS = {
   warning: () => vibrate(100),
 };
 
-// Global flag to prevent click after drag and manage scroll
 let isGlobalDragging = false;
 
-// ─── Palette & Global Helpers ──────────────────────────────────────────────────
 const C = {
   bg: "#0f0f13", surface: "#17171f", card: "#1e1e28", border: "#2a2a38",
   accent: "#6ee7b7", accentDim: "#1a3d30",
@@ -128,7 +124,6 @@ async function save(key, val) {
   }
 }
 
-// ─── Shared UI Components ──────────────────────────────────────────────────────
 function Pill({ color, children, style }) {
   return <span style={{ background:color+"22", color, border:`1px solid ${color}44`, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:700, letterSpacing:0.5, ...style }}>{children}</span>;
 }
@@ -170,7 +165,17 @@ function ConfirmModal({ title, message, onConfirm, onClose, confirmColor }) {
   );
 }
 
-// ─── App Footer Component ─────────────────────────────────────────────────────
+function AlertModal({ title, message, onClose, btnColor=C.accent }) {
+  return (
+    <Modal title={title} onClose={onClose} center={true}>
+      <p style={{ color:C.text, marginBottom:20, lineHeight:1.6, fontSize:14 }}>{message}</p>
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <Btn color={btnColor} onClick={onClose} style={{ minWidth:100 }}>Close</Btn>
+      </div>
+    </Modal>
+  );
+}
+
 function AppFooter({ navigateTo }) {
   return (
     <div style={{textAlign: "center", marginTop: 40, marginBottom: 20, width: "100%"}}>
@@ -180,17 +185,6 @@ function AppFooter({ navigateTo }) {
       </div>
       <div style={{color: "#60a5fa", opacity: 0.6, fontSize: "10px", fontWeight: "500"}}>Offline & 100% Private · Powered by Mahmoud © 2026</div>
     </div>
-  );
-}
-
-function AlertModal({ title, message, onClose, btnColor=C.accent }) {
-  return (
-    <Modal title={title} onClose={onClose} center={true}>
-      <p style={{ color:C.text, marginBottom:20, lineHeight:1.6, fontSize:14 }}>{message}</p>
-      <div style={{ display:"flex", justifyContent:"flex-end" }}>
-        <Btn color={btnColor} onClick={onClose} style={{ minWidth:100 }}>Close</Btn>
-      </div>
-    </Modal>
   );
 }
 
@@ -236,7 +230,7 @@ function Btn({ children, color=C.accent, outline, full, small, ...props }) {
 
 function ProgressBar({ value, max, color }) {
   const pct = max ? Math.min(100,(value/max)*100) : 0;
-  return <div style={{ height:6, background:C.border, borderRadius99:99, borderRadius:"99px", overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
+  return <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}><div style={{ height:"100%", width:`${pct}%`, background:color||C.accent, borderRadius:99, transition:"width .4s" }} /></div>;
 }
 
 function EmptyState({ icon, message }) {
@@ -248,7 +242,6 @@ function EmptyState({ icon, message }) {
   );
 }
 
-// ─── Native Magnetic Swipe Engine ──────────────────────────────────────────────
 let globalActiveSwipeClose = null;
 function SwipeRow({ onEdit, onDelete, children }) {
   const [slide, setSlide] = useState(0);
@@ -313,7 +306,6 @@ function SwipeRow({ onEdit, onDelete, children }) {
   );
 }
 
-// ─── dnd-kit Sortable Components ─────────────────────────────────────────────
 function SortableItem({ id, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(id) });
   const style = {
@@ -388,7 +380,6 @@ function SortableList({ items, onReorder, renderItem, grid, gap = 10 }) {
   );
 }
 
-// ─── Add to Home Screen Guide Modal ──────────────────────────────────────────
 function detectPlatform() {
   const ua = navigator.userAgent || "";
   const isIOS = /iphone|ipad|ipod/i.test(ua);
@@ -464,7 +455,6 @@ function AddToHomeModal({ onClose }) {
   );
 }
 
-// ─── Welcome Screen ───────────────────────────────────────────────────────────
 function WelcomeScreen({ onStart, onManual, navigateTo }) {
   const [showInstall, setShowInstall] = useState(false);
   const { isInStandaloneMode } = detectPlatform();
@@ -511,7 +501,7 @@ function WelcomeScreen({ onStart, onManual, navigateTo }) {
         <Btn full onClick={handleStart} style={{padding:"14px", fontSize:16}}>Start Using Saver</Btn>
         <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px", fontSize:16}}>Read Manual Guide</Btn>
       </div>
-      
+
       <AppFooter navigateTo={navigateTo} />
 
       {showInstall && (
@@ -521,7 +511,6 @@ function WelcomeScreen({ onStart, onManual, navigateTo }) {
   );
 }
 
-// ─── User Manual / Guide Page ──────────────────────────────────────────────────
 function UserManual({ onBack, navigateTo }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -547,7 +536,9 @@ function UserManual({ onBack, navigateTo }) {
 
       <div style={{marginBottom: 24}}>
         <Btn full outline color={C.accent} onClick={handleFeedback}>🐞 Report a Bug / Suggestion</Btn>
-        <div style={{textAlign: "center", color: C.faint, fontSize: 10, marginTop: 8}}>(Opens email to: hello@savertrack.app)</div>
+        <div style={{textAlign: "center", color: C.faint, fontSize: 10, marginTop: 8}}>
+          (Opens email to: hello@savertrack.app)
+        </div>
       </div>
 
       <div style={{display:"flex", gap:8, marginBottom:30, overflowX:"auto", paddingBottom: 10, WebkitOverflowScrolling: "touch"}}>
@@ -695,7 +686,6 @@ function UserManual({ onBack, navigateTo }) {
   );
 }
 
-// ─── Splash Screen ────────────────────────────────────────────────────────────
 function SplashScreen() {
   const [phase, setPhase] = useState(0);
   useEffect(() => {
@@ -733,7 +723,6 @@ function SplashScreen() {
   );
 }
 
-// ─── Main Application Logic ───────────────────────────────────────────────────
 function SaverApp() {
   const [tab, setTab] = useState("dashboard");
   const [scrollState, setScrollState] = useState({ y: 0, restore: false });
@@ -942,7 +931,6 @@ function SaverApp() {
   );
 }
 
-// ─── Bottom Navigation ────────────────────────────────────────────────────────
 function BottomNav({ tab, navigateTo, expCats, banks, onAdd, currency, bankBalance, setAppAlert, quickActions }) {
   const [showQuick, setShowQuick] = useState(false);
   const [quickForm, setQuickForm] = useState(null);
@@ -1054,7 +1042,6 @@ function NavBtn({ id, icon, label, tab, navigateTo }) {
   );
 }
 
-// ─── Dashboard Screen ────────────────────────────────────────────────────────
 function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filterMonth, setFilterMonth, availMonths, username, bankBalance, txnsAll, onDeleteTxn, onUpdateTxn, onOpenBank, onOpenGroup, onOpenSaving, onOpenBudget, hideTotal, setHideTotal, navigateTo, scrollState, setScrollState, onBanks, onBudgets, onSavings, onGroups }) {
 
   useEffect(() => {
@@ -1276,7 +1263,6 @@ function Dashboard({ txns, bills, budgets, banks, groups, expCats, savings, filt
   );
 }
 
-// ─── Clean Deep History View ──────────────────────────────────────────────────
 function LedgerHeader({ type, data }) {
   if (!type || !data) return null;
   if (type === "bank") { const neg = data.balance < 0; return (<div style={{ marginBottom: 20, padding: "16px 18px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16 }}><div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Account Balance</div><div style={{ color: neg ? C.red : C.accent, fontSize: 32, fontWeight: 800, letterSpacing: -1 }}>{fmt(data.balance)}</div></div>); }
@@ -1343,8 +1329,12 @@ function TxnRow({ txn, hideTotal }) {
             {txn.type==="saving"?ICONS.saving:isTrans?ICONS.transfer:ICONS[txn.catIcon]||"📌"}
         </div>
         <div>
-            <div style={{color:C.text,fontWeight:600,fontSize:14}}>{isTrans ? "Transfer" : (txn.catName||txn.type)}</div>
-            <div style={{color:C.muted,fontSize:11}}>{isTrans ? `${txn.bankName} ➔ ${txn.toBankName}` : txn.bankName} · {fmtDate(txn.date)}</div>
+            <div style={{color:C.text,fontWeight:600,fontSize:14}}>
+                {isTrans ? "Transfer" : (txn.catName||txn.type)}
+            </div>
+            <div style={{color:C.muted,fontSize:11}}>
+                {isTrans ? `${txn.bankName} ➔ ${txn.toBankName}` : txn.bankName} · {fmtDate(txn.date)}
+            </div>
         </div>
       </div>
       <div style={{color:isExp?C.red:isInc?C.accent:isTrans?C.blue:C.yellow,fontWeight:800,fontSize:15}}>
@@ -1354,7 +1344,6 @@ function TxnRow({ txn, hideTotal }) {
   );
 }
 
-// ─── Add Transaction Screen ───────────────────────────────────────────────────
 function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onSaveSavings, onDone, bankBalance, setAppAlert }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   const [type, setType] = useState("expense");
@@ -1439,7 +1428,6 @@ function AddTransaction({ banks, expCats, incCats, savings, currency, onAdd, onS
   );
 }
 
-// ─── History Screen ───────────────────────────────────────────────────────────
 function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, availMonths }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   const [search, setSearch] = useState("");
@@ -1471,7 +1459,9 @@ function History({ txns, onDelete, onUpdate, banks, expCats, incCats, currency, 
       <div style={{display:"flex",flexDirection:"column"}}>
         {filtered.length===0&&<EmptyState icon="💸" message="No transactions found." />}
         {filtered.map(t=>(
-          <SwipeRow key={t.id} onEdit={t.type !== "transfer" ? ()=>setEditTxn(t) : ()=>setTransferAlert(true)} onDelete={()=>setConfirmId(t.id)}>
+          <SwipeRow key={t.id}
+            onEdit={t.type !== "transfer" ? ()=>setEditTxn(t) : ()=>setTransferAlert(true)}
+            onDelete={()=>setConfirmId(t.id)}>
             <TxnRow txn={t} hideTotal={false} />
           </SwipeRow>
         ))}
@@ -1516,7 +1506,6 @@ function EditTxnModal({ txn, banks, expCats, incCats, currency, onSave, onClose 
   );
 }
 
-// ─── Savings Page ─────────────────────────────────────────────────────────────
 function SavingsPage({ savings, onSave, txns, onBack }) {
   useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [showAdd, setShowAdd] = useState(false);
@@ -1564,12 +1553,17 @@ function SavingsPage({ savings, onSave, txns, onBack }) {
         }} />
       </div>
       {showAdd&&(<Modal title={editId?"Edit Goal":"New Saving Goal"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}><Input label="Goal Name" placeholder="e.g. Travel Fund..." value={name} onChange={e=>setName(e.target.value)}/><Input label="Target Amount" type="number" step="any" value={goal} onChange={e=>setGoal(e.target.value)}/><Btn full onClick={handleAdd}>{editId?"Update Goal":"Create Goal"}</Btn></Modal>)}
-      {confirmId&&<ConfirmModal title="Delete Goal?" message="This will permanently delete this saving goal. Note: any saving transactions linked to this goal will remain in your history and still affect your account balances." onClose={()=>setConfirmId(null)} onConfirm={async()=>{await onSave(savings.filter(s=>s.id!==confirmId));setConfirmId(null);}}/>}
+
+      {confirmId&&<ConfirmModal
+        title="Delete Goal?"
+        message="This will permanently delete this saving goal. Note: any saving transactions linked to this goal will remain in your history and still affect your account balances."
+        onClose={()=>setConfirmId(null)}
+        onConfirm={async()=>{await onSave(savings.filter(s=>s.id!==confirmId));setConfirmId(null);}}
+      />}
     </div>
   );
 }
 
-// ─── Budgets Screen ───────────────────────────────────────────────────────────
 function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [showAdd, setShowAdd] = useState(false);
@@ -1639,7 +1633,6 @@ function BudgetsPage({ budgets, expCats, onSave, onBack, currency }) {
   );
 }
 
-// ─── Quick Actions Slots ──────────────────────────────────────────────────────
 function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   useEffect(()=>{ window.scrollTo(0,0); },[]);
   const [editingId, setEditingId] = useState(null);
@@ -1715,7 +1708,6 @@ function QuickActionsSetup({ quickActions, expCats, banks, onSave, onBack }) {
   );
 }
 
-// ─── Monthly Bills Screen ─────────────────────────────────────────────────────
 function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currency, setAppAlert }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   const [showAdd, setShowAdd] = useState(false);
@@ -1822,21 +1814,32 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
               <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
                 <div style={{background:paid?C.accentDim+"55":C.card,boxSizing:"border-box",borderBottom:isLast?"none":`1px solid ${C.border}`}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px 6px"}}>
-                    <div style={{width:36,height:36,borderRadius:99,background:paid?C.accentDim:C.border+"88",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{ICONS[cat?.icon]||"⚡"}</div>
+                    <div style={{width:36,height:36,borderRadius:99,background:paid?C.accentDim:C.border+"88",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+                      {ICONS[cat?.icon]||"⚡"}
+                    </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:C.text,fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
-                      <div style={{color:C.muted,fontSize:11,marginTop:1}}>{bank?.name} · {cat?.name||"Bills"}{bill.dueDay?<span style={{color:C.faint}}> · Due {bill.dueDay}{bill.dueDay===1?"st":bill.dueDay===2?"nd":bill.dueDay===3?"rd":"th"}</span>:null}</div>
+                      <div style={{color:C.muted,fontSize:11,marginTop:1}}>
+                        {bank?.name} · {cat?.name||"Bills"}
+                        {bill.dueDay?<span style={{color:C.faint}}> · Due {bill.dueDay}{bill.dueDay===1?"st":bill.dueDay===2?"nd":bill.dueDay===3?"rd":"th"}</span>:null}
+                      </div>
                       {(()=>{const r=getReminderStatus(bill);return r?<div style={{color:r.overdue?C.red:C.yellow,fontSize:10,fontWeight:700,marginTop:3}}>{r.overdue?"🔴 Overdue by "+r.days+" day"+(r.days!==1?"s":""):"🟡 Due in "+r.days+" day"+(r.days!==1?"s":"")}</div>:null;})()}
                     </div>
                     <div style={{color:paid?C.accent:C.red,fontSize:17,fontWeight:800,flexShrink:0}}>{fmt(bill.amount)}</div>
                   </div>
                   <div style={{padding:"0 14px 12px",display:"flex",gap:8}}>
                     {!paid ? (
-                      <button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6, fontFamily: "'DM Sans', sans-serif"}}><span>✓</span> Pay Now</button>
+                      <button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6, fontFamily: "'DM Sans', sans-serif"}}>
+                        <span>✓</span> Pay Now
+                      </button>
                     ) : (
                       <>
-                        <div style={{flex:1,background:C.accent,color:C.bg,borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>✓ Paid {filterMonth.slice(5)}</div>
-                        <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4, fontFamily: "'DM Sans', sans-serif"}}>⟲ Undo</button>
+                        <div style={{flex:1,background:C.accent,color:C.bg,borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                          ✓ Paid {filterMonth.slice(5)}
+                        </div>
+                        <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4, fontFamily: "'DM Sans', sans-serif"}}>
+                          ⟲ Undo
+                        </button>
                       </>
                     )}
                   </div>
@@ -1859,7 +1862,6 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
   );
 }
 
-// ─── Settings Screen ──────────────────────────────────────────────────────────
 function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onOpenBudgets, onOpenQuickActions, onOpenManual, setLastBackup, txns, bills, savings, budgets, onRestore, setAppAlert, navigateTo }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   const [section, setSection] = useState("profile");
@@ -2022,7 +2024,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
           {modal.type==="expCat"&&(<Select label="Group Tag" value={inputGroup} onChange={e=>setInputGroup(e.target.value)}>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>)}
           {modal.type==="group"&&(<>
             <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=>(<button key={col} onClick={()=>setInputColor(col)} style={{width:28,height:28,borderRadius:99,background:col,border:inputColor===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}</div></div>
-            <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div><div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>{expCats.map(c=>{const checked=groupCats.includes(c.id);return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"4px 0",userSelect:"none"}><div onClick={()=>setGroupCats(checked?groupCats.filter(x=>x!==c.id):[...groupCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div><span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span></label>);})}</div></div>
+            <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div><div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>{expCats.map(c=>{const checked=groupCats.includes(c.id);return(<label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"4px 0",userSelect:"none"}}><div onClick={()=>setGroupCats(checked?groupCats.filter(x=>x!==c.id):[...groupCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<span style={{color:C.accent,fontSize:12}}>✓</span>}</div><span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span></label>);})}</div></div>
           </>)}
           <Btn full onClick={handleSave} style={{marginTop:8}}>Save</Btn>
         </Modal>
@@ -2047,7 +2049,6 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
   );
 }
 
-// ─── Error Boundary Wrapper ───────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
   static getDerivedStateFromError(error) { return { hasError: true }; }
