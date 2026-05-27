@@ -18,6 +18,7 @@ export default function Privacy({ onBack }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          
           <div style={{ background: "#17171f", padding: "18px", borderRadius: "16px", border: "1px solid #2a2a38" }}>
             <h3 style={{ color: "#6ee7b7", margin: "0 0 10px 0", fontSize: "16px", fontWeight: "600" }}>1. 100% Offline (Local Storage)</h3>
             <p style={{ margin: "0", fontSize: "13.5px", lineHeight: "1.6", color: "#8888a8" }}>
@@ -38,12 +39,12 @@ export default function Privacy({ onBack }) {
               The app relies on advanced browser local storage technologies to save records. Please remember that permanently clearing your browser cache may erase the data, so we always recommend using the built-in Backup feature.
             </p>
           </div>
+
         </div>
       </div>
 
       <div style={{ textAlign: "center", marginTop: 40, width: "100%" }}>
-        <div style={{ color: "#60a5fa", opacity: 0.6, fontSize: "13px", fontWeight: "700", marginBottom: "6px" }}>Saver One V1.0</div>
-        <div style={{ color: "#6ee7b7", fontWeight: "700", fontSize: "12px", borderBottom: "1px solid #6ee7b7", display: "inline-block", marginBottom: "10px" }}>Privacy Policy</div>
+        <div style={{ color: "#60a5fa", opacity: 0.8, fontSize: "13px", fontWeight: "700", marginBottom: "6px" }}>Saver One V1.0</div>
         <div style={{ color: "#60a5fa", opacity: 0.6, fontSize: "10px", fontWeight: "500" }}>Offline & 100% Private · Powered by Mahmoud © 2026</div>
       </div>
     </div>
