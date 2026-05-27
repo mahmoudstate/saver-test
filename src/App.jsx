@@ -1,3 +1,4 @@
+// ─── Saver One V1.0 ───────────────────────────────────────────────────────────
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -126,7 +127,6 @@ async function save(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
     return true;
   } catch (e) {
-    // Storage full or private mode – fail silently, app still works in-memory
     console.warn("Storage unavailable:", e);
     return false;
   }
@@ -392,7 +392,6 @@ function AddToHomeModal({ onClose }) {
   const { isIOS, isAndroid, isInStandaloneMode } = detectPlatform();
 
   if (isInStandaloneMode) {
-    // Already installed – skip modal entirely, caller should not show it
     onClose();
     return null;
   }
@@ -456,7 +455,6 @@ function AddToHomeModal({ onClose }) {
     );
   }
 
-  // Desktop or unknown
   return (
     <Modal title="Install Saver" onClose={onClose} center={false}>
       <div style={{ background:C.purpleDim, border:`1px solid ${C.purple}44`, borderRadius:12, padding:"12px 14px", marginBottom:20 }}>
@@ -470,6 +468,20 @@ function AddToHomeModal({ onClose }) {
       </p>
       <Btn full onClick={onClose} style={{ marginTop:16 }}>Got it!</Btn>
     </Modal>
+  );
+}
+
+// ─── App Footer Component ─────────────────────────────────────────────────────
+function AppFooter() {
+  return (
+    <div style={{textAlign: "center", color: C.faint, fontSize: 11, marginTop: 40, marginBottom: 20}}>
+      <div style={{marginBottom: 8}}>
+        <strong style={{color: C.muted}}>Saver One V1.0</strong>
+        <span style={{margin: "0 12px"}}>|</span>
+        <a href="https://savertrack.app/privacy.html" target="_blank" rel="noopener noreferrer" style={{color: C.muted, textDecoration: "none", fontWeight: 700}}>Privacy Policy</a>
+      </div>
+      <div>Offline & 100% Private <span style={{margin: "0 8px"}}>·</span> Powered by Mahmoud © 2026</div>
+    </div>
   );
 }
 
@@ -518,8 +530,13 @@ function WelcomeScreen({ onStart, onManual }) {
 
       <div style={{display:"flex", flexDirection:"column", gap:12, marginTop:"auto"}}>
         <Btn full onClick={handleStart} style={{padding:"14px", fontSize:16}}>Start Using Saver</Btn>
+        <div style={{textAlign: "center", marginTop: 4, marginBottom: 8}}>
+          <span style={{color: C.muted, fontSize: 11}}>By using Saver, you agree to our <a href="https://savertrack.app/privacy.html" target="_blank" rel="noopener noreferrer" style={{color: C.accent, textDecoration: "none", fontWeight: 700}}>Privacy Policy</a></span>
+        </div>
         <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px", fontSize:16}}>Read Manual Guide</Btn>
       </div>
+      
+      <AppFooter />
 
       {showInstall && (
         <AddToHomeModal onClose={() => { setShowInstall(false); onStart(); }} />
@@ -538,7 +555,7 @@ function UserManual({ onBack }) {
   };
 
   const handleFeedback = () => {
-    window.location.href = "mailto:Saverapp1@outlook.com?subject=Saver%20App%20Feedback";
+    window.location.href = "mailto:hello@savertrack.app?subject=Saver%20App%20Feedback";
   };
 
   return (
@@ -552,7 +569,12 @@ function UserManual({ onBack }) {
         Welcome to Saver! Learn how to navigate and make the most out of your financial tracker using the interactive hints below. Everything is stored locally on your device.
       </p>
 
-      <Btn full outline color={C.accent} onClick={handleFeedback} style={{marginBottom: 24}}>🐞 Report a Bug / Suggestion</Btn>
+      <div style={{marginBottom: 24}}>
+        <Btn full outline color={C.accent} onClick={handleFeedback}>🐞 Report a Bug / Suggestion</Btn>
+        <div style={{textAlign: "center", color: C.faint, fontSize: 10, marginTop: 8}}>
+          (Opens email to: hello@savertrack.app)
+        </div>
+      </div>
 
       <div style={{display:"flex", gap:8, marginBottom:30, overflowX:"auto", paddingBottom: 10, WebkitOverflowScrolling: "touch"}}>
         {["Home Screen", "Adding (+)", "Bills", "History", "Settings", "Pro Tips"].map((item, idx) => (
@@ -694,6 +716,8 @@ function UserManual({ onBack }) {
         </div>
       </div>
 
+      <AppFooter />
+
     </div>
   );
 }
@@ -724,10 +748,14 @@ function SplashScreen() {
       <div style={{color:"#6ee7b7",fontSize:12,fontWeight:500,letterSpacing:3,opacity:phase>=1?1:0,animation:phase>=1?"saverFadeUp 0.6s ease forwards":"none",marginBottom:80}}>
         Easy come, easy go.
       </div>
-      <div style={{display:"flex",gap:7,position:"absolute",bottom:52}}>
+      <div style={{display:"flex",gap:7,position:"absolute",bottom:70}}>
         {[0,1,2].map(i=>(
           <div key={i} style={{width:5,height:5,borderRadius:99,background:"#6ee7b7",animation:`saverBounce 1.3s ease ${i*0.22}s infinite`}}/>
         ))}
+      </div>
+      
+      <div style={{color:"#444460", fontSize:10, position:"absolute", bottom:24, fontWeight:700, letterSpacing:1}}>
+        Saver One V1.0
       </div>
     </div>
   );
@@ -2072,6 +2100,8 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
           }}
         />
       )}
+      
+      <AppFooter />
     </div>
   );
 }
