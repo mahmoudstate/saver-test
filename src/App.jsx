@@ -1,7 +1,7 @@
-// ─── Saver One V1.0 ───────────────────────────────────────────────────────────
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import Privacy from './Privacy';
 
 // ─── Haptic Feedback Engine ────────────────────────────────────────────────────
 const vibrate = (pattern) => {
@@ -472,21 +472,20 @@ function AddToHomeModal({ onClose }) {
 }
 
 // ─── App Footer Component ─────────────────────────────────────────────────────
-function AppFooter() {
+function AppFooter({ navigateTo }) {
   return (
-    <div style={{textAlign: "center", color: C.faint, fontSize: 11, marginTop: 40, marginBottom: 20}}>
-      <div style={{marginBottom: 8}}>
-        <strong style={{color: C.muted}}>Saver One V1.0</strong>
-        <span style={{margin: "0 12px"}}>|</span>
-        <a href="https://savertrack.app/privacy.html" target="_blank" rel="noopener noreferrer" style={{color: C.muted, textDecoration: "none", fontWeight: 700}}>Privacy Policy</a>
+    <div style={{textAlign: "center", marginTop: 40, marginBottom: 20, width: "100%"}}>
+      <div style={{color: "#60a5fa", opacity: 0.6, fontSize: "13px", fontWeight: "700", marginBottom: "6px"}}>Saver One V1.0</div>
+      <div style={{marginBottom: "10px"}}>
+        <span onClick={() => navigateTo && navigateTo("privacy")} style={{color: "#6ee7b7", fontWeight: "700", fontSize: "12px", borderBottom: "1px solid #6ee7b7", cursor: "pointer"}}>Privacy Policy</span>
       </div>
-      <div>Offline & 100% Private <span style={{margin: "0 8px"}}>·</span> Powered by Mahmoud © 2026</div>
+      <div style={{color: "#60a5fa", opacity: 0.6, fontSize: "10px", fontWeight: "500"}}>Offline & 100% Private · Powered by Mahmoud © 2026</div>
     </div>
   );
 }
 
 // ─── Welcome Screen ───────────────────────────────────────────────────────────
-function WelcomeScreen({ onStart, onManual }) {
+function WelcomeScreen({ onStart, onManual, navigateTo }) {
   const [showInstall, setShowInstall] = useState(false);
   const { isInStandaloneMode } = detectPlatform();
 
@@ -530,13 +529,10 @@ function WelcomeScreen({ onStart, onManual }) {
 
       <div style={{display:"flex", flexDirection:"column", gap:12, marginTop:"auto"}}>
         <Btn full onClick={handleStart} style={{padding:"14px", fontSize:16}}>Start Using Saver</Btn>
-        <div style={{textAlign: "center", marginTop: 4, marginBottom: 8}}>
-          <span style={{color: C.muted, fontSize: 11}}>By using Saver, you agree to our <a href="https://savertrack.app/privacy.html" target="_blank" rel="noopener noreferrer" style={{color: C.accent, textDecoration: "none", fontWeight: 700}}>Privacy Policy</a></span>
-        </div>
         <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px", fontSize:16}}>Read Manual Guide</Btn>
       </div>
       
-      <AppFooter />
+      <AppFooter navigateTo={navigateTo} />
 
       {showInstall && (
         <AddToHomeModal onClose={() => { setShowInstall(false); onStart(); }} />
@@ -546,7 +542,7 @@ function WelcomeScreen({ onStart, onManual }) {
 }
 
 // ─── User Manual / Guide Page ──────────────────────────────────────────────────
-function UserManual({ onBack }) {
+function UserManual({ onBack, navigateTo }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const scrollToSection = (id) => {
@@ -716,7 +712,7 @@ function UserManual({ onBack }) {
         </div>
       </div>
 
-      <AppFooter />
+      <AppFooter navigateTo={navigateTo} />
 
     </div>
   );
@@ -919,6 +915,7 @@ function SaverApp() {
     <WelcomeScreen
        onStart={completeWelcome}
        onManual={() => { completeWelcome(); navigateTo("manual"); }}
+       navigateTo={navigateTo}
     />
   );
 
@@ -929,7 +926,7 @@ function SaverApp() {
   // ─── FIX #4: Show backup alert if NEVER backed up OR over 3 days since last backup ──
   const showBackupAlert = !lastBackup || (Date.now() - lastBackup > 3 * 24 * 60 * 60 * 1000);
 
-  const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || ledgerBudget || tab === "savings" || tab === "budgets" || tab === "quickactions" || tab === "manual";
+  const isSubPageActive = ledgerBank || ledgerGroup || ledgerSaving || ledgerBudget || tab === "savings" || tab === "budgets" || tab === "quickactions" || tab === "manual" || tab === "privacy";
 
   return (
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans', sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130, position:"relative", userSelect:"none", WebkitUserSelect:"none"}}>
@@ -946,15 +943,16 @@ function SaverApp() {
         <>
           {tab==="dashboard" && <Dashboard txns={filteredTxns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={savings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} bankBalance={bankBalance} txnsAll={txns} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{ setScrollState({y:window.scrollY, restore:true}); setLedgerBank(b); }} onOpenGroup={(g)=>{ setScrollState({y:window.scrollY, restore:true}); setLedgerGroup(g); }} onOpenSaving={(s)=>{ setScrollState({y:window.scrollY, restore:true}); setLedgerSaving(s); }} onOpenBudget={(bdg)=>{ setScrollState({y:window.scrollY, restore:true}); setLedgerBudget(bdg); }} hideTotal={hideTotal} setHideTotal={setHideTotal} navigateTo={navigateTo} scrollState={scrollState} setScrollState={setScrollState} onBanks={saveBanks} onBudgets={saveBudgets} onSavings={saveSavings} onGroups={saveGroups} />}
           {tab==="add" && <AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={savings} currency={currency} onAdd={addTxn} onSaveSavings={saveSavings} onDone={()=>navigateTo("dashboard")} bankBalance={bankBalance} setAppAlert={setAppAlert}/>}
-          {tab==="history" && <History txns={txns} allCats={allCats} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
+          {tab==="history" && <History txns={txns} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
           {tab==="savings" && <SavingsPage savings={savings} onSave={saveSavings} txns={txns} onBack={()=>navigateTo("settings")}/>}
           {tab==="budgets" && <BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>navigateTo("settings")} currency={currency}/>}
           {tab==="quickactions" && <QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>navigateTo("settings")} />}
-          {tab==="manual" && <UserManual onBack={()=>navigateTo("settings")} />}
-          {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} bankBalance={bankBalance} currency={currency} setAppAlert={setAppAlert}/>}
-          {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>navigateTo("savings")} onOpenBudgets={()=>navigateTo("budgets")} onOpenQuickActions={()=>navigateTo("quickactions")} onOpenManual={()=>navigateTo("manual")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert}/>}
+          {tab==="manual" && <UserManual onBack={()=>navigateTo("settings")} navigateTo={navigateTo} />}
+          {tab==="monthly" && <MonthlyBills bills={bills} onSave={saveBills} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} currency={currency} setAppAlert={setAppAlert}/>}
+          {tab==="settings" && <Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} bankBalance={bankBalance} onOpenSavings={()=>navigateTo("savings")} onOpenBudgets={()=>navigateTo("budgets")} onOpenQuickActions={()=>navigateTo("quickactions")} onOpenManual={()=>navigateTo("manual")} setLastBackup={setLastBackup} txns={txns} bills={bills} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert} navigateTo={navigateTo} />}
+          {tab==="privacy" && <Privacy onBack={()=>navigateTo("dashboard")} />}
 
-          <BottomNav tab={tab} navigateTo={navigateTo} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} bankBalance={bankBalance} setAppAlert={setAppAlert} quickActions={quickActions} />
+          {tab !== "privacy" && <BottomNav tab={tab} navigateTo={navigateTo} expCats={expCats} banks={banks} onAdd={addTxn} currency={currency} bankBalance={bankBalance} setAppAlert={setAppAlert} quickActions={quickActions} />}
         </>
       ) : (
         <>
@@ -1916,7 +1914,7 @@ function MonthlyBills({ bills, onSave, banks, expCats, onAddTxn, delTxn, currenc
 }
 
 // ─── Settings Screen ──────────────────────────────────────────────────────────
-function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onOpenBudgets, onOpenQuickActions, onOpenManual, setLastBackup, txns, bills, savings, budgets, onRestore, setAppAlert }) {
+function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCats, onGroups, currency, onCurrency, username, onUsername, bankBalance, onOpenSavings, onOpenBudgets, onOpenQuickActions, onOpenManual, setLastBackup, txns, bills, savings, budgets, onRestore, setAppAlert, navigateTo }) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   const [section, setSection] = useState("profile");
   const [modal, setModal] = useState(null);
@@ -2101,7 +2099,7 @@ function Settings({ banks, expCats, incCats, groups, onBanks, onExpCats, onIncCa
         />
       )}
       
-      <AppFooter />
+      <AppFooter navigateTo={navigateTo} />
     </div>
   );
 }
