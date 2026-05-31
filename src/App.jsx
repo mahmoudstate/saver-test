@@ -672,7 +672,7 @@ function NavBtn({id,icon,label,tab,navigateTo}){
 }
 
 // ── TxnRow ────────────────────────────────────────────────────────────────────
-function TxnRow({txn,hideTotal,onClick}){
+function TxnRow({txn,hideTotal,onClick,isTrulyLinked}){
   const isExp=txn.type==="expense"||txn.type==="goal_withdraw";
   const isInc=txn.type==="income"||txn.type==="goal_return";
   const isTrans=txn.type==="transfer";
@@ -680,15 +680,14 @@ function TxnRow({txn,hideTotal,onClick}){
   const bg=isExp?C.redDim:isInc?C.accentDim:isTrans?C.blueDim:C.yellowDim;
   const ic=isSav?ICONS.saving:isTrans?ICONS.transfer:txn.type==="goal_withdraw"?"💳":txn.type==="goal_return"?"🏦":ICONS[txn.catIcon]||"📌";
   
-  // توضيح أسماء العمليات الخاصة بالهدف
   const baseLabel = isTrans ? "Transfer" : 
-                    txn.type === "goal_withdraw" ? `Goal Spend: ${txn.goalName || ""}` : 
-                    txn.type === "goal_return" ? `Goal Return: ${txn.goalName || ""}` : 
-                    txn.type === "saving" ? `Goal Deposit: ${txn.goalName || ""}` : 
+                    txn.type === "goal_withdraw" ? `${txn.catName || "Expense"} (From ${txn.goalName || "Goal"})` : 
+                    txn.type === "goal_return" ? `Returned to Bank` : 
+                    txn.type === "saving" ? `Goal Deposit: ${txn.goalName || txn.catName || "Goal"}` : 
                     txn.catName || txn.type;
   
   const splitId = txn.splitGroupId ? txn.splitGroupId.slice(-3) : "";
-  const label = <>{baseLabel} {txn.splitGroupId && <span title="Linked Transaction" style={{fontSize:11, marginLeft:6, filter:"grayscale(1)"}}>🔗 #{splitId}</span>}</>;
+  const label = <>{baseLabel} {isTrulyLinked && <span title="Linked Transaction" style={{fontSize:11, marginLeft:6, filter:"grayscale(1)"}}>🔗 #{splitId}</span>}</>;
   
   const sub=isTrans?`${txn.bankName} ➔ ${txn.toBankName}`:txn.bankName;
   const amtColor=isExp?C.red:isInc?C.accent:isTrans?C.blue:C.yellow;
@@ -703,29 +702,6 @@ function TxnRow({txn,hideTotal,onClick}){
     </div>
     <div style={{color:amtColor,fontWeight:800,fontSize:15}}>{isExp?"−":isInc?"+":""}{hideTotal?"••••":fmt(txn.amount)}</div>
   </div>;
-}
-
-// ── Transaction View Modal (read-only) ────────────────────────────────────────
-function TxnViewModal({txn,onClose}){
-  if(!txn)return null;
-  const rows=[
-    {label:"Type",value:txn.type.replace("_"," ").toUpperCase()},
-    {label:"Amount",value:fmt(txn.amount)},
-    {label:"Date",value:fmtDate(txn.date)},
-    {label:"Account",value:txn.bankName||(txn.fromBankId?`${txn.bankName} ➔ ${txn.toBankName}`:"—")},
-    txn.catName&&{label:"Category",value:txn.catName},
-    txn.goalName&&{label:"Goal",value:txn.goalName},
-    txn.note&&{label:"Note",value:txn.note},
-  ].filter(Boolean);
-  return <Modal title="Transaction Details" onClose={onClose} center={false}>
-    <div style={{display:"flex",flexDirection:"column",gap:1,marginBottom:20}}>
-      {rows.map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<rows.length-1?`1px solid ${C.border}`:"none"}}>
-        <span style={{color:C.muted,fontSize:13}}>{r.label}</span>
-        <span style={{color:C.text,fontSize:13,fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{r.value}</span>
-      </div>)}
-    </div>
-    <Btn full onClick={onClose}>Done</Btn>
-  </Modal>;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -1173,37 +1149,55 @@ function History({txns,onDelete,onUpdate,banks,expCats,incCats,currency,availMon
   useEffect(()=>{window.scrollTo(0,0);},[]);
   const[search,setSearch]=useState("");const[filterType,setFilterType]=useState("all");const[filterMonth,setFilterMonth]=useState("all");const[confirmTxn,setConfirmTxn]=useState(null);const[editTxn,setEditTxn]=useState(null);const[viewTxn,setViewTxn]=useState(null);
 
+  // حساب ذكي لعدد العمليات المربوطة ببعض
+  const splitCounts = useMemo(() => {
+    const counts = {};
+    txns.forEach(t => {
+      if (t.splitGroupId) counts[t.splitGroupId] = (counts[t.splitGroupId] || 0) + 1;
+    });
+    return counts;
+  }, [txns]);
+
   const filtered=useMemo(()=>txns.filter(t=>{
-    if(filterType!=="all"&&t.type!==filterType)return false;
+    // دمج مصاريف وإرجاع الهدف مع فلاتر المصاريف والدخل
+    if(filterType !== "all") {
+        if(filterType === "expense" && t.type !== "expense" && t.type !== "goal_withdraw") return false;
+        else if(filterType === "income" && t.type !== "income" && t.type !== "goal_return") return false;
+        else if(filterType !== "expense" && filterType !== "income" && t.type !== filterType) return false;
+    }
     if(filterMonth!=="all"&&!t.date.startsWith(filterMonth))return false;
     if(search){const q=search.toLowerCase();return t.catName?.toLowerCase().includes(q)||t.note?.toLowerCase().includes(q)||t.bankName?.toLowerCase().includes(q)||t.goalName?.toLowerCase().includes(q);}
     return true;
   }),[txns,filterType,filterMonth,search]);
 
-  const editable=(t)=>t.type!=="transfer"&&t.type!=="goal_withdraw"&&t.type!=="goal_return";
-
-  // دالة ذكية للتحكم في التعديل
+  // التحكم في التعديل والرسايل الإنجليزي
   const handleEditClick = (t) => {
-      if (t.splitGroupId) {
-          setAppAlert({title: "Linked Transaction", message: "🔗 لا يمكن تعديل عملية مقسمة على أكثر من حساب. يرجى حذفها وإعادة إضافتها.", color: C.yellow});
+      const isTrulyLinked = t.splitGroupId && splitCounts[t.splitGroupId] > 1;
+      
+      if (isTrulyLinked) {
+          setAppAlert({title: "Linked Transaction 🔗", message: "Cannot edit a split transaction. Please delete and recreate it to keep balances accurate.", color: C.yellow});
           return;
       }
       if (t.goalId && savings) {
           const goal = savings.find(s => s.id === t.goalId);
           if (!goal || goal.status === "archived") {
-              setAppAlert({title: "Historical Lock 🔒", message: "هذا الهدف مغلق أو تم حذفه. لا يمكن تعديل عملياته للحفاظ على دقة حساباتك.", color: C.orange});
+              setAppAlert({title: "Historical Lock 🔒", message: "This goal is closed or deleted. Its transactions are locked to maintain balance accuracy.", color: C.orange});
               return;
           }
+      }
+      if (t.type === "goal_withdraw" || t.type === "goal_return") {
+          setAppAlert({title: "Action Not Allowed", message: "Goal spending and returns cannot be edited directly. Please delete and recreate if needed.", color: C.orange});
+          return;
       }
       setEditTxn(t);
   };
 
-  // دالة ذكية للتحكم في الحذف
+  // التحكم في الحذف
   const handleDeleteClick = (t) => {
       if (t.goalId && savings) {
           const goal = savings.find(s => s.id === t.goalId);
           if (!goal || goal.status === "archived") {
-              setAppAlert({title: "Historical Lock 🔒", message: "هذا الهدف مغلق أو تم حذفه. هذه العملية مقفولة تماماً ولا يمكن حذفها.", color: C.orange});
+              setAppAlert({title: "Historical Lock 🔒", message: "This goal is closed or deleted. This transaction is locked and cannot be deleted.", color: C.orange});
               return;
           }
       }
@@ -1220,11 +1214,17 @@ function History({txns,onDelete,onUpdate,banks,expCats,incCats,currency,availMon
     <div style={{color:C.faint,fontSize:11,marginBottom:12}}>{filtered.length} transaction{filtered.length!==1?"s":""}</div>
     <div style={{display:"flex",flexDirection:"column"}}>
       {filtered.length===0&&<EmptyState icon="💸" message="No transactions found."/>}
-      {filtered.map(t=><SwipeRow key={t.id} onEdit={editable(t)?()=>handleEditClick(t):()=>setViewTxn(t)} onDelete={()=>handleDeleteClick(t)}><TxnRow txn={t} hideTotal={false} onClick={()=>setViewTxn(t)}/></SwipeRow>)}
+      {filtered.map(t=>{
+        // نبعت الذكاء للسطر عشان يعرف يظهر اللينك ولا لأ
+        const isTrulyLinked = t.splitGroupId && splitCounts[t.splitGroupId] > 1;
+        return <SwipeRow key={t.id} onEdit={()=>handleEditClick(t)} onDelete={()=>handleDeleteClick(t)}>
+          <TxnRow txn={t} hideTotal={false} onClick={()=>setViewTxn(t)} isTrulyLinked={isTrulyLinked}/>
+        </SwipeRow>
+      })}
     </div>
     {confirmTxn&&<ConfirmModal 
-      title={confirmTxn.splitGroupId ? "Delete Linked Transactions?" : "Delete Transaction?"} 
-      message={confirmTxn.splitGroupId ? "🔗 This transaction is split across multiple accounts. Deleting it will safely remove ALL linked parts and return balances to normal." : "This will permanently remove the record and update all balances."} 
+      title={confirmTxn.splitGroupId && splitCounts[confirmTxn.splitGroupId] > 1 ? "Delete Linked Transactions?" : "Delete Transaction?"} 
+      message={confirmTxn.splitGroupId && splitCounts[confirmTxn.splitGroupId] > 1 ? "🔗 This transaction is split across multiple accounts. Deleting it will safely remove ALL linked parts and return balances to normal." : "This will permanently remove the record and update all balances."} 
       onClose={()=>setConfirmTxn(null)} 
       onConfirm={()=>{onDelete(confirmTxn.id);setConfirmTxn(null);}}
     />}
