@@ -680,23 +680,37 @@ function TxnRow({txn,hideTotal,onClick,isTrulyLinked}){
   const bg=isExp?C.redDim:isInc?C.accentDim:isTrans?C.blueDim:C.yellowDim;
   const ic=isSav?ICONS.saving:isTrans?ICONS.transfer:txn.type==="goal_withdraw"?"💳":txn.type==="goal_return"?"🏦":ICONS[txn.catIcon]||"📌";
   
+  // السطر الأول: العنوان النظيف
   const baseLabel = isTrans ? "Transfer" : 
-                    txn.type === "goal_withdraw" ? `${txn.catName || "Expense"} (From ${txn.goalName || "Goal"})` : 
-                    txn.type === "goal_return" ? `Returned to Bank` : 
-                    txn.type === "saving" ? `Goal Deposit: ${txn.goalName || txn.catName || "Goal"}` : 
+                    txn.type === "goal_return" ? "Returned to Bank" : 
+                    txn.type === "saving" ? "Goal Deposit" : 
                     txn.catName || txn.type;
   
-  const splitId = txn.splitGroupId ? txn.splitGroupId.slice(-3) : "";
-  const label = <>{baseLabel} {isTrulyLinked && <span title="Linked Transaction" style={{fontSize:11, marginLeft:6, filter:"grayscale(1)"}}>🔗 #{splitId}</span>}</>;
-  
+  // السطر التاني: البنك
   const sub=isTrans?`${txn.bankName} ➔ ${txn.toBankName}`:txn.bankName;
+  
+  // السطر التالت: سطر الهدف (يظهر فقط لو العملية مرتبطة بهدف)
+  let goalLine = null;
+  if (txn.type === "saving" && txn.goalName) {
+      goalLine = `To Goal: ${txn.goalName}`;
+  } else if ((txn.type === "goal_withdraw" || txn.type === "goal_return") && txn.goalName) {
+      goalLine = `From Goal: ${txn.goalName}`;
+  }
+
+  const splitId = txn.splitGroupId ? txn.splitGroupId.slice(-3) : "";
   const amtColor=isExp?C.red:isInc?C.accent:isTrans?C.blue:C.yellow;
+
   return <div onClick={onClick} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:C.card,cursor:onClick?"pointer":"default"}}>
     <div style={{display:"flex",gap:10,alignItems:"center"}}>
       <div style={{width:36,height:36,borderRadius:10,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{ic}</div>
       <div>
-        <div style={{color:C.text,fontWeight:600,fontSize:14,display:"flex",alignItems:"center"}}>{label}</div>
-        <div style={{color:C.muted,fontSize:11}}>{sub} · {fmtDate(txn.date)}</div>
+        <div style={{color:C.text,fontWeight:600,fontSize:14,display:"flex",alignItems:"center"}}>
+            {baseLabel} 
+            {/* اللينك بخط صغير 11px وعادي مش عريض */}
+            {isTrulyLinked && <span title="Linked Transaction" style={{fontSize:11, fontWeight:"normal", color:C.faint, marginLeft:6}}>🔗 #{splitId}</span>}
+        </div>
+        <div style={{color:C.muted,fontSize:11, marginTop: 2}}>{sub} · {fmtDate(txn.date)}</div>
+        {goalLine && <div style={{color:C.faint,fontSize:11, marginTop: 2}}>{goalLine}</div>}
         {txn.note&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>📝 {txn.note}</div>}
       </div>
     </div>
