@@ -670,6 +670,7 @@ function NavBtn({id,icon,label,tab,navigateTo}){
   const a=tab===id;
   return <button onClick={()=>navigateTo(id,false)} style={{background:"none",border:"none",color:a?C.accent:C.muted,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"4px 0",cursor:"pointer",transition:"color .2s",width:55,fontFamily:"'DM Sans', sans-serif"}}><span style={{fontSize:22}}>{icon}</span><span style={{fontSize:10,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{label}</span></button>;
 }
+
 // ── TxnRow ────────────────────────────────────────────────────────────────────
 function TxnRow({txn,hideTotal,onClick}){
   const isExp=txn.type==="expense"||txn.type==="goal_withdraw";
@@ -677,12 +678,15 @@ function TxnRow({txn,hideTotal,onClick}){
   const isTrans=txn.type==="transfer";
   const isSav=txn.type==="saving";
   const bg=isExp?C.redDim:isInc?C.accentDim:isTrans?C.blueDim:C.yellowDim;
-  
-  // تغيير أيقونة واسم عملية إرجاع الفلوس للبنك
   const ic=isSav?ICONS.saving:isTrans?ICONS.transfer:txn.type==="goal_withdraw"?"💳":txn.type==="goal_return"?"🏦":ICONS[txn.catIcon]||"📌";
-  const baseLabel=isTrans?"Transfer":txn.type==="goal_withdraw"?`Spent from ${txn.goalName||"Goal"}`:txn.type==="goal_return"?`Returned to Bank`:txn.catName||txn.type;
   
-  // إضافة علامة الربط مع آخر 3 أرقام من الـ ID للعمليات المقسمة
+  // توضيح أسماء العمليات الخاصة بالهدف
+  const baseLabel = isTrans ? "Transfer" : 
+                    txn.type === "goal_withdraw" ? `Goal Spend: ${txn.goalName || ""}` : 
+                    txn.type === "goal_return" ? `Goal Return: ${txn.goalName || ""}` : 
+                    txn.type === "saving" ? `Goal Deposit: ${txn.goalName || ""}` : 
+                    txn.catName || txn.type;
+  
   const splitId = txn.splitGroupId ? txn.splitGroupId.slice(-3) : "";
   const label = <>{baseLabel} {txn.splitGroupId && <span title="Linked Transaction" style={{fontSize:11, marginLeft:6, filter:"grayscale(1)"}}>🔗 #{splitId}</span>}</>;
   
@@ -922,18 +926,22 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
   const[withdrawAmt,setWithdrawAmt]=useState("");
   const[viewTxn,setViewTxn]=useState(null);
 
-  const pct=goal.goal>0?Math.min(110,Math.round((saved/goal.goal)*100)):0;
-  const goalTxns=txns.filter(t=>t.goalId===goal.id);
-  const isArchived = goal.status === "archived";
+  // تحديث حالة الهدف فورياً لمنع التهنيج في الألوان
+  const currentGoal = savings.find(s => s.id === goal.id) || goal;
+  const isArchived = currentGoal.status === "archived";
+  const isSpending = currentGoal.spendingMode;
+
+  const pct=currentGoal.goal>0?Math.min(110,Math.round((saved/currentGoal.goal)*100)):0;
+  const goalTxns=txns.filter(t=>t.goalId===currentGoal.id);
 
   const handleToggleSpending=()=>{
-    const enabling=!goal.spendingMode;
+    const enabling = !isSpending;
     setConfirmAction({
       type:"spending",
       title:enabling?"Start Spending Mode?":"Stop Spending Mode?",
       message:enabling?"💳 This will make the goal available as a payment source in the Add Transaction screen.\n\nYou can spend directly from this goal's balance.":"⏹ This will remove the goal from the payment sources list.\n\nYour saved balance stays safe.",
       color:enabling?C.accent:C.orange,
-      onConfirm:async()=>{await onSave(savings.map(s=>s.id===goal.id?{...s,spendingMode:!goal.spendingMode}:s));HAPTICS.success();}
+      onConfirm:async()=>{await onSave(savings.map(s=>s.id===currentGoal.id?{...s,spendingMode:!isSpending}:s));HAPTICS.success();}
     });
   };
 
@@ -941,7 +949,7 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
     const amt=parseFloat(withdrawAmt);
     if(!amt||isNaN(amt)||amt<=0)return;
     if(amt>saved){setAppAlert({title:"Insufficient Balance",message:`Goal only has ${fmt(saved)}.`,color:C.red});return;}
-    const ok=await addTxn({type:"goal_return",amount:amt,date:today(),bankId:banks[0]?.id, goalId:goal.id,goalName:goal.name,catId:"",catName:"Returned to Bank",catIcon:"saving"});
+    const ok=await addTxn({type:"goal_return",amount:amt,date:today(),bankId:banks[0]?.id, goalId:currentGoal.id,goalName:currentGoal.name,catId:"",catName:"Returned to Bank",catIcon:"saving"});
     if(ok!==false){setWithdrawModal(false);setWithdrawAmt("");}
   };
 
@@ -949,11 +957,11 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
     setConfirmAction({
       type:"archive",
       title:"Complete & Archive Goal?",
-      message:`🗃️ This will close the goal "${goal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be automatically returned to your contributing accounts.`:"No remaining balance to return."}\n\nThe goal will move to the Archived tab.`,
+      message:`🗃️ This will close the goal "${currentGoal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be automatically returned to your contributing accounts.`:"No remaining balance to return."}\n\nThe goal will move to the Archived tab.`,
       color:C.accent,
       onConfirm:async()=>{
-        if(saved>0) await addTxn({type:"goal_return",amount:saved,date:today(),bankId:banks[0]?.id, goalId:goal.id,goalName:goal.name,catName:"Goal Archived",catIcon:"saving"});
-        await onSave(savings.map(s=>s.id===goal.id?{...s,status:"archived",spendingMode:false}:s));
+        if(saved>0) await addTxn({type:"goal_return",amount:saved,date:today(),bankId:banks[0]?.id, goalId:currentGoal.id,goalName:currentGoal.name,catName:"Goal Archived",catIcon:"saving"});
+        await onSave(savings.map(s=>s.id===currentGoal.id?{...s,status:"archived",spendingMode:false}:s));
         HAPTICS.success();onClose();
       }
     });
@@ -963,11 +971,11 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
     setConfirmAction({
       type:"delete",
       title:"Delete Goal?",
-      message:`⚠️ This will permanently delete "${goal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be safely returned to your accounts first.`:""}\n\nAll linked transactions will remain in your history.`,
+      message:`⚠️ This will permanently delete "${currentGoal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be safely returned to your accounts first.`:""}\n\nAll linked transactions will remain in your history.`,
       color:C.red,
       onConfirm:async()=>{
-        if(saved>0) await addTxn({type:"goal_return",amount:saved,date:today(),bankId:banks[0]?.id, goalId:goal.id,goalName:goal.name,catName:"Goal Deleted",catIcon:"saving"});
-        await onSave(savings.filter(s=>s.id!==goal.id));
+        if(saved>0) await addTxn({type:"goal_return",amount:saved,date:today(),bankId:banks[0]?.id, goalId:currentGoal.id,goalName:currentGoal.name,catName:"Goal Deleted",catIcon:"saving"});
+        await onSave(savings.filter(s=>s.id!==currentGoal.id));
         HAPTICS.success();onClose();
       }
     });
@@ -980,7 +988,7 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
       message:"This will move the goal back to your Active list.",
       color:C.accent,
       onConfirm:async()=>{
-        await onSave(savings.map(s=>s.id===goal.id?{...s,status:"active"}:s));
+        await onSave(savings.map(s=>s.id===currentGoal.id?{...s,status:"active"}:s));
         HAPTICS.success();onClose();
       }
     });
@@ -988,7 +996,7 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
 
   return <div style={{padding:"24px 16px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <span style={{color:C.text,fontWeight:800,fontSize:22}}>{goal.spendingMode?"💳":isArchived?"🗃️":"🎯"} {goal.name}</span>
+      <span style={{color:C.text,fontWeight:800,fontSize:22}}>{isSpending?"💳":isArchived?"🗃️":"🎯"} {currentGoal.name}</span>
       <button onClick={onClose} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,width:44,height:44,borderRadius:99,cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
     </div>
 
@@ -997,20 +1005,20 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
       <span style={{color:C.blue,fontSize:13,fontWeight:600}}>This goal is archived. You can view its history, or reactivate it to resume saving.</span>
     </div>}
 
-    <div style={{background:C.card,border:`1px solid ${goal.spendingMode?C.orange+"66":C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:20}}>
+    <div style={{background:C.card,border:`1px solid ${isSpending?C.orange+"66":C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-        <div><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>Saved</div><div style={{color:isArchived?C.muted:goal.spendingMode?C.orange:C.yellow,fontSize:28,fontWeight:800,letterSpacing:-0.5}}>{fmt(saved)}</div></div>
-        <div style={{textAlign:"right"}}><div style={{color:C.faint,fontSize:11,marginBottom:4}}>of {fmt(goal.goal)}</div><Pill color={pct>=100?C.accent:isArchived?C.faint:C.yellow}>{pct}%</Pill></div>
+        <div><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>Saved</div><div style={{color:isArchived?C.muted:isSpending?C.orange:C.yellow,fontSize:28,fontWeight:800,letterSpacing:-0.5}}>{fmt(saved)}</div></div>
+        <div style={{textAlign:"right"}}><div style={{color:C.faint,fontSize:11,marginBottom:4}}>of {fmt(currentGoal.goal)}</div><Pill color={pct>=100?C.accent:isArchived?C.faint:C.yellow}>{pct}%</Pill></div>
       </div>
-      <ProgressBar value={saved} max={goal.goal} color={isArchived?C.faint:goal.spendingMode?C.orange:C.yellow} allowOver/>
+      <ProgressBar value={saved} max={currentGoal.goal} color={isArchived?C.faint:isSpending?C.orange:C.yellow} allowOver/>
     </div>
 
     {!isArchived ? (
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
-        <button onClick={handleToggleSpending} style={{width:"100%",background:goal.spendingMode?C.orange+"22":C.accent+"22",border:`1.5px solid ${goal.spendingMode?C.orange:C.accent}`,color:goal.spendingMode?C.orange:C.accent,borderRadius:12,padding:"14px 0",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>{goal.spendingMode?"⏹ Stop Spending Mode":"💳 Start Spending Mode"}</button>
+        <button onClick={handleToggleSpending} style={{width:"100%",background:isSpending?C.orange+"22":C.accent+"22",border:`1.5px solid ${isSpending?C.orange:C.accent}`,color:isSpending?C.orange:C.accent,borderRadius:12,padding:"14px 0",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>{isSpending?"⏹ Stop Spending Mode":"💳 Start Spending Mode"}</button>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>setWithdrawModal(true)} style={{flex:1,background:C.blueDim,border:`1.5px solid ${C.blue}`,color:C.blue,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🏦 Return to Bank</button>
-          <button onClick={handleArchive} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:13,cursor:"cursor",fontFamily:"'DM Sans', sans-serif"}}>🗃️ Complete & Archive</button>
+          <button onClick={handleArchive} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🗃️ Complete & Archive</button>
         </div>
         <button onClick={handleDelete} style={{width:"100%",background:"transparent",border:`1px solid ${C.redDim}`,color:C.red,borderRadius:10,padding:"9px 0",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans', sans-serif", marginTop:4}}>🗑 Delete Goal</button>
       </div>
