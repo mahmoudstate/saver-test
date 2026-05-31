@@ -578,7 +578,7 @@ function SaverApp(){
         {tab==="dashboard"&&<Dashboard txns={filteredTxns} txnsAll={txns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={activeSavings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} {...sharedProps} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBank(b);}} onOpenGroup={(g)=>{setScrollState({y:window.scrollY,restore:true});setLedgerGroup(g);}} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}} onOpenBudget={(bdg)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBudget(bdg);}} hideTotal={hideTotal} setHideTotal={setHideTotal} navigateTo={navigateTo} scrollState={scrollState} setScrollState={setScrollState} onBanks={saveBanks} onBudgets={saveBudgets} onSavings={saveSavings} onGroups={saveGroups}/>}
         {tab==="add"&&<AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={activeSavings} currency={currency} onAdd={addTxn} onDone={()=>navigateTo("dashboard")} {...sharedProps} setAppAlert={setAppAlert} onGoalToast={setGoalToast} txns={txns}/>}
         {tab==="history"&&<History txns={txns} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths}/>}
-        {tab==="savings"&&<SavingsPage savings={savings} onSave={saveSavings} txns={txns} banks={banks} onBack={()=>navigateTo("settings")} addTxn={addTxn} delTxn={delTxn} onGoalToast={setGoalToast} {...sharedProps} setAppAlert={setAppAlert}/>}
+        {tab==="savings"&&<SavingsPage savings={savings} onSave={saveSavings} txns={txns} banks={banks} onBack={()=>navigateTo("settings")} addTxn={addTxn} delTxn={delTxn} onGoalToast={setGoalToast} {...sharedProps} setAppAlert={setAppAlert} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}}/>}
         {tab==="budgets"&&<BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>navigateTo("settings")} currency={currency}/>}
         {tab==="quickactions"&&<QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>navigateTo("settings")}/>}
         {tab==="manual"&&<UserManual onBack={()=>navigateTo("settings")} navigateTo={navigateTo}/>}
@@ -664,14 +664,18 @@ function TxnRow({txn,hideTotal,onClick}){
   const isSav=txn.type==="saving";
   const bg=isExp?C.redDim:isInc?C.accentDim:isTrans?C.blueDim:C.yellowDim;
   const ic=isSav?ICONS.saving:isTrans?ICONS.transfer:txn.type==="goal_withdraw"?"💳":txn.type==="goal_return"?"🔓":ICONS[txn.catIcon]||"📌";
-  const label=isTrans?"Transfer":txn.type==="goal_withdraw"?`Spent from ${txn.goalName||"Goal"}`:txn.type==="goal_return"?`Returned from ${txn.goalName||"Goal"}`:txn.catName||txn.type;
+  const baseLabel=isTrans?"Transfer":txn.type==="goal_withdraw"?`Spent from ${txn.goalName||"Goal"}`:txn.type==="goal_return"?`Returned from ${txn.goalName||"Goal"}`:txn.catName||txn.type;
+  
+  // إضافة علامة الربط للعمليات المقسمة
+  const label = <>{baseLabel} {txn.splitGroupId && <span title="Linked Transaction" style={{fontSize:11, marginLeft:4, filter:"grayscale(1)"}}>🔗</span>}</>;
+  
   const sub=isTrans?`${txn.bankName} ➔ ${txn.toBankName}`:txn.bankName;
   const amtColor=isExp?C.red:isInc?C.accent:isTrans?C.blue:C.yellow;
   return <div onClick={onClick} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:C.card,cursor:onClick?"pointer":"default"}}>
     <div style={{display:"flex",gap:10,alignItems:"center"}}>
       <div style={{width:36,height:36,borderRadius:10,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{ic}</div>
       <div>
-        <div style={{color:C.text,fontWeight:600,fontSize:14}}>{label}</div>
+        <div style={{color:C.text,fontWeight:600,fontSize:14,display:"flex",alignItems:"center"}}>{label}</div>
         <div style={{color:C.muted,fontSize:11}}>{sub} · {fmtDate(txn.date)}</div>
         {txn.note&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>📝 {txn.note}</div>}
       </div>
@@ -896,21 +900,14 @@ function DeepLedgerView({title,headerType,headerData,txns,onDelete,onUpdate,bank
 // ── SavingDetailView — goal detail page with controls ─────────────────────────
 function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,onGoalToast,setAppAlert,goalSaved,onClose}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
-  const[confirmAction,setConfirmAction]=useState(null); // {type,title,message,color,onConfirm}
+  const[confirmAction,setConfirmAction]=useState(null); 
   const[withdrawModal,setWithdrawModal]=useState(false);
   const[withdrawAmt,setWithdrawAmt]=useState("");
   const[viewTxn,setViewTxn]=useState(null);
 
   const pct=goal.goal>0?Math.min(110,Math.round((saved/goal.goal)*100)):0;
   const goalTxns=txns.filter(t=>t.goalId===goal.id);
-
-  // Find top bank (most contributions)
-  const getTopBank=()=>{
-    const bc={};
-    txns.filter(t=>t.goalId===goal.id&&t.type==="saving").forEach(t=>{bc[t.bankId]=(bc[t.bankId]||0)+t.amount;});
-    txns.filter(t=>t.goalId===goal.id&&(t.type==="goal_withdraw"||t.type==="goal_return")).forEach(t=>{bc[t.bankId]=(bc[t.bankId]||0)-t.amount;});
-    return Object.entries(bc).sort((a,b)=>b[1]-a[1])[0]?.[0]||banks[0]?.id;
-  };
+  const isArchived = goal.status === "archived";
 
   const handleToggleSpending=()=>{
     const enabling=!goal.spendingMode;
@@ -927,9 +924,9 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
     const amt=parseFloat(withdrawAmt);
     if(!amt||isNaN(amt)||amt<=0)return;
     if(amt>saved){setAppAlert({title:"Insufficient Balance",message:`Goal only has ${fmt(saved)}.`,color:C.red});return;}
-    const topBankId=getTopBank();
-    const bank=banks.find(b=>b.id===topBankId);
-    const ok=await addTxn({type:"goal_withdraw",amount:amt,date:today(),bankId:topBankId,bankName:bank?.name,goalId:goal.id,goalName:goal.name,catId:"",catName:"Goal Withdrawal",catIcon:"saving"});
+    // إصلاح سحب الطوارئ: نستخدم goal_return لفك التجميد عن الأموال لتعود للبنك
+    // يتم تمرير bankId وهمي لأن نظام الـ Auto-Split سيتولى إرجاع الأموال لكل بنك حسب رصيده في الهدف
+    const ok=await addTxn({type:"goal_return",amount:amt,date:today(),bankId:banks[0]?.id, goalId:goal.id,goalName:goal.name,catId:"",catName:"Emergency Withdrawal",catIcon:"saving"});
     if(ok!==false){setWithdrawModal(false);setWithdrawAmt("");}
   };
 
@@ -937,13 +934,10 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
     setConfirmAction({
       type:"archive",
       title:"Complete & Archive Goal?",
-      message:`🗃️ This will close the goal "${goal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be returned to your bank as available balance.`:"No remaining balance to return."}\n\nThe goal will move to the Archived tab.`,
+      message:`🗃️ This will close the goal "${goal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be automatically returned to your contributing accounts.`:"No remaining balance to return."}\n\nThe goal will move to the Archived tab.`,
       color:C.accent,
       onConfirm:async()=>{
-        if(saved>0){
-          const topBankId=getTopBank();const bank=banks.find(b=>b.id===topBankId);
-          await addTxn({type:"goal_return",amount:saved,date:today(),bankId:topBankId,bankName:bank?.name,goalId:goal.id,goalName:goal.name,catName:"Goal Archived",catIcon:"saving"});
-        }
+        if(saved>0) await addTxn({type:"goal_return",amount:saved,date:today(),bankId:banks[0]?.id, goalId:goal.id,goalName:goal.name,catName:"Goal Archived",catIcon:"saving"});
         await onSave(savings.map(s=>s.id===goal.id?{...s,status:"archived",spendingMode:false}:s));
         HAPTICS.success();onClose();
       }
@@ -954,14 +948,24 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
     setConfirmAction({
       type:"delete",
       title:"Delete Goal?",
-      message:`⚠️ This will permanently delete "${goal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be returned to your bank first.`:""}\n\nAll linked transactions will remain in your history.`,
+      message:`⚠️ This will permanently delete "${goal.name}".\n\n${saved>0?`The remaining ${fmt(saved)} will be safely returned to your accounts first.`:""}\n\nAll linked transactions will remain in your history.`,
       color:C.red,
       onConfirm:async()=>{
-        if(saved>0){
-          const topBankId=getTopBank();const bank=banks.find(b=>b.id===topBankId);
-          await addTxn({type:"goal_return",amount:saved,date:today(),bankId:topBankId,bankName:bank?.name,goalId:goal.id,goalName:goal.name,catName:"Goal Deleted",catIcon:"saving"});
-        }
+        if(saved>0) await addTxn({type:"goal_return",amount:saved,date:today(),bankId:banks[0]?.id, goalId:goal.id,goalName:goal.name,catName:"Goal Deleted",catIcon:"saving"});
         await onSave(savings.filter(s=>s.id!==goal.id));
+        HAPTICS.success();onClose();
+      }
+    });
+  };
+
+  const handleUnarchive=()=>{
+    setConfirmAction({
+      type:"unarchive",
+      title:"Reactivate Goal?",
+      message:"This will move the goal back to your Active list.",
+      color:C.accent,
+      onConfirm:async()=>{
+        await onSave(savings.map(s=>s.id===goal.id?{...s,status:"active"}:s));
         HAPTICS.success();onClose();
       }
     });
@@ -969,30 +973,39 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
 
   return <div style={{padding:"24px 16px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <span style={{color:C.text,fontWeight:800,fontSize:22}}>{goal.spendingMode?"💳":"🎯"} {goal.name}</span>
+      <span style={{color:C.text,fontWeight:800,fontSize:22}}>{goal.spendingMode?"💳":isArchived?"🗃️":"🎯"} {goal.name}</span>
       <button onClick={onClose} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,width:44,height:44,borderRadius:99,cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
     </div>
 
-    {/* Header stats */}
-    <div style={{background:C.card,border:`1px solid ${goal.spendingMode?C.orange+"66":C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-        <div><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>Saved</div><div style={{color:goal.spendingMode?C.orange:C.yellow,fontSize:28,fontWeight:800,letterSpacing:-0.5}}>{fmt(saved)}</div></div>
-        <div style={{textAlign:"right"}}><div style={{color:C.faint,fontSize:11,marginBottom:4}}>of {fmt(goal.goal)}</div><Pill color={pct>=100?C.accent:C.yellow}>{pct}%</Pill></div>
-      </div>
-      <ProgressBar value={saved} max={goal.goal} color={goal.spendingMode?C.orange:C.yellow} allowOver/>
-    </div>
-
-    {/* Action buttons — only for active goals */}
-    {goal.status!=="archived"&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setWithdrawModal(true)} style={{flex:1,background:C.orangeDim,border:`1.5px solid ${C.orange}`,color:C.orange,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>➖ Emergency Withdrawal</button>
-        <button onClick={handleToggleSpending} style={{flex:1,background:goal.spendingMode?C.orange+"22":C.surface,border:`1.5px solid ${goal.spendingMode?C.orange:C.border}`,color:goal.spendingMode?C.orange:C.muted,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>{goal.spendingMode?"⏹ Stop Spending":"💳 Start Spending"}</button>
-      </div>
-      <button onClick={handleArchive} style={{width:"100%",background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🗃️ Complete & Archive Goal</button>
-      <button onClick={handleDelete} style={{width:"100%",background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,borderRadius:10,padding:"9px 0",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🗑 Delete Goal</button>
+    {isArchived && <div style={{background:C.blueDim,border:`1px solid ${C.blue}44`,borderRadius:12,padding:"12px 14px",marginBottom:20,display:"flex",alignItems:"center",gap:10}}>
+      <span style={{fontSize:20}}>🗃️</span>
+      <span style={{color:C.blue,fontSize:13,fontWeight:600}}>This goal is archived. You can view its history, or reactivate it to resume saving.</span>
     </div>}
 
-    {/* Transaction history */}
+    <div style={{background:C.card,border:`1px solid ${goal.spendingMode?C.orange+"66":C.border}`,borderRadius:16,padding:"16px 18px",marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>Saved</div><div style={{color:isArchived?C.muted:goal.spendingMode?C.orange:C.yellow,fontSize:28,fontWeight:800,letterSpacing:-0.5}}>{fmt(saved)}</div></div>
+        <div style={{textAlign:"right"}}><div style={{color:C.faint,fontSize:11,marginBottom:4}}>of {fmt(goal.goal)}</div><Pill color={pct>=100?C.accent:isArchived?C.faint:C.yellow}>{pct}%</Pill></div>
+      </div>
+      <ProgressBar value={saved} max={goal.goal} color={isArchived?C.faint:goal.spendingMode?C.orange:C.yellow} allowOver/>
+    </div>
+
+    {!isArchived ? (
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
+        <button onClick={handleToggleSpending} style={{width:"100%",background:goal.spendingMode?C.orange+"22":C.surface,border:`1.5px solid ${goal.spendingMode?C.orange:C.border}`,color:goal.spendingMode?C.orange:C.text,borderRadius:12,padding:"14px 0",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>{goal.spendingMode?"⏹ Stop Spending Mode":"💳 Start Spending Mode"}</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setWithdrawModal(true)} style={{flex:1,background:C.orangeDim,border:`1.5px solid ${C.orange}`,color:C.orange,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>➖ Withdraw</button>
+          <button onClick={handleArchive} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"11px 0",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🗃️ Archive</button>
+        </div>
+        <button onClick={handleDelete} style={{width:"100%",background:"transparent",border:`1px solid ${C.redDim}`,color:C.red,borderRadius:10,padding:"9px 0",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans', sans-serif", marginTop:4}}>🗑 Delete Goal</button>
+      </div>
+    ) : (
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+        <button onClick={handleUnarchive} style={{width:"100%",background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"12px 0",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🔄 Reactivate Goal</button>
+        <button onClick={handleDelete} style={{width:"100%",background:"transparent",border:`1px solid ${C.redDim}`,color:C.red,borderRadius:10,padding:"9px 0",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>🗑 Permanently Delete</button>
+      </div>
+    )}
+
     <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>History</div>
     {goalTxns.length===0?<EmptyState icon="◎" message="No transactions yet."/>:(
       <div style={{display:"flex",flexDirection:"column",gap:2}}>
@@ -1000,11 +1013,10 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
       </div>
     )}
 
-    {/* Emergency Withdrawal Modal */}
     {withdrawModal&&<Modal title={`Emergency Withdrawal`} onClose={()=>setWithdrawModal(false)} center={false}>
       <div style={{background:C.orangeDim,border:`1px solid ${C.orange}44`,borderRadius:12,padding:"12px 14px",marginBottom:16}}>
         <div style={{color:C.orange,fontSize:13,fontWeight:700}}>⚠️ Emergency Withdrawal</div>
-        <div style={{color:C.muted,fontSize:12,marginTop:4}}>Funds return to your bank as available balance. No expense is recorded.</div>
+        <div style={{color:C.muted,fontSize:12,marginTop:4}}>Funds will automatically return to the bank accounts they were saved from.</div>
       </div>
       <div style={{color:C.muted,fontSize:13,marginBottom:14}}>Available in goal: <strong style={{color:C.yellow}}>{fmt(saved)}</strong></div>
       <Input label="Amount to withdraw" type="number" step="any" placeholder="0.00" value={withdrawAmt} onChange={e=>setWithdrawAmt(e.target.value)}/>
@@ -1136,7 +1148,7 @@ function AddTransaction({banks,expCats,incCats,savings,currency,onAdd,onDone,ban
 // ── History ───────────────────────────────────────────────────────────────────
 function History({txns,onDelete,onUpdate,banks,expCats,incCats,currency,availMonths}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
-  const[search,setSearch]=useState("");const[filterType,setFilterType]=useState("all");const[filterMonth,setFilterMonth]=useState("all");const[confirmId,setConfirmId]=useState(null);const[editTxn,setEditTxn]=useState(null);const[viewTxn,setViewTxn]=useState(null);
+  const[search,setSearch]=useState("");const[filterType,setFilterType]=useState("all");const[filterMonth,setFilterMonth]=useState("all");const[confirmTxn,setConfirmTxn]=useState(null);const[editTxn,setEditTxn]=useState(null);const[viewTxn,setViewTxn]=useState(null);
 
   const filtered=useMemo(()=>txns.filter(t=>{
     if(filterType!=="all"&&t.type!==filterType)return false;
@@ -1149,7 +1161,7 @@ function History({txns,onDelete,onUpdate,banks,expCats,incCats,currency,availMon
 
   return <div style={{padding:"24px 16px 0"}}>
     <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>History</div>
-    <input placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} style={{...IS,marginBottom:12}}/>
+    <input placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:12,fontFamily:"'DM Sans', sans-serif"}}/>
     <div style={{display:"flex",gap:8,marginBottom:14,overflowX:"auto"}}>
       {["all","expense","income","saving","transfer"].map(f=><button key={f} onClick={()=>setFilterType(f)} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterType===f?C.accent:C.border}`,background:filterType===f?C.accentDim:"transparent",color:filterType===f?C.accent:C.muted,fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize",fontFamily:"'DM Sans', sans-serif"}}>{f}</button>)}
     </div>
@@ -1157,9 +1169,14 @@ function History({txns,onDelete,onUpdate,banks,expCats,incCats,currency,availMon
     <div style={{color:C.faint,fontSize:11,marginBottom:12}}>{filtered.length} transaction{filtered.length!==1?"s":""}</div>
     <div style={{display:"flex",flexDirection:"column"}}>
       {filtered.length===0&&<EmptyState icon="💸" message="No transactions found."/>}
-      {filtered.map(t=><SwipeRow key={t.id} onEdit={editable(t)?()=>setEditTxn(t):()=>setViewTxn(t)} onDelete={()=>setConfirmId(t.id)}><TxnRow txn={t} hideTotal={false} onClick={()=>setViewTxn(t)}/></SwipeRow>)}
+      {filtered.map(t=><SwipeRow key={t.id} onEdit={editable(t)?()=>setEditTxn(t):()=>setViewTxn(t)} onDelete={()=>setConfirmTxn(t)}><TxnRow txn={t} hideTotal={false} onClick={()=>setViewTxn(t)}/></SwipeRow>)}
     </div>
-    {confirmId&&<ConfirmModal title="Delete Transaction?" message="This will permanently remove the record and update all balances." onClose={()=>setConfirmId(null)} onConfirm={()=>{onDelete(confirmId);setConfirmId(null);}}/>}
+    {confirmTxn&&<ConfirmModal 
+      title={confirmTxn.splitGroupId ? "Delete Linked Transactions?" : "Delete Transaction?"} 
+      message={confirmTxn.splitGroupId ? "🔗 This transaction is split across multiple accounts. Deleting it will safely remove ALL linked parts and return balances to normal." : "This will permanently remove the record and update all balances."} 
+      onClose={()=>setConfirmTxn(null)} 
+      onConfirm={()=>{onDelete(confirmTxn.id);setConfirmTxn(null);}}
+    />}
     {editTxn&&<EditTxnModal txn={editTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} onSave={async(data)=>{const ok=await onUpdate(editTxn.id,data);if(ok)setEditTxn(null);}} onClose={()=>setEditTxn(null)}/>}
     {viewTxn&&<TxnViewModal txn={viewTxn} onClose={()=>setViewTxn(null)}/>}
   </div>;
@@ -1180,7 +1197,7 @@ function EditTxnModal({txn,banks,expCats,incCats,currency,onSave,onClose}){
 }
 
 // ── SavingsPage ───────────────────────────────────────────────────────────────
-function SavingsPage({savings,onSave,txns,banks,onBack,addTxn,delTxn,onGoalToast,bankBalance,safeToSpend,frozenForBank,goalSaved,setAppAlert}){
+function SavingsPage({savings,onSave,txns,banks,onBack,addTxn,delTxn,onGoalToast,bankBalance,safeToSpend,frozenForBank,goalSaved,setAppAlert, onOpenSaving}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
   const[activeTab,setActiveTab]=useState("active");const[showAdd,setShowAdd]=useState(false);const[name,setName]=useState("");const[goal,setGoal]=useState("");const[editId,setEditId]=useState(null);
 
@@ -1192,6 +1209,17 @@ function SavingsPage({savings,onSave,txns,banks,onBack,addTxn,delTxn,onGoalToast
     if(editId)await onSave(savings.map(s=>s.id===editId?{...s,name,goal:pg}:s));
     else await onSave([...savings,newGoal]);
     setName("");setGoal("");setShowAdd(false);setEditId(null);
+  };
+
+  const attemptDelete = (s) => {
+    const saved = goalSaved(s.id);
+    const hasTxns = txns.some(t => t.goalId === s.id);
+    if (saved > 0 || hasTxns) {
+      setAppAlert({title: "Cannot Delete Directly", message: "This goal contains funds or transaction history. Please tap on the goal card to withdraw funds, archive it, or delete it safely from the control panel.", color: C.yellow});
+    } else {
+      onSave(savings.filter(g => g.id !== s.id));
+      HAPTICS.success();
+    }
   };
 
   return <div style={{padding:"24px 16px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
@@ -1206,15 +1234,15 @@ function SavingsPage({savings,onSave,txns,banks,onBack,addTxn,delTxn,onGoalToast
     <div style={{display:"flex",flexDirection:"column",gap:0}}>
       {(activeTab==="active"?active:archived).map(s=>{
         const saved=goalSaved(s.id),pct=s.goal?Math.min(110,Math.round((saved/s.goal)*100)):0;
-        return <SwipeRow key={s.id} onEdit={()=>{setEditId(s.id);setName(s.name);setGoal(s.goal);setShowAdd(true);}} onDelete={null}>
-          <div style={{padding:"14px 16px",cursor:"default"}}>
+        return <SwipeRow key={s.id} onEdit={()=>{setEditId(s.id);setName(s.name);setGoal(s.goal);setShowAdd(true);}} onDelete={()=>attemptDelete(s)}>
+          <div onClick={() => onOpenSaving(s)} style={{padding:"14px 16px",cursor:"pointer"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{color:C.text,fontWeight:700,fontSize:15}}>{s.spendingMode?"💳":"🎯"} {s.name}</span>
               <Pill color={pct>=100?C.accent:activeTab==="archived"?C.faint:C.yellow}>{pct}%</Pill>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:activeTab==="archived"?C.muted:s.spendingMode?C.orange:C.yellow,fontSize:17,fontWeight:800}}>{fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>{fmt(Math.max(0,s.goal-saved))} left</span></div>
             <ProgressBar value={saved} max={s.goal} color={activeTab==="archived"?C.faint:s.spendingMode?C.orange:C.yellow} allowOver/>
-            <div style={{color:C.faint,fontSize:11,marginTop:6}}>Tap on goal card from Home to manage →</div>
+            <div style={{color:C.accent,fontSize:11,marginTop:6, fontWeight:700}}>Tap to manage goal →</div>
           </div>
         </SwipeRow>;
       })}
