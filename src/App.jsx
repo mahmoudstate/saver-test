@@ -86,6 +86,7 @@ const ICONS = {
   parking:"🅿️",fuel:"⛽",car_repair:"🔧",takeaway:"🍕",barber:"💈",pets:"🐾",
   travel:"✈️",gaming:"🎮",pharmacy:"💊",laundry:"🧺",tuition:"🎓",gym:"🏋️",
   type_streaming:"🎬",type_software:"🤖",type_telecom:"📶",type_shopping:"🛍",type_utilities:"⚡",type_other:"🧾",
+  installment:"💳",
 };
 
 const DEFAULT_BANKS = [{id:"b1",name:"CIB",color:"#60a5fa"},{id:"b2",name:"NBE",color:"#6ee7b7"},{id:"b3",name:"Cash",color:"#fbbf24"}];
@@ -240,6 +241,14 @@ const INSTALLMENT_PROVIDERS = [
   {id:"contact",name:"Contact",domain:"contactcfs.com",color:"#1a237e",category:"BNPL"},
   {id:"btech",name:"B.TECH",domain:"btech.com",color:"#ffd600",category:"BNPL"},
   {id:"noon_pay",name:"Noon Pay Later",domain:"noon.com",color:"#feee00",category:"BNPL"},
+  // ── UK & global BNPL ──
+  {id:"klarna",name:"Klarna",domain:"klarna.com",color:"#ffb3c7",category:"BNPL"},
+  {id:"clearpay",name:"Clearpay",domain:"clearpay.co.uk",color:"#b2fce4",category:"BNPL"},
+  {id:"paypal_pay",name:"PayPal Pay in 3",domain:"paypal.com",color:"#003087",category:"BNPL"},
+  {id:"zilch",name:"Zilch",domain:"zilch.com",color:"#00e0a1",category:"BNPL"},
+  {id:"laybuy",name:"Laybuy",domain:"laybuy.com",color:"#6a4cff",category:"BNPL"},
+  {id:"frasersplus",name:"Frasers Plus",domain:"frasers.group",color:"#000000",category:"BNPL"},
+  {id:"affirm",name:"Affirm",domain:"affirm.com",color:"#4a4af4",category:"BNPL"},
   {id:"gam3ya",name:"Gam3ya",domain:"",color:"#6c63ff",category:"Community"},
   {id:"car",name:"Car Loan",domain:"",color:"#546e7a",category:"Assets"},
   {id:"rent_install",name:"Rent",domain:"",color:"#26a69a",category:"Assets"},
@@ -1661,7 +1670,7 @@ function MonthlyBillsPage({bills,installments,onSaveBills,onSaveInstallments,ban
       {[{id:"subscriptions",label:"📋 Subscriptions"},{id:"installments",label:"💳 Installments"}].map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{flex:1,padding:"11px 0",borderRadius:12,border:`1.5px solid ${activeTab===t.id?C.accent:C.border}`,background:activeTab===t.id?C.accentDim:"transparent",color:activeTab===t.id?C.accent:C.muted,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>{t.label}</button>)}
     </div>
     {activeTab==="subscriptions"&&<SubscriptionsTab bills={bills} onSave={onSaveBills} banks={banks} expCats={expCats} onAddTxn={onAddTxn} delTxn={delTxn} currency={currency} setAppAlert={setAppAlert}/>}
-    {activeTab==="installments"&&<InstallmentsTab installments={installments} onSave={onSaveInstallments} banks={banks} expCats={expCats} onAddTxn={onAddTxn} setAppAlert={setAppAlert}/>}
+    {activeTab==="installments"&&<InstallmentsTab installments={installments} onSave={onSaveInstallments} banks={banks} expCats={expCats} onAddTxn={onAddTxn} delTxn={delTxn} setAppAlert={setAppAlert}/>}
   </div>;
 }
 
@@ -1980,144 +1989,344 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
   </div>;
 }
 
-function InstallmentsTab({installments,onSave,banks,expCats,onAddTxn,setAppAlert}){
-  const[showAdd,setShowAdd]=useState(false);const[showProviderPicker,setShowProviderPicker]=useState(false);const[providerSearch,setProviderSearch]=useState("");
-  const[editItem,setEditItem]=useState(null);const[confirmDel,setConfirmDel]=useState(null);
-  const[name,setName]=useState("");const[totalAmount,setTotalAmount]=useState("");const[installmentAmount,setInstallmentAmount]=useState("");const[totalInstallments,setTotalInstallments]=useState("");const[bankId,setBankId]=useState(banks[0]?.id||"");const[catId,setCatId]=useState(expCats[0]?.id||"");const[startDate,setStartDate]=useState(today());const[providerColor,setProviderColor]=useState("#6ee7b7");const[providerDomain,setProviderDomain]=useState("");
+function InstallmentsTab({installments,onSave,banks,expCats,onAddTxn,delTxn,setAppAlert}){
+  const getLocalMonth=()=>{const d=new Date();const offset=d.getTimezoneOffset()*60000;return new Date(d.getTime()-offset).toISOString().slice(0,7);};
+  const curMonth=getLocalMonth();
+  const monthOffset=(n)=>{const d=new Date();const m=new Date(d.getFullYear(),d.getMonth()+n,1);return `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}`;};
+  const[view,setView]=useState({mode:"list"}); // list | picker | form | detail
+  const[providerSearch,setProviderSearch]=useState("");
+  const[form,setForm]=useState(null);
+  const[detailMonth,setDetailMonth]=useState(curMonth);
+  const[filterMonth,setFilterMonth]=useState(curMonth);
+  const[confirmDel,setConfirmDel]=useState(null);
+  const[confirmUndo,setConfirmUndo]=useState(null); // {inst,month}
   const payingRef=useRef({});
-  const active=installments.filter(i=>i.status!=="completed");
-  const completed=installments.filter(i=>i.status==="completed");
-  const totalMonthly=active.reduce((a,i)=>a+i.installmentAmount,0);
-  const totalRemaining=active.reduce((a,i)=>a+(i.totalAmount-(i.paidInstallments*i.installmentAmount)),0);
+  const is=getIS();
 
-  const openAdd=(item=null)=>{
-    setEditItem(item);setName(item?.name||"");setTotalAmount(item?.totalAmount?String(item.totalAmount):"");
-    setInstallmentAmount(item?.installmentAmount?String(item.installmentAmount):"");setTotalInstallments(item?.totalInstallments?String(item.totalInstallments):"");
-    setBankId(item?.bankId||banks[0]?.id||"");setCatId(item?.catId||expCats[0]?.id||"");setStartDate(item?.startDate||today());
-    setProviderColor(item?.color||"#6ee7b7");setProviderDomain(item?.domain||"");setShowAdd(true);
+  // Derived helpers (payments[] is the source of truth; migrate old paidInstallments count)
+  const paidOf=(inst)=>inst.payments?inst.payments.length:(inst.paidInstallments||0);
+  const isCompleted=(inst)=>paidOf(inst)>=inst.totalInstallments;
+  const paidInMonth=(inst,m)=>!!inst.payments?.some(p=>p.month===m);
+  const ensurePayments=(inst)=>{
+    if(inst.payments)return inst.payments;
+    const n=inst.paidInstallments||0,arr=[];
+    for(let k=0;k<n;k++)arr.push({month:monthOffset(-(n-k)),date:null,txnId:null,num:k+1});
+    return arr;
   };
+  const dueInfo=(inst)=>{
+    if(isCompleted(inst))return{text:"Completed",color:C.accent};
+    if(paidInMonth(inst,curMonth))return{text:"Paid",color:C.accent};
+    if(!inst.dueDay)return{text:"Due this month",color:C.muted};
+    const now=new Date();const due=new Date(now.getFullYear(),now.getMonth(),inst.dueDay);
+    const diff=Math.ceil((due-now)/(1000*60*60*24));
+    if(diff<0)return{text:`Overdue ${Math.abs(diff)}d`,color:C.red};
+    if(diff===0)return{text:"Today",color:C.red};
+    if(diff===1)return{text:"Tomorrow",color:C.orange};
+    if(diff<=(inst.reminderDays||2))return{text:`In ${diff} days`,color:C.yellow};
+    return{text:`Day ${inst.dueDay}`,color:C.muted};
+  };
+
+  const active=installments.filter(i=>!isCompleted(i));
+  const totalMonthly=active.reduce((a,i)=>a+i.installmentAmount,0);
+  const totalRemaining=active.reduce((a,i)=>a+(i.totalAmount-paidOf(i)*i.installmentAmount),0);
+  const availMonths=[...new Set([...installments.flatMap(i=>(i.payments||[]).map(p=>p.month)),curMonth])].sort().reverse();
+  const isReportMode=filterMonth==="all";
+  const sortForMonth=(m)=>[...installments].sort((a,b)=>{const ra=isCompleted(a)?2:paidInMonth(a,m)?1:0,rb=isCompleted(b)?2:paidInMonth(b,m)?1:0;if(ra!==rb)return ra-rb;return (a.dueDay||99)-(b.dueDay||99);});
+
+  // ── Navigation ──
+  const openPicker=()=>{setProviderSearch("");setView({mode:"picker"});};
+  const blankForm=()=>({editId:null,itemType:"",company:"",domain:"",color:"",count:"",amount:"",total:"",paidInit:"0",bankId:banks[0]?.id||"",dueDay:"1",reminderDays:"2",note:"",startDate:today()});
+  const pickProvider=(prov)=>{setForm({...blankForm(),company:prov.name,domain:prov.domain,color:prov.color});setView({mode:"form"});};
+  const pickCustom=()=>{setForm(blankForm());setView({mode:"form"});};
+  const openEdit=(inst)=>{setForm({editId:inst.id,itemType:inst.itemType||"",company:inst.company||inst.name||"",domain:inst.domain||"",color:inst.color||"",count:String(inst.totalInstallments||""),amount:String(inst.installmentAmount||""),total:String(inst.totalAmount||""),paidInit:String(paidOf(inst)),bankId:inst.bankId,dueDay:String(inst.dueDay||1),reminderDays:String(inst.reminderDays??2),note:inst.note||"",startDate:inst.startDate||today()});setView({mode:"form"});};
+  const openDetail=(inst)=>{setDetailMonth(curMonth);setView({mode:"detail",instId:inst.id});};
+
+  const setF=(k,v)=>setForm(p=>{const n={...p,[k]:v};if((k==="count"||k==="amount")){const c=parseFloat(n.count),a=parseFloat(n.amount);if(c>0&&a>0)n.total=String(Math.round(c*a*100)/100);}return n;});
 
   const handleSave=async()=>{
-    const ta=parseFloat(totalAmount),ia=parseFloat(installmentAmount),ti=parseInt(totalInstallments);
-    if(!name||isNaN(ta)||ta<=0||isNaN(ia)||ia<=0||isNaN(ti)||ti<=0)return;
-    const prov=INSTALLMENT_PROVIDERS.find(p=>p.name===name);
-    const obj={id:editItem?.id||Date.now().toString(),name,domain:prov?.domain||providerDomain,color:prov?.color||providerColor,totalAmount:ta,installmentAmount:ia,totalInstallments:ti,paidInstallments:editItem?.paidInstallments||0,startDate,bankId,catId,status:"active"};
-    if(editItem)await onSave(installments.map(i=>i.id===editItem.id?obj:i));
-    else await onSave([...installments,obj]);
-    setShowAdd(false);setEditItem(null);setName("");setTotalAmount("");setInstallmentAmount("");setTotalInstallments("");
+    const f=form;const count=parseInt(f.count),amount=parseFloat(f.amount);
+    let total=parseFloat(f.total);if(isNaN(total)||total<=0)total=count*amount;
+    const title=(f.itemType||f.company).trim();
+    if(!title||isNaN(count)||count<=0||isNaN(amount)||amount<=0)return;
+    const dd=Math.min(28,Math.max(1,parseInt(f.dueDay)||1)),rd=Math.min(7,Math.max(0,parseInt(f.reminderDays)||2));
+    const base={itemType:f.itemType.trim(),company:f.company.trim(),domain:f.domain,color:f.color,totalInstallments:count,installmentAmount:amount,totalAmount:total,bankId:f.bankId,dueDay:dd,reminderDays:rd,note:f.note.trim(),startDate:f.startDate};
+    if(f.editId){
+      await onSave(installments.map(i=>{if(i.id!==f.editId)return i;const pays=ensurePayments(i);return{...i,...base,name:base.company,payments:pays,paidInstallments:pays.length,status:pays.length>=count?"completed":"active"};}));
+      setView({mode:"detail",instId:f.editId});
+    }else{
+      const initN=Math.min(count,Math.max(0,parseInt(f.paidInit)||0));
+      const payments=[];for(let k=0;k<initN;k++)payments.push({month:monthOffset(-(initN-k)),date:null,txnId:null,num:k+1});
+      await onSave([...installments,{id:Date.now().toString(),...base,name:base.company,payments,paidInstallments:payments.length,status:payments.length>=count?"completed":"active"}]);
+      setView({mode:"list"});
+    }
+    HAPTICS.success();
   };
 
-  const handlePayInstallment=async(inst)=>{
-    if(payingRef.current[inst.id])return;if(inst.paidInstallments>=inst.totalInstallments){setAppAlert({title:"Already Complete",message:"All installments for this item have been paid.",color:C.accent});return;}
+  const handlePay=async(inst,mStr)=>{
+    if(payingRef.current[inst.id])return;
+    const payments=ensurePayments(inst);
+    if(payments.length>=inst.totalInstallments){setAppAlert({title:"Already Complete",message:"All installments have been paid.",color:C.accent});return;}
+    if(payments.some(p=>p.month===mStr)){setAppAlert({title:"Already Paid",message:`An installment is already recorded for ${MONTHS[+mStr.split("-")[1]-1]}.`,color:C.yellow});return;}
     payingRef.current[inst.id]=true;
     try{
-      const bank=banks.find(b=>b.id===inst.bankId);const cat=expCats.find(c=>c.id===inst.catId);
-      const id=await onAddTxn({type:"expense",amount:inst.installmentAmount,date:today(),bankId:inst.bankId,bankName:bank?.name,catId:inst.catId,catName:cat?.name||inst.name,catIcon:cat?.icon||"bills",note:`Installment ${inst.paidInstallments+1}/${inst.totalInstallments}: ${inst.name}`});
+      const bank=banks.find(b=>b.id===inst.bankId);const num=payments.length+1;const label=inst.itemType||inst.company||inst.name;
+      const id=await onAddTxn({type:"expense",amount:inst.installmentAmount,date:today(),bankId:inst.bankId,bankName:bank?.name,catId:"installment",catName:"Installments",catIcon:"installment",note:`Installment ${num}/${inst.totalInstallments}: ${label}`});
       if(id!==false){
-        const newPaid=inst.paidInstallments+1;
-        const newStatus=newPaid>=inst.totalInstallments?"completed":"active";
-        HAPTICS.success();await onSave(installments.map(i=>i.id===inst.id?{...i,paidInstallments:newPaid,status:newStatus}:i));
-        if(newStatus==="completed")setAppAlert({title:"Installment Complete! 🎉",message:`"${inst.name}" has been fully paid off!`,color:C.accent});
+        const newPayments=[...payments,{month:mStr,date:today(),txnId:id,num}];
+        const newStatus=newPayments.length>=inst.totalInstallments?"completed":"active";
+        HAPTICS.success();await onSave(installments.map(i=>i.id===inst.id?{...i,payments:newPayments,paidInstallments:newPayments.length,status:newStatus}:i));
+        if(newStatus==="completed")setAppAlert({title:"Installment Complete! 🎉",message:`"${label}" has been fully paid off!`,color:C.accent});
       }
     }finally{setTimeout(()=>{payingRef.current[inst.id]=false;},1000);}
   };
+  const handleUndoConfirm=async()=>{
+    if(!confirmUndo)return;const{inst,month}=confirmUndo;const payments=ensurePayments(inst);
+    const p=payments.find(x=>x.month===month);if(p?.txnId)await delTxn(p.txnId);
+    const newPayments=payments.filter(x=>x.month!==month);
+    await onSave(installments.map(i=>i.id===inst.id?{...i,payments:newPayments,paidInstallments:newPayments.length,status:newPayments.length>=inst.totalInstallments?"completed":"active"}:i));
+    setConfirmUndo(null);
+  };
 
-  const filteredProviders=INSTALLMENT_PROVIDERS.filter(p=>p.name.toLowerCase().includes(providerSearch.toLowerCase()));
-  const is=getIS();
-  const byCategory={};INSTALLMENT_PROVIDERS.forEach(p=>{if(!byCategory[p.category])byCategory[p.category]=[];byCategory[p.category].push(p);});
+  const byCategory={};INSTALLMENT_PROVIDERS.forEach(p=>{(byCategory[p.category]=byCategory[p.category]||[]).push(p);});
 
-  return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <div style={{color:C.muted,fontSize:13}}>{active.length} active</div>
-      <Btn small onClick={()=>setShowProviderPicker(true)}>+ Add</Btn>
-    </div>
-
-    {active.length>0&&(
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
-        <Card style={{padding:"14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>Monthly</div><div style={{color:C.text,fontSize:16,fontWeight:800}}>{fmt(totalMonthly)}</div></Card>
-        <Card style={{padding:"14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>Active</div><div style={{color:C.blue,fontSize:16,fontWeight:800}}>{active.length}</div></Card>
-        <Card style={{padding:"14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>Remaining</div><div style={{color:C.yellow,fontSize:16,fontWeight:800}}>{fmt(totalRemaining)}</div></Card>
-      </div>
-    )}
-
-    {active.length===0&&completed.length===0&&<EmptyState icon="💳" message="No installment plans yet. Add your BNPL or loan installments."/>}
-
-    {active.map(inst=>{
-      const pct=Math.round((inst.paidInstallments/inst.totalInstallments)*100);
-      const remaining=inst.totalAmount-(inst.paidInstallments*inst.installmentAmount);
-      const bank=banks.find(b=>b.id===inst.bankId);
-      return <SwipeRow key={inst.id} onEdit={()=>openAdd(inst)} onDelete={()=>setConfirmDel(inst.id)}>
-        <div style={{padding:"14px 16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,marginBottom:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-            <ServiceLogo domain={inst.domain} name={inst.name} color={inst.color} size={40}/>
-            <div style={{flex:1}}>
-              <div style={{color:C.text,fontWeight:700,fontSize:15}}>{inst.name}</div>
-              <div style={{color:C.muted,fontSize:11,marginTop:2}}>{bank?.name} · {fmt(inst.installmentAmount)}/mo</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{color:C.yellow,fontSize:15,fontWeight:800}}>{fmt(remaining)}</div>
-              <div style={{color:C.muted,fontSize:10,marginTop:2}}>remaining</div>
-            </div>
-          </div>
-          <div style={{marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <span style={{color:C.muted,fontSize:11,fontWeight:700}}>{inst.paidInstallments} of {inst.totalInstallments} paid</span>
-              <span style={{color:C.accent,fontSize:11,fontWeight:700}}>{pct}%</span>
-            </div>
-            <ProgressBar value={inst.paidInstallments} max={inst.totalInstallments} color={pct>=90?C.accent:C.blue}/>
-          </div>
-          <button onClick={()=>handlePayInstallment(inst)} style={{width:"100%",background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,padding:"10px",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>✓ Pay Installment #{inst.paidInstallments+1}</button>
+  // ════════════ PICKER ════════════
+  if(view.mode==="picker"){
+    const q=providerSearch.toLowerCase();
+    return <FullPage title="Add Installment" onBack={()=>setView({mode:"list"})}>
+      <div style={{padding:"0 16px 40px"}}>
+        <div style={{position:"relative",marginBottom:18}}>
+          <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:C.muted,fontSize:15}}>🔍</span>
+          <input placeholder="Search providers..." value={providerSearch} onChange={e=>setProviderSearch(e.target.value)} style={{...is,paddingLeft:40,borderRadius:14}}/>
         </div>
-      </SwipeRow>;
-    })}
-
-    {completed.length>0&&(
-      <div style={{marginTop:20}}>
-        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Completed ({completed.length})</div>
-        {completed.map(inst=>(
-          <div key={inst.id} style={{padding:"12px 16px",background:C.accentDim+"44",border:`1px solid ${C.accent}44`,borderRadius:12,marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
-            <ServiceLogo domain={inst.domain} name={inst.name} color={inst.color} size={32}/>
-            <div style={{flex:1}}>
-              <div style={{color:C.text,fontWeight:700,fontSize:14}}>{inst.name}</div>
-              <div style={{color:C.muted,fontSize:11}}>{fmt(inst.totalAmount)} fully paid</div>
+        <button onClick={pickCustom} style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:C.card,border:`1.5px dashed ${C.border}`,borderRadius:16,padding:"16px",cursor:"pointer",marginBottom:24,textAlign:"left",fontFamily:"'DM Sans', sans-serif"}}>
+          <div style={{width:44,height:44,borderRadius:12,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✎</div>
+          <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>Custom Installment</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>Loan, gam3ya, or any plan</div></div>
+          <span style={{color:C.muted,fontSize:18}}>❯</span>
+        </button>
+        {Object.entries(byCategory).map(([cat,provs])=>{const list=provs.filter(p=>p.name.toLowerCase().includes(q));if(!list.length)return null;return (
+          <div key={cat} style={{marginBottom:22}}>
+            <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>{cat}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"16px 10px"}}>
+              {list.map(prov=>(
+                <button key={prov.id} onClick={()=>pickProvider(prov)} style={{background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,fontFamily:"'DM Sans', sans-serif",padding:0}}>
+                  <ServiceLogo domain={prov.domain} name={prov.name} color={prov.color} size={56} style={{borderRadius:16}}/>
+                  <span style={{color:C.text,fontSize:11,fontWeight:600,textAlign:"center",lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{prov.name}</span>
+                </button>
+              ))}
             </div>
-            <span style={{color:C.accent,fontSize:18}}>✓</span>
+          </div>
+        );})}
+      </div>
+    </FullPage>;
+  }
+
+  // ════════════ FORM ════════════
+  if(view.mode==="form"&&form){
+    const f=form;const accent=f.color||C.accent;
+    const count=parseInt(f.count)||0,amount=parseFloat(f.amount)||0;
+    const computedTotal=parseFloat(f.total)||(count*amount);
+    const valid=(f.itemType||f.company).trim()&&count>0&&amount>0;
+    const lbl={color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8,display:"block"};
+    return <FullPage title={f.editId?"Edit Installment":"New Installment"} onBack={()=>setView(f.editId?{mode:"detail",instId:f.editId}:{mode:"picker"})}>
+      <div style={{padding:"4px 16px 48px"}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24}}>
+          <ServiceLogo domain={f.domain} name={f.company||f.itemType||"?"} color={accent} size={72} style={{borderRadius:20}}/>
+        </div>
+        <div style={{marginBottom:20}}><label style={lbl}>What is it?</label><input value={f.itemType} onChange={e=>setF("itemType",e.target.value)} placeholder="e.g. iPhone 15, Car, Sofa..." style={{...is,borderRadius:14}}/></div>
+        <div style={{marginBottom:20}}><label style={lbl}>Company / Place</label><input value={f.company} onChange={e=>setF("company",e.target.value)} placeholder="e.g. ValU, B.TECH, dealership..." style={{...is,borderRadius:14}}/></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:8}}>
+          <div><label style={lbl}>No. of Installments</label><input type="number" min="1" inputMode="numeric" value={f.count} onChange={e=>setF("count",e.target.value)} placeholder="12" style={{...is,borderRadius:14}}/></div>
+          <div><label style={lbl}>Installment Amount</label><input type="number" step="any" inputMode="decimal" value={f.amount} onChange={e=>setF("amount",e.target.value)} placeholder="0" style={{...is,borderRadius:14}}/></div>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={lbl}>Total Amount (auto · editable)</label>
+          <input type="number" step="any" inputMode="decimal" value={f.total} onChange={e=>setF("total",e.target.value)} placeholder={String(computedTotal||0)} style={{...is,borderRadius:14,fontWeight:800}}/>
+          {count>0&&amount>0&&<div style={{color:C.muted,fontSize:11,marginTop:6}}>{count} × {fmt(amount)} = {fmt(count*amount)}</div>}
+        </div>
+        {!f.editId&&<div style={{marginBottom:20}}><label style={lbl}>Already Paid (installments)</label><input type="number" min="0" inputMode="numeric" value={f.paidInit} onChange={e=>setF("paidInit",e.target.value)} style={{...is,borderRadius:14}}/><div style={{color:C.faint,fontSize:11,marginTop:6}}>Installments paid before adding here (no transaction created).</div></div>}
+        <div style={{marginBottom:20}}><label style={lbl}>Pay from Account</label><select value={f.bankId} onChange={e=>setF("bankId",e.target.value)} style={{...is,borderRadius:14}}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          <div><label style={lbl}>Due Day</label><input type="number" min="1" max="28" inputMode="numeric" value={f.dueDay} onChange={e=>setF("dueDay",e.target.value)} style={{...is,borderRadius:14}}/></div>
+          <div><label style={lbl}>Remind Before (days)</label><input type="number" min="0" max="7" inputMode="numeric" value={f.reminderDays} onChange={e=>setF("reminderDays",e.target.value)} style={{...is,borderRadius:14}}/></div>
+        </div>
+        <div style={{marginBottom:20}}><label style={lbl}>Start Date</label><input type="date" value={f.startDate} onChange={e=>setF("startDate",e.target.value)} style={{...is,borderRadius:14,colorScheme:C.isDark?"dark":"light"}}/></div>
+        <div style={{marginBottom:28}}><label style={lbl}>Note (optional)</label><input value={f.note} onChange={e=>setF("note",e.target.value)} placeholder="e.g. 0% interest" style={{...is,borderRadius:14}}/></div>
+        <Btn full onClick={handleSave} color={accent} style={{opacity:valid?1:0.5,pointerEvents:valid?"auto":"none",borderRadius:14,padding:"15px"}}>{f.editId?"Save Changes":"Add Installment"}</Btn>
+      </div>
+    </FullPage>;
+  }
+
+  // ════════════ DETAIL ════════════
+  if(view.mode==="detail"){
+    const inst=installments.find(i=>i.id===view.instId);
+    if(!inst)return <FullPage title="Installment" onBack={()=>setView({mode:"list"})}><EmptyState icon="💳" message="This plan was removed."/></FullPage>;
+    const accent=inst.color||C.accent;const bank=banks.find(b=>b.id===inst.bankId);
+    const paid=paidOf(inst);const pct=Math.round((paid/inst.totalInstallments)*100);
+    const remaining=inst.totalAmount-paid*inst.installmentAmount;
+    const title=inst.itemType||inst.company||inst.name;
+    const payments=inst.payments||ensurePayments(inst);
+    const paidThisMonth=paidInMonth(inst,detailMonth);
+    const recent12=[];for(let i=0;i<12;i++)recent12.push(monthOffset(-i));
+    const dAvail=[...new Set([...payments.map(p=>p.month),...recent12])].sort().reverse();
+    const grad=C.isDark?`linear-gradient(160deg,${accent}33 0%,${C.card} 70%)`:`linear-gradient(160deg,${accent}22 0%,${C.surface} 70%)`;
+    const rowStyle={display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 0",borderBottom:`1px solid ${C.border}`};
+    return <FullPage title={title} onBack={()=>setView({mode:"list"})} right={
+      <button onClick={()=>openEdit(inst)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>✎ Edit</button>
+    }>
+      <div style={{padding:"0 16px 48px"}}>
+        <div style={{background:grad,border:`1px solid ${C.border}`,borderRadius:22,padding:"24px 20px",textAlign:"center",marginBottom:16}}>
+          <ServiceLogo domain={inst.domain} name={inst.company||title} color={accent} size={64} style={{borderRadius:18,margin:"0 auto 12px"}}/>
+          <div style={{color:C.text,fontSize:21,fontWeight:800}}>{title}</div>
+          {inst.company&&inst.itemType&&<div style={{color:C.muted,fontSize:13,fontWeight:600,marginTop:2}}>{inst.company}</div>}
+          <div style={{color:C.text,fontSize:30,fontWeight:800,letterSpacing:-1,marginTop:10}}>{fmt(inst.installmentAmount)}<span style={{fontSize:14,color:C.muted,fontWeight:600}}> /mo</span></div>
+          <div style={{marginTop:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.muted,fontSize:12,fontWeight:700}}>{paid} of {inst.totalInstallments} paid</span><span style={{color:accent,fontSize:12,fontWeight:800}}>{pct}%</span></div>
+            <ProgressBar value={paid} max={inst.totalInstallments} color={pct>=90?C.accent:accent}/>
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+          <Card style={{padding:"14px 10px",textAlign:"center"}}><div style={{color:C.text,fontSize:15,fontWeight:800}}>{fmt(inst.totalAmount)}</div><div style={{color:C.muted,fontSize:10,fontWeight:700,marginTop:4}}>Total</div></Card>
+          <Card style={{padding:"14px 10px",textAlign:"center"}}><div style={{color:C.accent,fontSize:15,fontWeight:800}}>{fmt(paid*inst.installmentAmount)}</div><div style={{color:C.muted,fontSize:10,fontWeight:700,marginTop:4}}>Paid</div></Card>
+          <Card style={{padding:"14px 10px",textAlign:"center"}}><div style={{color:C.yellow,fontSize:15,fontWeight:800}}>{fmt(remaining)}</div><div style={{color:C.muted,fontSize:10,fontWeight:700,marginTop:4}}>Remaining</div></Card>
+        </div>
+
+        <Card style={{padding:"4px 16px",marginBottom:16}}>
+          {inst.itemType&&<div style={rowStyle}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Item</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{inst.itemType}</span></div>}
+          {inst.company&&<div style={rowStyle}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Company</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{inst.company}</span></div>}
+          <div style={rowStyle}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Pay from</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bank?.name||"—"}</span></div>
+          <div style={rowStyle}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Due day</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>Day {inst.dueDay||1} of month</span></div>
+          <div style={{...rowStyle,borderBottom:inst.note?`1px solid ${C.border}`:"none"}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Reminder</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{(inst.reminderDays??2)===0?"Off":`${inst.reminderDays??2} day(s) before`}</span></div>
+          {inst.note&&<div style={{...rowStyle,borderBottom:"none"}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Note</span><span style={{color:C.text,fontSize:14,fontWeight:700,maxWidth:"60%",textAlign:"right"}}>{inst.note}</span></div>}
+        </Card>
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <span style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Record a Month</span>
+          <MonthSelect value={detailMonth} onChange={e=>setDetailMonth(e.target.value==="all"?curMonth:e.target.value)} availMonths={dAvail}/>
+        </div>
+        {isCompleted(inst)?(
+          <div style={{background:C.accentDim,color:C.accent,borderRadius:14,height:50,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:24}}>🎉 Fully paid off</div>
+        ):paidThisMonth?(
+          <div style={{display:"flex",gap:8,marginBottom:24}}>
+            <div style={{flex:1,background:C.accent,color:"#111",borderRadius:14,height:50,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>✓ Paid {MONTHS[+detailMonth.split("-")[1]-1]}</div>
+            <button onClick={()=>setConfirmUndo({inst,month:detailMonth})} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:14,height:50,padding:"0 20px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>⟲ Undo</button>
+          </div>
+        ):(
+          <button onClick={()=>handlePay(inst,detailMonth)} style={{width:"100%",background:accent,border:"none",color:"#111",borderRadius:14,height:52,fontWeight:800,fontSize:16,cursor:"pointer",marginBottom:24,fontFamily:"'DM Sans', sans-serif"}}>✓ Pay Installment #{paid+1} ({MONTHS[+detailMonth.split("-")[1]-1]})</button>
+        )}
+
+        <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Schedule</div>
+        <Card style={{padding:"4px 16px",marginBottom:24}}>
+          {Array.from({length:inst.totalInstallments}).map((_,idx)=>{
+            const num=idx+1;const p=payments.find(x=>x.num===num)||payments[idx];const done=idx<paid;
+            return <div key={num} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:idx===inst.totalInstallments-1?"none":`1px solid ${C.border}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:24,height:24,borderRadius:99,background:done?C.accent:C.border,color:done?"#111":C.muted,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{done?"✓":num}</div>
+                <span style={{color:done?C.text:C.muted,fontSize:13,fontWeight:600}}>{done&&p?.month?`${MONTHS[+p.month.split("-")[1]-1]} ${p.month.split("-")[0]}`:done?"Paid":`Installment ${num}`}</span>
+              </div>
+              <span style={{color:done?C.accent:C.muted,fontSize:13,fontWeight:700}}>{done?"✓ ":""}{fmt(inst.installmentAmount)}</span>
+            </div>;
+          })}
+        </Card>
+
+        <Btn full outline color={C.red} onClick={()=>setConfirmDel(inst.id)} style={{borderRadius:14}}>🗑 Delete Installment</Btn>
+      </div>
+      {confirmDel&&<ConfirmModal title="Delete Installment?" message="This removes the plan. Past payment transactions stay in your history." onClose={()=>setConfirmDel(null)} onConfirm={async()=>{await onSave(installments.filter(i=>i.id!==confirmDel));setConfirmDel(null);setView({mode:"list"});}}/>}
+      {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This removes the installment recorded for ${MONTHS[+confirmUndo.month.split("-")[1]-1]} and its transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
+    </FullPage>;
+  }
+
+  // ════════════ LIST ════════════
+  return <div>
+    <div style={{background:C.isDark?`linear-gradient(160deg,${C.purpleDim} 0%,${C.card} 80%)`:`linear-gradient(160deg,${C.purpleDim} 0%,${C.surface} 90%)`,border:`1px solid ${C.border}`,borderRadius:20,padding:"20px",marginBottom:20}}>
+      <div style={{color:C.muted,fontSize:12,fontWeight:700,letterSpacing:.5,marginBottom:4}}>Monthly installments</div>
+      <div style={{color:C.text,fontSize:38,fontWeight:800,letterSpacing:-1.5,marginBottom:16}}>{fmt(totalMonthly)}</div>
+      <div style={{display:"flex",background:C.isDark?"#ffffff10":"#00000008",borderRadius:14,padding:"12px 0"}}>
+        {[{v:active.length,l:"Active"},{v:fmt(totalRemaining),l:"Remaining"},{v:installments.filter(isCompleted).length,l:"Done"}].map((s,i)=>(
+          <div key={i} style={{flex:1,textAlign:"center",borderLeft:i?`1px solid ${C.border}`:"none"}}>
+            <div style={{color:C.text,fontSize:17,fontWeight:800}}>{s.v}</div>
+            <div style={{color:C.muted,fontSize:11,fontWeight:600,marginTop:2}}>{s.l}</div>
           </div>
         ))}
       </div>
-    )}
+    </div>
 
-    {showProviderPicker&&<Modal title="Add Installment" onClose={()=>{setShowProviderPicker(false);setProviderSearch("");}} center={false}>
-      <input placeholder="Search provider..." value={providerSearch} onChange={e=>setProviderSearch(e.target.value)} style={{...is,marginBottom:16}}/>
-      {Object.entries(byCategory).map(([cat,provs])=>(
-        <div key={cat} style={{marginBottom:16}}>
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>{cat}</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-            {provs.filter(p=>p.name.toLowerCase().includes(providerSearch.toLowerCase())).map(prov=>(
-              <button key={prov.id} onClick={()=>{setName(prov.name);setProviderColor(prov.color);setProviderDomain(prov.domain);setShowProviderPicker(false);openAdd();}} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 6px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,fontFamily:"'DM Sans', sans-serif"}}>
-                <ServiceLogo domain={prov.domain} name={prov.name} color={prov.color} size={32}/>
-                <span style={{color:C.text,fontSize:10,fontWeight:700,textAlign:"center",lineHeight:1.2}}>{prov.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-      <Btn full outline color={C.muted} onClick={()=>{setName("");setProviderColor("#6ee7b7");setProviderDomain("");setShowProviderPicker(false);openAdd();}}>+ Custom Installment</Btn>
-    </Modal>}
+    {installments.length===0&&<><EmptyState icon="💳" message="No installment plans yet. Add your BNPL, loan, or any plan."/><Btn full onClick={openPicker} style={{marginTop:4}}>+ Add Installment</Btn></>}
 
-    {showAdd&&<Modal title={editItem?"Edit Installment":"New Installment"} onClose={()=>{setShowAdd(false);setEditItem(null);}} center={false}>
-      <Input label="Name" value={name} onChange={e=>setName(e.target.value)}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <Input label="Total Amount" type="number" step="any" value={totalAmount} onChange={e=>setTotalAmount(e.target.value)}/>
-        <Input label="Monthly Amount" type="number" step="any" value={installmentAmount} onChange={e=>setInstallmentAmount(e.target.value)}/>
+    {installments.length>0&&<>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths}/>
+        <Btn small onClick={openPicker}>+ Add</Btn>
       </div>
-      <Input label="Total Installments" type="number" value={totalInstallments} onChange={e=>setTotalInstallments(e.target.value)}/>
-      <Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
-      <Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>
-      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Start Date</div><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} style={{...is,colorScheme:C.isDark?"dark":"light"}}/></div>
-      <Btn full onClick={handleSave}>{editItem?"Update":"Add Installment"}</Btn>
-    </Modal>}
-    {confirmDel&&<ConfirmModal title="Delete Installment?" message="This will remove the installment plan. Past payment transactions will remain in your history." onClose={()=>setConfirmDel(null)} onConfirm={async()=>{await onSave(installments.filter(i=>i.id!==confirmDel));setConfirmDel(null);}}/>}
+
+      {isReportMode?(()=>{
+        const yearsMap={};availMonths.filter(m=>m!=="all").forEach(m=>{const y=m.split("-")[0];(yearsMap[y]=yearsMap[y]||[]).push(m);});
+        const years=Object.keys(yearsMap).sort().reverse();
+        return <div style={{display:"flex",flexDirection:"column",gap:24,paddingBottom:40}}>
+          {years.map(year=>(
+            <div key={year}>
+              <div style={{color:C.text,fontSize:26,fontWeight:800,marginBottom:14,borderBottom:`1px solid ${C.border}`,paddingBottom:8}}>{year}</div>
+              {yearsMap[year].map(mStr=>{
+                const paidThis=installments.filter(i=>paidInMonth(i,mStr));
+                if(!paidThis.length)return null;
+                const monthTotal=paidThis.reduce((a,i)=>a+i.installmentAmount,0);
+                return <div key={mStr} style={{marginBottom:20}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <span style={{color:C.muted,fontSize:14,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>{MONTHS[+mStr.split("-")[1]-1]}</span>
+                    <Pill color={C.accent}>{fmt(monthTotal)}</Pill>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {paidThis.map(inst=>{const p=inst.payments.find(x=>x.month===mStr);return (
+                      <div key={inst.id} onClick={()=>openDetail(inst)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.accentDim+"33",border:`1px solid ${C.accent}55`,borderRadius:12,cursor:"pointer"}}>
+                        <ServiceLogo domain={inst.domain} name={inst.company||inst.itemType} color={inst.color||C.accent} size={38} style={{borderRadius:11}}/>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inst.itemType||inst.company}</div>
+                          <div style={{color:C.muted,fontSize:11,marginTop:2}}>Installment #{p?.num||"?"} / {inst.totalInstallments}</div>
+                        </div>
+                        <div style={{color:C.accent,fontSize:14,fontWeight:800}}>✓ {fmt(inst.installmentAmount)}</div>
+                      </div>
+                    );})}
+                  </div>
+                </div>;
+              })}
+            </div>
+          ))}
+        </div>;
+      })():(
+        <>
+          <div style={{color:C.text,fontSize:18,fontWeight:800,marginBottom:14}}>{filterMonth===curMonth?"Your installments":`${MONTHS[+filterMonth.split("-")[1]-1]} ${filterMonth.split("-")[0]}`}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:40}}>
+            {sortForMonth(filterMonth).map(inst=>{
+              const done=isCompleted(inst);const paidM=paidInMonth(inst,filterMonth);const paid=paidOf(inst);
+              const pct=Math.round((paid/inst.totalInstallments)*100);const di=dueInfo(inst);
+              return <SwipeRow key={inst.id} onEdit={()=>openEdit(inst)} onDelete={()=>setConfirmDel(inst.id)}>
+                <div style={{padding:"14px",borderLeft:`4px solid ${inst.color||C.accent}`,opacity:done?0.65:paidM?0.8:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div onClick={()=>openDetail(inst)} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
+                      <ServiceLogo domain={inst.domain} name={inst.company||inst.itemType} color={inst.color||C.accent} size={44} style={{borderRadius:13}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{color:C.text,fontWeight:800,fontSize:16,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inst.itemType||inst.company}</div>
+                        <div style={{color:C.muted,fontSize:12,marginTop:2}}>{paid}/{inst.totalInstallments} · {fmt(inst.installmentAmount)}/mo</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:7,flexShrink:0}}>
+                      {done?<span style={{color:C.accent,fontSize:12,fontWeight:800}}>✓ Done</span>
+                        :paidM?<button onClick={e=>{e.stopPropagation();setConfirmUndo({inst,month:filterMonth});}} style={{background:C.accentDim,border:`1px solid ${C.accent}`,color:C.accent,borderRadius:99,padding:"5px 13px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>✓ Paid</button>
+                        :<button onClick={e=>{e.stopPropagation();handlePay(inst,filterMonth);}} style={{background:C.accent,border:"none",color:"#111",borderRadius:99,padding:"6px 16px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>Pay #{paid+1}</button>}
+                    </div>
+                  </div>
+                  <div style={{marginTop:10}}><ProgressBar value={paid} max={inst.totalInstallments} color={pct>=90?C.accent:(inst.color||C.blue)}/></div>
+                  {filterMonth===curMonth&&!done&&!paidM&&<div style={{color:di.color,fontSize:11,fontWeight:700,marginTop:8}}>{di.text}</div>}
+                </div>
+              </SwipeRow>;
+            })}
+          </div>
+        </>
+      )}
+    </>}
+
+    {confirmDel&&<ConfirmModal title="Delete Installment?" message="This removes the plan. Past payment transactions stay in your history." onClose={()=>setConfirmDel(null)} onConfirm={async()=>{await onSave(installments.filter(i=>i.id!==confirmDel));setConfirmDel(null);}}/>}
+    {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This removes the installment recorded for ${MONTHS[+confirmUndo.month.split("-")[1]-1]} and its transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
   </div>;
 }
 
