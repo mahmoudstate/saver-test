@@ -85,6 +85,7 @@ const ICONS = {
   bank:"🏦",cash:"💵",goal:"🎯",trash:"🗑",edit:"✎",close:"✕",check:"✓",
   parking:"🅿️",fuel:"⛽",car_repair:"🔧",takeaway:"🍕",barber:"💈",pets:"🐾",
   travel:"✈️",gaming:"🎮",pharmacy:"💊",laundry:"🧺",tuition:"🎓",gym:"🏋️",
+  type_streaming:"🎬",type_software:"🤖",type_telecom:"📶",type_shopping:"🛍",type_utilities:"⚡",type_other:"🧾",
 };
 
 const DEFAULT_BANKS = [{id:"b1",name:"CIB",color:"#60a5fa"},{id:"b2",name:"NBE",color:"#6ee7b7"},{id:"b3",name:"Cash",color:"#fbbf24"}];
@@ -168,6 +169,18 @@ const SUBSCRIPTION_SERVICES = [
   {id:"talabat",name:"Talabat Pro",domain:"talabat.com",color:"#ff6b00",category:"Shopping"},
   {id:"noon",name:"Noon",domain:"noon.com",color:"#feee00",category:"Shopping"},
 ];
+
+// Bill types — used as the background "category" for each bill, derived from its kind.
+const BILL_TYPES = [
+  {id:"streaming",name:"Streaming & TV",icon:"type_streaming",color:"#f87171"},
+  {id:"software",name:"Software & AI",icon:"type_software",color:"#60a5fa"},
+  {id:"telecom",name:"Telecom & Internet",icon:"type_telecom",color:"#34d399"},
+  {id:"shopping",name:"Shopping & Delivery",icon:"type_shopping",color:"#fb923c"},
+  {id:"utilities",name:"Utilities",icon:"type_utilities",color:"#fbbf24"},
+  {id:"other",name:"Other",icon:"type_other",color:"#a78bfa"},
+];
+const SERVICE_CAT_TO_TYPE = {"Streaming":"streaming","Tech & AI":"software","Telecom":"telecom","Shopping":"shopping"};
+const getBillType = (id) => BILL_TYPES.find(t=>t.id===id) || BILL_TYPES.find(t=>t.id==="other");
 
 const INSTALLMENT_PROVIDERS = [
   {id:"valu",name:"ValU",domain:"valucorp.com",color:"#6c3ce1",category:"BNPL"},
@@ -1568,6 +1581,24 @@ function QuickActionsSetup({quickActions,expCats,banks,onSave,onBack}){
   </div>;
 }
 
+// ── FullPage: full-screen sub-page wrapper (slides over the app, above bottom nav) ──
+function FullPage({title,onBack,right,children,maxHeader}){
+  useEffect(()=>{const{overflow}=document.body.style;document.body.style.overflow="hidden";return()=>{document.body.style.overflow=overflow;};},[]);
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:120,background:C.bg,overflowY:"auto",WebkitOverflowScrolling:"touch",fontFamily:"'DM Sans', sans-serif",animation:"fpIn 0.28s cubic-bezier(0.2,0.8,0.2,1)"}}>
+      <style>{`@keyframes fpIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      <div style={{maxWidth:520,margin:"0 auto",minHeight:"100%",boxSizing:"border-box"}}>
+        {!maxHeader&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"18px 12px 10px",position:"sticky",top:0,background:C.bg,zIndex:3}}>
+          <button onClick={onBack} style={{background:"transparent",border:"none",color:C.text,fontSize:22,cursor:"pointer",padding:"8px 12px 8px 4px",display:"flex",alignItems:"center"}}><span style={{display:"block",transform:"translateY(-1px)"}}>❮</span></button>
+          <div style={{flex:1,color:C.text,fontSize:19,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</div>
+          {right}
+        </div>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ── MonthlyBillsPage (Subscriptions + Installments) ───────────────────────────
 function MonthlyBillsPage({bills,installments,onSaveBills,onSaveInstallments,banks,expCats,onAddTxn,delTxn,currency,setAppAlert}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
@@ -1585,149 +1616,267 @@ function MonthlyBillsPage({bills,installments,onSaveBills,onSaveInstallments,ban
 function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,setAppAlert}){
   const getLocalMonth=()=>{const d=new Date();const offset=d.getTimezoneOffset()*60000;return new Date(d.getTime()-offset).toISOString().slice(0,7);};
   const curMonth=getLocalMonth();
-  const[showAdd,setShowAdd]=useState(false);const[editItem,setEditItem]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmUndo,setConfirmUndo]=useState(null);
-  const[name,setName]=useState("");const[amount,setAmount]=useState("");const[bankId,setBankId]=useState(banks[0]?.id||"");const[catId,setCatId]=useState(expCats[0]?.id||"");const[dueDay,setDueDay]=useState("1");const[reminderDays,setReminderDays]=useState("2");
-  const[filterMonth,setFilterMonth]=useState(curMonth);
-  const[showServicePicker,setShowServicePicker]=useState(false);const[serviceSearch,setServiceSearch]=useState("");
-  const availMonths=[...new Set([...bills.flatMap(b=>b.payments?.map(p=>p.month)||[]),curMonth])].sort().reverse();
+  const[view,setView]=useState({mode:"list"}); // list | picker | form | detail
+  const[serviceSearch,setServiceSearch]=useState("");
+  const[form,setForm]=useState(null); // {editId,name,amount,bankId,typeId,dueDay,reminderDays,note,domain,color}
+  const[detailMonth,setDetailMonth]=useState(curMonth);
+  const[confirmDelete,setConfirmDelete]=useState(null);
+  const[confirmUndo,setConfirmUndo]=useState(null); // {bill,month}
   const payingRef=useRef({});
-  const isReportMode=filterMonth==="all";
-  const isPaid=(bill,mStr=filterMonth)=>bill.payments?.some(p=>p.month===mStr);
-  const getReminderStatus=(bill)=>{
-    if(!bill.dueDay||isPaid(bill)||filterMonth!==curMonth)return null;
-    const now=new Date();const due=new Date(now.getFullYear(),now.getMonth(),bill.dueDay);const diff=Math.ceil((due-now)/(1000*60*60*24));
-    if(diff<0)return{overdue:true,days:Math.abs(diff)};if(diff<=(bill.reminderDays||2))return{overdue:false,days:diff};return null;
+  const is=getIS();
+
+  const isPaid=(bill,mStr)=>bill.payments?.some(p=>p.month===mStr);
+  const typeOf=(bill)=>{
+    if(bill.typeId)return getBillType(bill.typeId);
+    const svc=SUBSCRIPTION_SERVICES.find(s=>s.name===bill.name||(bill.domain&&s.domain===bill.domain));
+    return getBillType(svc?SERVICE_CAT_TO_TYPE[svc.category]:"other");
   };
-  const openAdd=(item=null)=>{setEditItem(item);setName(item?.name||"");setAmount(item?.amount?String(item.amount):"");setBankId(item?.bankId||banks[0]?.id||"");setCatId(item?.catId||expCats[0]?.id||"");setDueDay(item?.dueDay?String(item.dueDay):"1");setReminderDays(item?.reminderDays?String(item.reminderDays):"2");setShowAdd(true);};
+  // Relative due-date status for the current month
+  const dueInfo=(bill)=>{
+    if(isPaid(bill,curMonth))return{text:"Paid",color:C.accent};
+    if(!bill.dueDay)return{text:"Due this month",color:C.muted};
+    const now=new Date();const due=new Date(now.getFullYear(),now.getMonth(),bill.dueDay);
+    const diff=Math.ceil((due-now)/(1000*60*60*24));
+    if(diff<0)return{text:`Overdue ${Math.abs(diff)}d`,color:C.red};
+    if(diff===0)return{text:"Today",color:C.red};
+    if(diff===1)return{text:"Tomorrow",color:C.orange};
+    if(diff<=(bill.reminderDays||2))return{text:`In ${diff} days`,color:C.yellow};
+    return{text:`Day ${bill.dueDay}`,color:C.muted};
+  };
+
+  const totalMonthly=bills.reduce((a,b)=>a+b.amount,0);
+  const paidCount=bills.filter(b=>isPaid(b,curMonth)).length;
+  const upcoming=bills.filter(b=>!isPaid(b,curMonth)).sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
+
+  // ── Navigation between sub-pages ──
+  const openPicker=()=>{setServiceSearch("");setView({mode:"picker"});};
+  const blankForm=()=>({editId:null,name:"",amount:"",bankId:banks[0]?.id||"",typeId:"other",dueDay:"1",reminderDays:"2",note:"",domain:"",color:""});
+  const pickService=(svc)=>{setForm({...blankForm(),name:svc.name,domain:svc.domain,color:svc.color,typeId:SERVICE_CAT_TO_TYPE[svc.category]||"other"});setView({mode:"form"});};
+  const pickCustom=()=>{setForm(blankForm());setView({mode:"form"});};
+  const openEdit=(bill)=>{setForm({editId:bill.id,name:bill.name,amount:String(bill.amount),bankId:bill.bankId,typeId:typeOf(bill).id,dueDay:String(bill.dueDay||1),reminderDays:String(bill.reminderDays??2),note:bill.note||"",domain:bill.domain||"",color:bill.color||""});setView({mode:"form"});};
+  const openDetail=(bill)=>{setDetailMonth(curMonth);setView({mode:"detail",billId:bill.id});};
+
   const handleSave=async()=>{
-    const pa=parseFloat(amount);if(!name||!amount||isNaN(pa)||pa<=0)return;
-    const dd=Math.min(28,Math.max(1,parseInt(dueDay)||1)),rd=Math.min(7,Math.max(0,parseInt(reminderDays)||2));
-    const svc=SUBSCRIPTION_SERVICES.find(s=>s.name===name);
-    const domain=svc?.domain||"";const color=svc?.color||"";
-    if(editItem)await onSave(bills.map(b=>b.id===editItem.id?{...b,name,amount:pa,bankId,catId,dueDay:dd,reminderDays:rd,domain,color}:b));
-    else await onSave([...bills,{id:Date.now().toString(),name,amount:pa,bankId,catId,dueDay:dd,reminderDays:rd,payments:[],domain,color}]);
-    setShowAdd(false);setEditItem(null);setName("");setAmount("");
+    const pa=parseFloat(form.amount);if(!form.name.trim()||isNaN(pa)||pa<=0)return;
+    const dd=Math.min(28,Math.max(1,parseInt(form.dueDay)||1)),rd=Math.min(7,Math.max(0,parseInt(form.reminderDays)||2));
+    const base={name:form.name.trim(),amount:pa,bankId:form.bankId,typeId:form.typeId,dueDay:dd,reminderDays:rd,note:form.note.trim(),domain:form.domain,color:form.color};
+    if(form.editId){await onSave(bills.map(b=>b.id===form.editId?{...b,...base}:b));setView({mode:"detail",billId:form.editId});}
+    else{await onSave([...bills,{id:Date.now().toString(),...base,payments:[]}]);setView({mode:"list"});}
+    HAPTICS.success();
   };
-  const handlePay=async(bill)=>{
-    if(payingRef.current[bill.id]||isPaid(bill))return;payingRef.current[bill.id]=true;
+
+  const handlePay=async(bill,mStr)=>{
+    if(payingRef.current[bill.id]||isPaid(bill,mStr))return;payingRef.current[bill.id]=true;
     try{
-      const bank=banks.find(b=>b.id===bill.bankId),cat=expCats.find(c=>c.id===bill.catId);
-      const dateStr=today();const ms=`${MONTHS[+filterMonth.split("-")[1]-1]} ${filterMonth.split("-")[0]}`;
-      const id=await onAddTxn({type:"expense",amount:bill.amount,date:dateStr,bankId:bill.bankId,bankName:bank?.name,catId:bill.catId,catName:cat?.name||bill.name,catIcon:cat?.icon||"bills",note:`Monthly Bill: ${bill.name} ${ms}`});
-      if(id!==false){HAPTICS.success();await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:filterMonth,date:dateStr,txnId:id}]}:b));}
+      const bank=banks.find(b=>b.id===bill.bankId),type=typeOf(bill);
+      const dateStr=today();const ms=`${MONTHS[+mStr.split("-")[1]-1]} ${mStr.split("-")[0]}`;
+      const id=await onAddTxn({type:"expense",amount:bill.amount,date:dateStr,bankId:bill.bankId,bankName:bank?.name,catId:`bill_${type.id}`,catName:type.name,catIcon:type.icon,note:`Bill: ${bill.name} ${ms}`});
+      if(id!==false){HAPTICS.success();await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:mStr,date:dateStr,txnId:id}]}:b));}
     }finally{setTimeout(()=>{payingRef.current[bill.id]=false;},1000);}
   };
   const handleUndoConfirm=async()=>{
-    if(!confirmUndo)return;const p=confirmUndo.payments.find(p=>p.month===filterMonth);
+    if(!confirmUndo)return;const{bill,month}=confirmUndo;const p=bill.payments?.find(p=>p.month===month);
     if(p?.txnId)await delTxn(p.txnId);
-    await onSave(bills.map(b=>b.id===confirmUndo.id?{...b,payments:b.payments.filter(p=>p.month!==filterMonth)}:b));setConfirmUndo(null);
+    await onSave(bills.map(b=>b.id===bill.id?{...b,payments:(b.payments||[]).filter(p=>p.month!==month)}:b));setConfirmUndo(null);
   };
-  const paidCount=isReportMode?0:bills.filter(b=>isPaid(b)).length;
-  const totalMonthly=bills.reduce((a,b)=>a+b.amount,0);
-  const paidAmount=isReportMode?0:bills.filter(b=>isPaid(b)).reduce((a,b)=>a+b.amount,0);
-  const yearsMap={};availMonths.forEach(m=>{const y=m.split("-")[0];if(!yearsMap[y])yearsMap[y]=[];yearsMap[y].push(m);});
-  const sortedYears=Object.keys(yearsMap).sort().reverse();
 
-  const filteredServices=SUBSCRIPTION_SERVICES.filter(s=>s.name.toLowerCase().includes(serviceSearch.toLowerCase()));
-  const is=getIS();
-
-  const renderBillCard=(bill,mStr,isReadOnly,idx)=>{
-    const paid=isPaid(bill,mStr);const bank=banks.find(b=>b.id===bill.bankId);const cat=expCats.find(c=>c.id===bill.catId);const isLast=!isReadOnly&&idx===bills.length-1;
-    const cardContent=(
-      <div style={{background:paid?C.accentDim+"44":isReadOnly?C.redDim+"33":C.card,boxSizing:"border-box",borderBottom:isLast?"none":isReadOnly?"none":`1px solid ${C.border}`,borderRadius:isReadOnly?12:0,border:isReadOnly?`1px solid ${paid?C.accent:C.red}66`:"none",marginBottom:isReadOnly?10:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:isReadOnly?"14px 16px":"12px 14px 6px"}}>
-          <ServiceLogo domain={bill.domain||""} name={bill.name} color={bill.color||C.accent} size={36}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
-            <div style={{color:C.muted,fontSize:11,marginTop:2}}>{bank?.name} · {cat?.name||"Bills"}{!isReadOnly&&bill.dueDay?<span style={{color:C.faint}}> · Due {bill.dueDay}</span>:null}</div>
-            {!isReadOnly&&(()=>{const r=getReminderStatus(bill);return r?<div style={{color:r.overdue?C.red:C.yellow,fontSize:10,fontWeight:700,marginTop:3}}>{r.overdue?"🔴 Overdue by "+r.days+" day"+(r.days!==1?"s":""):"🟡 Due in "+r.days+" day"+(r.days!==1?"s":"")}</div>:null;})()}
+  // ════════════ PICKER PAGE ════════════
+  if(view.mode==="picker"){
+    const q=serviceSearch.toLowerCase();
+    const byCat={};SUBSCRIPTION_SERVICES.forEach(s=>{if(!s.name.toLowerCase().includes(q))return;if(!byCat[s.category])byCat[s.category]=[];byCat[s.category].push(s);});
+    return <FullPage title="Add Subscription" onBack={()=>setView({mode:"list"})}>
+      <div style={{padding:"0 16px 40px"}}>
+        <div style={{position:"relative",marginBottom:18}}>
+          <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:C.muted,fontSize:15}}>🔍</span>
+          <input autoFocus placeholder="Search services..." value={serviceSearch} onChange={e=>setServiceSearch(e.target.value)} style={{...is,paddingLeft:40,borderRadius:14}}/>
+        </div>
+        <button onClick={pickCustom} style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:C.card,border:`1.5px dashed ${C.border}`,borderRadius:16,padding:"16px",cursor:"pointer",marginBottom:24,textAlign:"left",fontFamily:"'DM Sans', sans-serif"}}>
+          <div style={{width:44,height:44,borderRadius:12,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✎</div>
+          <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>Custom Subscription</div><div style={{color:C.muted,fontSize:12,marginTop:2}}>Add any service manually</div></div>
+          <span style={{color:C.muted,fontSize:18}}>❯</span>
+        </button>
+        {Object.entries(byCat).map(([cat,list])=>(
+          <div key={cat} style={{marginBottom:22}}>
+            <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>{cat}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"16px 10px"}}>
+              {list.map(svc=>(
+                <button key={svc.id} onClick={()=>pickService(svc)} style={{background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,fontFamily:"'DM Sans', sans-serif",padding:0}}>
+                  <ServiceLogo domain={svc.domain} name={svc.name} color={svc.color} size={56} style={{borderRadius:16}}/>
+                  <span style={{color:C.text,fontSize:11,fontWeight:600,textAlign:"center",lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{svc.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{color:paid?C.accent:C.red,fontSize:17,fontWeight:800}}>{fmt(bill.amount)}</div>
-            {isReadOnly&&<div style={{color:paid?C.accent:C.red,fontSize:10,fontWeight:800,marginTop:4,letterSpacing:1}}>{paid?"✓ PAID":"✕ UNPAID"}</div>}
+        ))}
+        {Object.keys(byCat).length===0&&<EmptyState icon="🔍" message="No services match your search. Use Custom above."/>}
+      </div>
+    </FullPage>;
+  }
+
+  // ════════════ FORM PAGE (add / edit details) ════════════
+  if(view.mode==="form"&&form){
+    const f=form;const setF=(k,v)=>setForm(p=>({...p,[k]:v}));
+    const valid=f.name.trim()&&parseFloat(f.amount)>0;
+    const accent=f.color||C.accent;
+    const lblStyle={color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8,display:"block"};
+    return <FullPage title={f.editId?"Edit Subscription":"New Subscription"} onBack={()=>setView(f.editId?{mode:"detail",billId:f.editId}:{mode:"picker"})}>
+      <div style={{padding:"4px 16px 48px"}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24}}>
+          <ServiceLogo domain={f.domain} name={f.name||"?"} color={accent} size={72} style={{borderRadius:20}}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={lblStyle}>Name</label>
+          <input value={f.name} onChange={e=>setF("name",e.target.value)} placeholder="e.g. Netflix, Vodafone..." style={{...is,borderRadius:14}}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={lblStyle}>Amount ({currency}) · per month</label>
+          <input type="number" step="any" inputMode="decimal" value={f.amount} onChange={e=>setF("amount",e.target.value)} placeholder="0" style={{...is,borderRadius:14,fontSize:22,fontWeight:800,padding:"14px"}}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={lblStyle}>Type</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {BILL_TYPES.map(t=>{const on=f.typeId===t.id;return <button key={t.id} onClick={()=>setF("typeId",t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:99,border:`1.5px solid ${on?t.color:C.border}`,background:on?t.color+"22":"transparent",color:on?t.color:C.muted,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}><span>{ICONS[t.icon]}</span>{t.name}</button>;})}
           </div>
         </div>
-        {!isReadOnly&&(
-          <div style={{padding:"0 14px 12px",display:"flex",gap:8}}>
-            {!paid?<button onClick={()=>handlePay(bill)} style={{flex:1,background:C.accentDim,border:`1.5px solid ${C.accent}`,color:C.accent,borderRadius:10,height:44,fontWeight:800,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"'DM Sans', sans-serif"}}><span>✓</span> Pay Now</button>:<>
-              <div style={{flex:1,background:C.accent,color:"#111",borderRadius:10,height:44,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>✓ Paid {filterMonth.slice(5)}</div>
-              <button onClick={()=>setConfirmUndo(bill)} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:10,height:44,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"'DM Sans', sans-serif"}}>⟲ Undo</button>
-            </>}
-          </div>
-        )}
+        <div style={{marginBottom:20}}>
+          <label style={lblStyle}>Pay from Account</label>
+          <select value={f.bankId} onChange={e=>setF("bankId",e.target.value)} style={{...is,borderRadius:14}}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          <div><label style={lblStyle}>Due Day</label><input type="number" min="1" max="28" inputMode="numeric" value={f.dueDay} onChange={e=>setF("dueDay",e.target.value)} style={{...is,borderRadius:14}}/></div>
+          <div><label style={lblStyle}>Remind Before (days)</label><input type="number" min="0" max="7" inputMode="numeric" value={f.reminderDays} onChange={e=>setF("reminderDays",e.target.value)} style={{...is,borderRadius:14}}/></div>
+        </div>
+        <div style={{marginBottom:28}}>
+          <label style={lblStyle}>Note (optional)</label>
+          <input value={f.note} onChange={e=>setF("note",e.target.value)} placeholder="e.g. Family plan" style={{...is,borderRadius:14}}/>
+        </div>
+        <Btn full onClick={handleSave} color={accent} style={{opacity:valid?1:0.5,pointerEvents:valid?"auto":"none",borderRadius:14,padding:"15px"}}>{f.editId?"Save Changes":"Add Subscription"}</Btn>
       </div>
-    );
-    if(isReadOnly)return <div key={`${bill.id}-${mStr}`}>{cardContent}</div>;
-    return <SwipeRow key={bill.id} onEdit={()=>openAdd(bill)} onDelete={()=>setConfirmDelete(bill.id)}>{cardContent}</SwipeRow>;
-  };
+    </FullPage>;
+  }
 
+  // ════════════ DETAIL PAGE ════════════
+  if(view.mode==="detail"){
+    const bill=bills.find(b=>b.id===view.billId);
+    if(!bill)return <FullPage title="Subscription" onBack={()=>setView({mode:"list"})}><EmptyState icon="📋" message="This subscription was removed."/></FullPage>;
+    const type=typeOf(bill);const bank=banks.find(b=>b.id===bill.bankId);const accent=bill.color||C.accent;
+    const di=dueInfo(bill);const paidThisMonth=isPaid(bill,detailMonth);
+    const recent12=[];{const d=new Date();for(let i=0;i<12;i++){const m=new Date(d.getFullYear(),d.getMonth()-i,1);recent12.push(`${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}`);}}
+    const availMonths=[...new Set([...(bill.payments||[]).map(p=>p.month),...recent12])].sort().reverse();
+    const grad=C.isDark?`linear-gradient(160deg,${accent}33 0%,${C.card} 70%)`:`linear-gradient(160deg,${accent}22 0%,${C.surface} 70%)`;
+    const rowStyle={display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 0",borderBottom:`1px solid ${C.border}`};
+    return <FullPage title={bill.name} onBack={()=>setView({mode:"list"})} right={
+      <button onClick={()=>openEdit(bill)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>✎ Edit</button>
+    }>
+      <div style={{padding:"0 16px 48px"}}>
+        <div style={{background:grad,border:`1px solid ${C.border}`,borderRadius:22,padding:"26px 20px",textAlign:"center",marginBottom:16}}>
+          <ServiceLogo domain={bill.domain} name={bill.name} color={accent} size={68} style={{borderRadius:20,margin:"0 auto 12px"}}/>
+          <div style={{color:C.text,fontSize:22,fontWeight:800}}>{bill.name}</div>
+          <div style={{color:C.text,fontSize:34,fontWeight:800,letterSpacing:-1,marginTop:4}}>{fmt(bill.amount)}</div>
+          <div style={{color:C.muted,fontSize:13,fontWeight:600,marginTop:2}}>per month</div>
+          <div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:14,background:di.color+"22",border:`1px solid ${di.color}55`,color:di.color,borderRadius:99,padding:"7px 16px",fontWeight:800,fontSize:13}}>{paidThisMonth?"✓ Paid this month":`⏱ ${di.text}`}</div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+          <Card style={{padding:"14px",textAlign:"center"}}><div style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(bill.amount)}</div><div style={{color:C.muted,fontSize:11,fontWeight:700,marginTop:4}}>Monthly</div></Card>
+          <Card style={{padding:"14px",textAlign:"center"}}><div style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(bill.amount*12)}</div><div style={{color:C.muted,fontSize:11,fontWeight:700,marginTop:4}}>Per year</div></Card>
+        </div>
+
+        <Card style={{padding:"4px 16px",marginBottom:16}}>
+          <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Type</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{ICONS[type.icon]} {type.name}</span></div>
+          <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Pay from</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bank?.name||"—"}</span></div>
+          <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Due day</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>Day {bill.dueDay||1} of month</span></div>
+          <div style={{...rowStyle,borderBottom:bill.note?`1px solid ${C.border}`:"none"}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Reminder</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{(bill.reminderDays??2)===0?"Off":`${bill.reminderDays??2} day(s) before`}</span></div>
+          {bill.note&&<div style={{...rowStyle,borderBottom:"none"}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Note</span><span style={{color:C.text,fontSize:14,fontWeight:700,maxWidth:"60%",textAlign:"right"}}>{bill.note}</span></div>}
+        </Card>
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <span style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Payment Status</span>
+          <MonthSelect value={detailMonth} onChange={e=>setDetailMonth(e.target.value==="all"?curMonth:e.target.value)} availMonths={availMonths}/>
+        </div>
+        {paidThisMonth?(
+          <div style={{display:"flex",gap:8,marginBottom:24}}>
+            <div style={{flex:1,background:C.accent,color:"#111",borderRadius:14,height:50,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>✓ Paid {MONTHS[+detailMonth.split("-")[1]-1]}</div>
+            <button onClick={()=>setConfirmUndo({bill,month:detailMonth})} style={{flexShrink:0,background:C.yellowDim,border:`1.5px solid ${C.yellow}`,color:C.yellow,borderRadius:14,height:50,padding:"0 20px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>⟲ Undo</button>
+          </div>
+        ):(
+          <button onClick={()=>handlePay(bill,detailMonth)} style={{width:"100%",background:accent,border:"none",color:"#111",borderRadius:14,height:52,fontWeight:800,fontSize:16,cursor:"pointer",marginBottom:24,fontFamily:"'DM Sans', sans-serif"}}>✓ Record Payment for {MONTHS[+detailMonth.split("-")[1]-1]}</button>
+        )}
+
+        {(bill.payments||[]).length>0&&<>
+          <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>History ({bill.payments.length})</div>
+          <Card style={{padding:"4px 16px",marginBottom:24}}>
+            {[...bill.payments].sort((a,b)=>b.month.localeCompare(a.month)).map((p,i,arr)=>(
+              <div key={p.month} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:i===arr.length-1?"none":`1px solid ${C.border}`}}>
+                <span style={{color:C.text,fontSize:14,fontWeight:700}}>{MONTHS[+p.month.split("-")[1]-1]} {p.month.split("-")[0]}</span>
+                <span style={{color:C.accent,fontSize:13,fontWeight:700}}>✓ {fmt(bill.amount)}</span>
+              </div>
+            ))}
+          </Card>
+        </>}
+
+        <Btn full outline color={C.red} onClick={()=>setConfirmDelete(bill.id)} style={{borderRadius:14}}>🗑 Delete Subscription</Btn>
+      </div>
+      {confirmDelete&&<ConfirmModal title="Delete Subscription?" message="This removes it from your recurring list. Past payment transactions stay in your history." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);setView({mode:"list"});}}/>}
+      {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This marks "${confirmUndo.bill.name}" as unpaid for ${MONTHS[+confirmUndo.month.split("-")[1]-1]} and removes the transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
+    </FullPage>;
+  }
+
+  // ════════════ LIST PAGE (default) ════════════
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={{marginBottom:16}}><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths}/></div>
-      <Btn small onClick={()=>setShowServicePicker(true)}>+ Add Bill</Btn>
-    </div>
-    {bills.length===0&&<EmptyState icon="📋" message="No monthly bills added yet."/>}
-    {bills.length>0&&(isReportMode?(
-      <div style={{display:"flex",flexDirection:"column",gap:24,paddingBottom:40}}>
-        {sortedYears.map(year=>(
-          <div key={year}>
-            <div style={{color:C.text,fontSize:28,fontWeight:800,marginBottom:16,borderBottom:`1px solid ${C.border}`,paddingBottom:8}}>{year}</div>
-            {yearsMap[year].map(monthStr=>{
-              const monthName=MONTHS[+monthStr.split("-")[1]-1];const pdCnt=bills.filter(b=>isPaid(b,monthStr)).length;
-              return <div key={monthStr} style={{marginBottom:20}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                  <span style={{color:C.muted,fontSize:15,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>{monthName}</span>
-                  <Pill color={pdCnt===bills.length?C.accent:C.red}>{pdCnt}/{bills.length} Paid</Pill>
-                </div>
-                <div style={{display:"flex",flexDirection:"column",gap:0}}>{bills.map(b=>renderBillCard(b,monthStr,true))}</div>
-              </div>;
-            })}
+    <div style={{background:C.isDark?`linear-gradient(160deg,${C.blueDim} 0%,${C.card} 80%)`:`linear-gradient(160deg,${C.blueDim} 0%,${C.surface} 90%)`,border:`1px solid ${C.border}`,borderRadius:20,padding:"20px",marginBottom:20}}>
+      <div style={{color:C.muted,fontSize:12,fontWeight:700,letterSpacing:.5,marginBottom:4}}>Monthly spending</div>
+      <div style={{color:C.text,fontSize:38,fontWeight:800,letterSpacing:-1.5,marginBottom:16}}>{fmt(totalMonthly)}</div>
+      <div style={{display:"flex",background:C.isDark?"#ffffff10":"#00000008",borderRadius:14,padding:"12px 0"}}>
+        {[{v:bills.length,l:"Active"},{v:fmt(totalMonthly*12),l:"Per year"},{v:`${paidCount}/${bills.length}`,l:"Paid"}].map((s,i)=>(
+          <div key={i} style={{flex:1,textAlign:"center",borderLeft:i?`1px solid ${C.border}`:"none"}}>
+            <div style={{color:C.text,fontSize:17,fontWeight:800}}>{s.v}</div>
+            <div style={{color:C.muted,fontSize:11,fontWeight:600,marginTop:2}}>{s.l}</div>
           </div>
         ))}
       </div>
-    ):(
-      <>
-        <div style={{color:C.muted,fontSize:13,marginBottom:16}}>{paidCount}/{bills.length} paid</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-          <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Total Monthly</div><div style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(totalMonthly)}</div></Card>
-          <Card style={{padding:"14px 14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Paid</div><div style={{color:C.accent,fontSize:18,fontWeight:800}}>{fmt(paidAmount)}</div></Card>
-        </div>
-        <div style={{border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",marginBottom:40}}>
-          <SortableList gap={0} items={bills} onReorder={onSave} renderItem={(bill,idx)=>renderBillCard(bill,filterMonth,false,idx)}/>
-        </div>
-      </>
-    ))}
+    </div>
 
-    {showServicePicker&&<Modal title={editItem?"Edit Bill":"Add Subscription"} onClose={()=>{setShowServicePicker(false);setServiceSearch("");}} center={false}>
-      {!showAdd?(
-        <>
-          <input placeholder="Search service..." value={serviceSearch} onChange={e=>setServiceSearch(e.target.value)} style={{...is,marginBottom:16}}/>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-            {filteredServices.slice(0,16).map(svc=>(
-              <button key={svc.id} onClick={()=>{setName(svc.name);setShowServicePicker(false);openAdd();}} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 6px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,fontFamily:"'DM Sans', sans-serif"}}>
-                <ServiceLogo domain={svc.domain} name={svc.name} color={svc.color} size={36}/>
-                <span style={{color:C.text,fontSize:10,fontWeight:700,textAlign:"center",lineHeight:1.2}}>{svc.name.split(" ")[0]}</span>
-              </button>
-            ))}
+    {bills.length===0&&<><EmptyState icon="📋" message="No subscriptions yet. Add Netflix, Vodafone, Spotify and more."/><Btn full onClick={openPicker} style={{marginTop:4}}>+ Add Subscription</Btn></>}
+
+    {upcoming.length>0&&<div style={{marginBottom:24}}>
+      <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Coming up</div>
+      <Card style={{padding:"6px 16px"}}>
+        {upcoming.slice(0,4).map((bill,i,arr)=>{const di=dueInfo(bill);return (
+          <div key={bill.id} onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:i===arr.length-1?"none":`1px solid ${C.border}`,cursor:"pointer"}}>
+            <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={36} style={{borderRadius:11}}/>
+            <span style={{flex:1,color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</span>
+            <span style={{background:di.color+"22",color:di.color,borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:700}}>{di.text}</span>
           </div>
-          <Btn full outline color={C.muted} onClick={()=>{setName("");setShowServicePicker(false);openAdd();}}>+ Custom Bill</Btn>
-        </>
-      ):null}
-    </Modal>}
+        );})}
+      </Card>
+    </div>}
 
-    {showAdd&&<Modal title={editItem?"Edit Bill":"New Monthly Bill"} onClose={()=>{setShowAdd(false);setEditItem(null);}} center={false}>
-      <Input label="Bill Name" value={name} onChange={e=>setName(e.target.value)}/>
-      <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Amount</div><input type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)} style={is}/></div>
-      <Select label="Pay from Account" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>
-      <Select label="Category" value={catId} onChange={e=>setCatId(e.target.value)}>{expCats.map(c=><option key={c.id} value={c.id}>{ICONS[c.icon]||"📌"} {c.name}</option>)}</Select>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:4}}>
-        <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Due Day</div><input type="number" min="1" max="28" value={dueDay} onChange={e=>setDueDay(e.target.value)} style={is}/></div>
-        <div><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Remind Before</div><input type="number" min="0" max="7" value={reminderDays} onChange={e=>setReminderDays(e.target.value)} style={is}/></div>
+    {bills.length>0&&<div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={{color:C.text,fontSize:18,fontWeight:800}}>Your subscriptions</div>
+        <Btn small onClick={openPicker}>+ Add</Btn>
       </div>
-      <Btn full onClick={handleSave} style={{marginTop:12}}>{editItem?"Update Bill":"Add Bill"}</Btn>
-    </Modal>}
-    {confirmDelete&&<ConfirmModal title="Delete Bill?" message="This removes the bill from your recurring list." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
-    {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This will mark "${confirmUndo.name}" as unpaid and remove the payment transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
+      <div style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:40}}>
+        {bills.map(bill=>{const di=dueInfo(bill);const type=typeOf(bill);return (
+          <SwipeRow key={bill.id} onEdit={()=>openEdit(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
+            <div onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,padding:"14px",borderLeft:`4px solid ${bill.color||C.accent}`,cursor:"pointer"}}>
+              <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={44} style={{borderRadius:13}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{color:C.text,fontWeight:800,fontSize:16,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
+                <div style={{color:C.muted,fontSize:12,marginTop:2}}>{ICONS[type.icon]} {type.name}</div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{color:C.text,fontSize:17,fontWeight:800}}>{fmt(bill.amount)}</div>
+                <div style={{color:di.color,fontSize:12,fontWeight:700,marginTop:2}}>{di.text}</div>
+              </div>
+            </div>
+          </SwipeRow>
+        );})}
+      </div>
+    </div>}
+
+    {confirmDelete&&<ConfirmModal title="Delete Subscription?" message="This removes it from your recurring list. Past payment transactions stay in your history." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
   </div>;
 }
 
