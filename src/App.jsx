@@ -168,6 +168,55 @@ const SUBSCRIPTION_SERVICES = [
   {id:"careem",name:"Careem Plus",domain:"careem.com",color:"#5bae47",category:"Shopping"},
   {id:"talabat",name:"Talabat Pro",domain:"talabat.com",color:"#ff6b00",category:"Shopping"},
   {id:"noon",name:"Noon",domain:"noon.com",color:"#feee00",category:"Shopping"},
+  // ── UK & Global streaming ──
+  {id:"max",name:"Max (HBO)",domain:"max.com",color:"#0046ff",category:"Streaming"},
+  {id:"paramount",name:"Paramount+",domain:"paramountplus.com",color:"#0064ff",category:"Streaming"},
+  {id:"nowtv",name:"NOW",domain:"nowtv.com",color:"#00818a",category:"Streaming"},
+  {id:"skytv",name:"Sky",domain:"sky.com",color:"#0072c9",category:"Streaming"},
+  {id:"britbox",name:"BritBox",domain:"britbox.com",color:"#1b2a6b",category:"Streaming"},
+  {id:"itvx",name:"ITVX",domain:"itv.com",color:"#102382",category:"Streaming"},
+  {id:"bbciplayer",name:"BBC iPlayer",domain:"bbc.co.uk",color:"#ff4e98",category:"Streaming"},
+  {id:"discoveryplus",name:"Discovery+",domain:"discoveryplus.com",color:"#2175ff",category:"Streaming"},
+  {id:"dazn",name:"DAZN",domain:"dazn.com",color:"#f8f400",category:"Streaming"},
+  {id:"crunchyroll",name:"Crunchyroll",domain:"crunchyroll.com",color:"#f47521",category:"Streaming"},
+  {id:"audible",name:"Audible",domain:"audible.com",color:"#f8991c",category:"Streaming"},
+  {id:"tidal",name:"Tidal",domain:"tidal.com",color:"#000000",category:"Streaming"},
+  {id:"soundcloud",name:"SoundCloud",domain:"soundcloud.com",color:"#ff5500",category:"Streaming"},
+  // ── UK telecom & internet ──
+  {id:"ee",name:"EE",domain:"ee.co.uk",color:"#00b5b0",category:"Telecom"},
+  {id:"o2",name:"O2",domain:"o2.co.uk",color:"#0019a5",category:"Telecom"},
+  {id:"three",name:"Three",domain:"three.co.uk",color:"#ec1c92",category:"Telecom"},
+  {id:"vodafone_uk",name:"Vodafone UK",domain:"vodafone.co.uk",color:"#e60000",category:"Telecom"},
+  {id:"bt",name:"BT",domain:"bt.com",color:"#5514b4",category:"Telecom"},
+  {id:"virginmedia",name:"Virgin Media",domain:"virginmedia.com",color:"#cc0000",category:"Telecom"},
+  {id:"giffgaff",name:"giffgaff",domain:"giffgaff.com",color:"#000000",category:"Telecom"},
+  {id:"plusnet",name:"Plusnet",domain:"plus.net",color:"#7ab800",category:"Telecom"},
+  {id:"talktalk",name:"TalkTalk",domain:"talktalk.co.uk",color:"#7c2e8a",category:"Telecom"},
+  // ── UK & global shopping / delivery ──
+  {id:"deliveroo",name:"Deliveroo Plus",domain:"deliveroo.co.uk",color:"#00ccbc",category:"Shopping"},
+  {id:"justeat",name:"Just Eat",domain:"just-eat.co.uk",color:"#ff8000",category:"Shopping"},
+  {id:"ubereats",name:"Uber Eats",domain:"ubereats.com",color:"#06c167",category:"Shopping"},
+  {id:"ocado",name:"Ocado",domain:"ocado.com",color:"#6b2c91",category:"Shopping"},
+  {id:"asos",name:"ASOS Premier",domain:"asos.com",color:"#000000",category:"Shopping"},
+  {id:"gousto",name:"Gousto",domain:"gousto.co.uk",color:"#e84c3d",category:"Shopping"},
+  {id:"hellofresh",name:"HelloFresh",domain:"hellofresh.co.uk",color:"#91c11e",category:"Shopping"},
+  // ── More tech & AI ──
+  {id:"perplexity",name:"Perplexity",domain:"perplexity.ai",color:"#20808d",category:"Tech & AI"},
+  {id:"dropbox",name:"Dropbox",domain:"dropbox.com",color:"#0061ff",category:"Tech & AI"},
+  {id:"zoom",name:"Zoom",domain:"zoom.us",color:"#0b5cff",category:"Tech & AI"},
+  {id:"canva",name:"Canva",domain:"canva.com",color:"#00c4cc",category:"Tech & AI"},
+  {id:"linkedin",name:"LinkedIn Premium",domain:"linkedin.com",color:"#0a66c2",category:"Tech & AI"},
+  {id:"nordvpn",name:"NordVPN",domain:"nordvpn.com",color:"#4687ff",category:"Tech & AI"},
+  // ── Utilities ──
+  {id:"britishgas",name:"British Gas",domain:"britishgas.co.uk",color:"#0396d6",category:"Utilities"},
+  {id:"octopus",name:"Octopus Energy",domain:"octopus.energy",color:"#ff597b",category:"Utilities"},
+  {id:"edf",name:"EDF Energy",domain:"edfenergy.com",color:"#fe5000",category:"Utilities"},
+  {id:"eon",name:"E.ON Next",domain:"eonnext.com",color:"#e2001a",category:"Utilities"},
+  {id:"thameswater",name:"Thames Water",domain:"thameswater.co.uk",color:"#005670",category:"Utilities"},
+  {id:"tvlicence",name:"TV Licence",domain:"tvlicensing.co.uk",color:"#1d1d1b",category:"Utilities"},
+  // ── Health & fitness ──
+  {id:"puregym",name:"PureGym",domain:"puregym.com",color:"#e4002b",category:"Health & Fitness"},
+  {id:"thegymgroup",name:"The Gym Group",domain:"thegymgroup.com",color:"#ffd200",category:"Health & Fitness"},
 ];
 
 // Bill types — used as the background "category" for each bill, derived from its kind.
@@ -179,7 +228,7 @@ const BILL_TYPES = [
   {id:"utilities",name:"Utilities",icon:"type_utilities",color:"#fbbf24"},
   {id:"other",name:"Other",icon:"type_other",color:"#a78bfa"},
 ];
-const SERVICE_CAT_TO_TYPE = {"Streaming":"streaming","Tech & AI":"software","Telecom":"telecom","Shopping":"shopping"};
+const SERVICE_CAT_TO_TYPE = {"Streaming":"streaming","Tech & AI":"software","Telecom":"telecom","Shopping":"shopping","Utilities":"utilities","Health & Fitness":"other"};
 const getBillType = (id) => BILL_TYPES.find(t=>t.id===id) || BILL_TYPES.find(t=>t.id==="other");
 
 const INSTALLMENT_PROVIDERS = [
@@ -201,14 +250,17 @@ const INSTALLMENT_PROVIDERS = [
 ];
 
 function ServiceLogo({ domain, name, color, size = 36, style = {} }) {
-  const [imgOk, setImgOk] = useState(!!domain);
+  // Tiered logo source: hi-res Clearbit logo → Google favicon (128px) → initials fallback
+  const [tier, setTier] = useState(domain ? 0 : 2);
+  useEffect(()=>{ setTier(domain ? 0 : 2); }, [domain]);
   const initials = (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const bg = color || "#6ee7b7";
-  if (imgOk && domain) {
+  const src = tier===0 ? `https://logo.clearbit.com/${domain}` : tier===1 ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
+  if (src) {
     return (
-      <div style={{ width:size, height:size, borderRadius:size*0.28, overflow:"hidden", flexShrink:0, background:bg+"22", ...style }}>
-        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name}
-          style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={() => setImgOk(false)} />
+      <div style={{ width:size, height:size, borderRadius:size*0.28, overflow:"hidden", flexShrink:0, background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", ...style }}>
+        <img src={src} alt={name}
+          style={{ width:"100%", height:"100%", objectFit:tier===0?"contain":"cover" }} onError={() => setTier(t => t+1)} />
       </div>
     );
   }
@@ -1620,6 +1672,7 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
   const[serviceSearch,setServiceSearch]=useState("");
   const[form,setForm]=useState(null); // {editId,name,amount,bankId,typeId,dueDay,reminderDays,note,domain,color}
   const[detailMonth,setDetailMonth]=useState(curMonth);
+  const[filterMonth,setFilterMonth]=useState(curMonth);
   const[confirmDelete,setConfirmDelete]=useState(null);
   const[confirmUndo,setConfirmUndo]=useState(null); // {bill,month}
   const payingRef=useRef({});
@@ -1647,6 +1700,10 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
   const totalMonthly=bills.reduce((a,b)=>a+b.amount,0);
   const paidCount=bills.filter(b=>isPaid(b,curMonth)).length;
   const upcoming=bills.filter(b=>!isPaid(b,curMonth)).sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
+  const availMonths=[...new Set([...bills.flatMap(b=>(b.payments||[]).map(p=>p.month)),curMonth])].sort().reverse();
+  const isReportMode=filterMonth==="all";
+  // Smart order for a given month: unpaid first (soonest due on top), paid sink to bottom
+  const sortForMonth=(mStr)=>[...bills].sort((a,b)=>{const pa=isPaid(a,mStr)?1:0,pb=isPaid(b,mStr)?1:0;if(pa!==pb)return pa-pb;return (a.dueDay||99)-(b.dueDay||99);});
 
   // ── Navigation between sub-pages ──
   const openPicker=()=>{setServiceSearch("");setView({mode:"picker"});};
@@ -1688,7 +1745,7 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
       <div style={{padding:"0 16px 40px"}}>
         <div style={{position:"relative",marginBottom:18}}>
           <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:C.muted,fontSize:15}}>🔍</span>
-          <input autoFocus placeholder="Search services..." value={serviceSearch} onChange={e=>setServiceSearch(e.target.value)} style={{...is,paddingLeft:40,borderRadius:14}}/>
+          <input placeholder="Search services..." value={serviceSearch} onChange={e=>setServiceSearch(e.target.value)} style={{...is,paddingLeft:40,borderRadius:14}}/>
         </div>
         <button onClick={pickCustom} style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:C.card,border:`1.5px dashed ${C.border}`,borderRadius:16,padding:"16px",cursor:"pointer",marginBottom:24,textAlign:"left",fontFamily:"'DM Sans', sans-serif"}}>
           <div style={{width:44,height:44,borderRadius:12,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✎</div>
@@ -1731,12 +1788,6 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
         <div style={{marginBottom:20}}>
           <label style={lblStyle}>Amount ({currency}) · per month</label>
           <input type="number" step="any" inputMode="decimal" value={f.amount} onChange={e=>setF("amount",e.target.value)} placeholder="0" style={{...is,borderRadius:14,fontSize:22,fontWeight:800,padding:"14px"}}/>
-        </div>
-        <div style={{marginBottom:20}}>
-          <label style={lblStyle}>Type</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {BILL_TYPES.map(t=>{const on=f.typeId===t.id;return <button key={t.id} onClick={()=>setF("typeId",t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:99,border:`1.5px solid ${on?t.color:C.border}`,background:on?t.color+"22":"transparent",color:on?t.color:C.muted,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}><span>{ICONS[t.icon]}</span>{t.name}</button>;})}
-          </div>
         </div>
         <div style={{marginBottom:20}}>
           <label style={lblStyle}>Pay from Account</label>
@@ -1839,44 +1890,93 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
 
     {bills.length===0&&<><EmptyState icon="📋" message="No subscriptions yet. Add Netflix, Vodafone, Spotify and more."/><Btn full onClick={openPicker} style={{marginTop:4}}>+ Add Subscription</Btn></>}
 
-    {upcoming.length>0&&<div style={{marginBottom:24}}>
-      <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Coming up</div>
-      <Card style={{padding:"6px 16px"}}>
-        {upcoming.slice(0,4).map((bill,i,arr)=>{const di=dueInfo(bill);return (
-          <div key={bill.id} onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:i===arr.length-1?"none":`1px solid ${C.border}`,cursor:"pointer"}}>
-            <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={36} style={{borderRadius:11}}/>
-            <span style={{flex:1,color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</span>
-            <span style={{background:di.color+"22",color:di.color,borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:700}}>{di.text}</span>
-          </div>
-        );})}
-      </Card>
-    </div>}
-
-    {bills.length>0&&<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{color:C.text,fontSize:18,fontWeight:800}}>Your subscriptions</div>
+    {bills.length>0&&<>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths}/>
         <Btn small onClick={openPicker}>+ Add</Btn>
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:40}}>
-        {bills.map(bill=>{const di=dueInfo(bill);const type=typeOf(bill);return (
-          <SwipeRow key={bill.id} onEdit={()=>openEdit(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
-            <div onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,padding:"14px",borderLeft:`4px solid ${bill.color||C.accent}`,cursor:"pointer"}}>
-              <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={44} style={{borderRadius:13}}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{color:C.text,fontWeight:800,fontSize:16,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
-                <div style={{color:C.muted,fontSize:12,marginTop:2}}>{ICONS[type.icon]} {type.name}</div>
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                <div style={{color:C.text,fontSize:17,fontWeight:800}}>{fmt(bill.amount)}</div>
-                <div style={{color:di.color,fontSize:12,fontWeight:700,marginTop:2}}>{di.text}</div>
-              </div>
+
+      {/* ── History (All Time): Year → Month → bills ── */}
+      {isReportMode?(()=>{
+        const yearsMap={};availMonths.filter(m=>m!=="all").forEach(m=>{const y=m.split("-")[0];(yearsMap[y]=yearsMap[y]||[]).push(m);});
+        const years=Object.keys(yearsMap).sort().reverse();
+        return <div style={{display:"flex",flexDirection:"column",gap:24,paddingBottom:40}}>
+          {years.map(year=>(
+            <div key={year}>
+              <div style={{color:C.text,fontSize:26,fontWeight:800,marginBottom:14,borderBottom:`1px solid ${C.border}`,paddingBottom:8}}>{year}</div>
+              {yearsMap[year].map(mStr=>{
+                const pdCnt=bills.filter(b=>isPaid(b,mStr)).length;
+                return <div key={mStr} style={{marginBottom:20}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <span style={{color:C.muted,fontSize:14,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>{MONTHS[+mStr.split("-")[1]-1]}</span>
+                    <Pill color={pdCnt===bills.length?C.accent:C.red}>{pdCnt}/{bills.length} Paid</Pill>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {sortForMonth(mStr).map(bill=>{const paid=isPaid(bill,mStr);const type=typeOf(bill);return (
+                      <div key={bill.id} onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:paid?C.accentDim+"33":C.redDim+"22",border:`1px solid ${paid?C.accent:C.red}55`,borderRadius:12,cursor:"pointer"}}>
+                        <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={38} style={{borderRadius:11}}/>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
+                          <div style={{color:C.muted,fontSize:11,marginTop:2}}>{ICONS[type.icon]} {type.name}</div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{color:C.text,fontSize:15,fontWeight:800}}>{fmt(bill.amount)}</div>
+                          <div style={{color:paid?C.accent:C.red,fontSize:10,fontWeight:800,letterSpacing:.5,marginTop:3}}>{paid?"✓ PAID":"✕ UNPAID"}</div>
+                        </div>
+                      </div>
+                    );})}
+                  </div>
+                </div>;
+              })}
             </div>
-          </SwipeRow>
-        );})}
-      </div>
-    </div>}
+          ))}
+        </div>;
+      })():(
+        <>
+          {/* ── Coming up (current month only) ── */}
+          {filterMonth===curMonth&&upcoming.length>0&&<div style={{marginBottom:24}}>
+            <div style={{color:C.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Coming up</div>
+            <Card style={{padding:"6px 16px"}}>
+              {upcoming.slice(0,4).map((bill,i,arr)=>{const di=dueInfo(bill);return (
+                <div key={bill.id} onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:i===arr.length-1?"none":`1px solid ${C.border}`,cursor:"pointer"}}>
+                  <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={36} style={{borderRadius:11}}/>
+                  <span style={{flex:1,color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</span>
+                  <span style={{background:di.color+"22",color:di.color,borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:700}}>{di.text}</span>
+                </div>
+              );})}
+            </Card>
+          </div>}
+
+          {/* ── Selected-month list, smart-sorted ── */}
+          <div style={{color:C.text,fontSize:18,fontWeight:800,marginBottom:14}}>{filterMonth===curMonth?"Your subscriptions":`${MONTHS[+filterMonth.split("-")[1]-1]} ${filterMonth.split("-")[0]}`}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:40}}>
+            {sortForMonth(filterMonth).map(bill=>{const paid=isPaid(bill,filterMonth);const type=typeOf(bill);const di=dueInfo(bill);return (
+              <SwipeRow key={bill.id} onEdit={()=>openEdit(bill)} onDelete={()=>setConfirmDelete(bill.id)}>
+                <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px",borderLeft:`4px solid ${bill.color||C.accent}`,opacity:paid?0.7:1}}>
+                  <div onClick={()=>openDetail(bill)} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
+                    <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={44} style={{borderRadius:13}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:C.text,fontWeight:800,fontSize:16,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
+                      <div style={{color:C.muted,fontSize:12,marginTop:2}}>{ICONS[type.icon]} {type.name}</div>
+                      {filterMonth===curMonth&&!paid&&<div style={{color:di.color,fontSize:11,fontWeight:700,marginTop:3}}>{di.text}</div>}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:7,flexShrink:0}}>
+                    <div style={{color:C.text,fontSize:16,fontWeight:800}}>{fmt(bill.amount)}</div>
+                    {paid
+                      ?<button onClick={e=>{e.stopPropagation();setConfirmUndo({bill,month:filterMonth});}} style={{background:C.accentDim,border:`1px solid ${C.accent}`,color:C.accent,borderRadius:99,padding:"5px 13px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>✓ Paid</button>
+                      :<button onClick={e=>{e.stopPropagation();handlePay(bill,filterMonth);}} style={{background:C.accent,border:"none",color:"#111",borderRadius:99,padding:"6px 18px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>Pay</button>}
+                  </div>
+                </div>
+              </SwipeRow>
+            );})}
+          </div>
+        </>
+      )}
+    </>}
 
     {confirmDelete&&<ConfirmModal title="Delete Subscription?" message="This removes it from your recurring list. Past payment transactions stay in your history." onClose={()=>setConfirmDelete(null)} onConfirm={async()=>{await onSave(bills.filter(b=>b.id!==confirmDelete));setConfirmDelete(null);}}/>}
+    {confirmUndo&&<ConfirmModal title="Undo Payment?" message={`This marks "${confirmUndo.bill.name}" as unpaid for ${MONTHS[+confirmUndo.month.split("-")[1]-1]} and removes the transaction.`} confirmColor={C.yellow} onClose={()=>setConfirmUndo(null)} onConfirm={handleUndoConfirm}/>}
   </div>;
 }
 
