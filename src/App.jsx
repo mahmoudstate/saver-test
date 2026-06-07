@@ -313,6 +313,32 @@ function CatIcon({ cat, glyph, emoji, icon, color, name, size = 36, style = {} }
   return <div style={{ width:size, height:size, borderRadius:radius, background:tile, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, ...style }}>{inner}</div>;
 }
 
+// Hand-drawn outline marks (app identity, never emoji) — inner SVG, rendered with stroke
+const MARKS={
+  zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
+  alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
+  up:'<line x1="12" x2="12" y1="19" y2="5"/><polyline points="5 12 12 5 19 12"/>',
+  down:'<line x1="12" x2="12" y1="5" y2="19"/><polyline points="19 12 12 19 5 12"/>',
+  chevR:'<polyline points="9 18 15 12 9 6"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  trendUp:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  trendDown:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  piggy:CAT_GLYPHS["piggy-bank"]||'<circle cx="12" cy="12" r="9"/>',
+  layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+};
+function Ico({ name, size=18, color="currentColor", stroke=2, style={} }){
+  const d=MARKS[name]; if(!d) return null;
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, display:"block", ...style }} dangerouslySetInnerHTML={{__html:d}}/>;
+}
+
 const getIS = () => ({
   width:"100%", minWidth:0, background:C.bg, border:`1px solid ${C.border}`,
   borderRadius:10, padding:"10px 12px", color:C.text, fontSize:15, outline:"none",
@@ -363,7 +389,7 @@ function EmptyState({icon,message}){
   </div>;
 }
 
-function MonthSelect({value,onChange,availMonths}){
+function MonthSelect({value,onChange,availMonths,allowAll=true}){
   const months=availMonths.length>0?availMonths:[new Date().toISOString().slice(0,7)];
   const byYear={};
   months.forEach(m=>{const[y,mo]=m.split("-");if(!byYear[y])byYear[y]=[];byYear[y].push({m,mo});});
@@ -371,7 +397,7 @@ function MonthSelect({value,onChange,availMonths}){
   return (
     <div style={{position:"relative",display:"inline-block"}}>
       <select value={value} onChange={onChange} style={{background:C.card,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"8px 32px 8px 12px",fontSize:13,fontWeight:600,outline:"none",appearance:"none",cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>
-        <option value="all">All Time</option>
+        {allowAll&&<option value="all">All Time</option>}
         {years.map(y=>(
           <optgroup key={y} label={y}>
             {byYear[y].map(({m,mo})=><option key={m} value={m}>{MONTHS[+mo-1]} {y}</option>)}
@@ -633,7 +659,7 @@ function SaverApp(){
   const[quickActions,setQuickActions]=useState(DEFAULT_QUICK_ACTIONS);
   const[showSplash,setShowSplash]=useState(true);
   const[hasSeenWelcome,setHasSeenWelcome]=useState(true);
-  const[filterMonth,setFilterMonth]=useState("all");
+  const[filterMonth,setFilterMonth]=useState(currentMonth());
   const[currency,setCurrencyState]=useState("EGP");
   const[theme,setThemeState]=useState("dark");
   useEffect(()=>{ setCurrencyGlobal(currency); },[currency]);
@@ -827,7 +853,7 @@ function SaverApp(){
 
       {!ledgerBank&&!ledgerGroup&&!ledgerSaving&&!ledgerBudget?(
         <>
-          {tab==="dashboard"&&<Dashboard txns={filteredTxns} txnsAll={txns} bills={bills} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={activeSavings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} {...sharedProps} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBank(b);}} onOpenGroup={(g)=>{setScrollState({y:window.scrollY,restore:true});setLedgerGroup(g);}} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}} onOpenBudget={(bdg)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBudget(bdg);}} hideTotal={hideTotal} setHideTotal={setHideTotal} navigateTo={navigateTo} scrollState={scrollState} setScrollState={setScrollState} onBanks={saveBanks} onBudgets={saveBudgets} onSavings={saveSavings} onGroups={saveGroups}/>}
+          {tab==="dashboard"&&<Dashboard txns={filteredTxns} txnsAll={txns} bills={bills} installments={installments} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={activeSavings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} {...sharedProps} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBank(b);}} onOpenGroup={(g)=>{setScrollState({y:window.scrollY,restore:true});setLedgerGroup(g);}} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}} onOpenBudget={(bdg)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBudget(bdg);}} hideTotal={hideTotal} setHideTotal={setHideTotal} navigateTo={navigateTo} scrollState={scrollState} setScrollState={setScrollState} onBanks={saveBanks} onBudgets={saveBudgets} onSavings={saveSavings} onGroups={saveGroups}/>}
           {tab==="add"&&<AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={activeSavings} currency={currency} onAdd={addTxn} onDone={()=>navigateTo("dashboard")} {...sharedProps} setAppAlert={setAppAlert} onGoalToast={setGoalToast} txns={txns}/>}
           {tab==="savings"&&<SavingsPage savings={savings} onSave={saveSavings} txns={txns} banks={banks} onBack={()=>navigateTo("settings")} addTxn={addTxn} delTxn={delTxn} onGoalToast={setGoalToast} {...sharedProps} setAppAlert={setAppAlert} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}}/>}
           {tab==="history"&&<History txns={txns} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths} savings={savings} setAppAlert={setAppAlert}/>}
@@ -1047,7 +1073,7 @@ function EditTxnModal({txn,banks,expCats,incCats,currency,onSave,onClose}){
   </Modal>;
 }
 
-function Dashboard({txns,txnsAll,bills,budgets,banks,groups,expCats,savings,filterMonth,setFilterMonth,availMonths,username,bankBalance,safeToSpend,frozenForBank,goalSaved,onDeleteTxn,onUpdateTxn,onOpenBank,onOpenGroup,onOpenSaving,onOpenBudget,hideTotal,setHideTotal,navigateTo,scrollState,setScrollState,onBanks,onBudgets,onSavings,onGroups}){
+function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expCats,savings,filterMonth,setFilterMonth,availMonths,username,bankBalance,safeToSpend,frozenForBank,goalSaved,onDeleteTxn,onUpdateTxn,onOpenBank,onOpenGroup,onOpenSaving,onOpenBudget,hideTotal,setHideTotal,navigateTo,scrollState,setScrollState,onBanks,onBudgets,onSavings,onGroups}){
   useEffect(()=>{if(scrollState.restore){setTimeout(()=>window.scrollTo(0,scrollState.y),50);setScrollState(s=>({...s,restore:false}));}else window.scrollTo(0,0);},[]);
   const[recentFilter,setRecentFilter]=useState("all");
   const[viewTxn,setViewTxn]=useState(null);
@@ -1057,40 +1083,78 @@ function Dashboard({txns,txnsAll,bills,budgets,banks,groups,expCats,savings,filt
   useEffect(()=>{load("et_balance_mode","total").then(setBalanceMode);},[]);
 
   const defaultOrder=[
-    {id:"accounts",label:"🏦 Accounts & Balance"},
-    {id:"overview",label:"📊 Income & Cash Flow"},
-    {id:"bills",label:"⚡ Monthly Bills"},
-    {id:"budgets",label:"📈 Monthly Budgets"},
-    {id:"savings",label:"🎯 Savings Goals"},
-    {id:"spending",label:"🛍️ Spending Groups"}
+    {id:"accounts",label:"Accounts & Balance"},
+    {id:"overview",label:"Income & Net"},
+    {id:"bills",label:"Monthly Bills"},
+    {id:"installments",label:"Installments"},
+    {id:"budgets",label:"Monthly Budgets"},
+    {id:"savings",label:"Savings Goals"},
+    {id:"spending",label:"Spending Groups"}
   ];
   const[dashOrder,setDashOrder]=useState(defaultOrder);
-  useEffect(()=>{load("et_dash_order",defaultOrder).then(setDashOrder);},[]);
+  useEffect(()=>{load("et_dash_order",defaultOrder).then(saved=>{
+    // Merge: keep saved order, append any new sections, refresh labels, drop removed ones
+    const known=Object.fromEntries(defaultOrder.map(s=>[s.id,s.label]));
+    const merged=saved.filter(s=>known[s.id]).map(s=>({id:s.id,label:known[s.id]}));
+    defaultOrder.forEach(s=>{if(!merged.some(m=>m.id===s.id))merged.push(s);});
+    setDashOrder(merged);
+  });},[]);
 
   const totalBalance=useMemo(()=>banks.reduce((s,b)=>s+bankBalance(b.id),0),[banks,bankBalance]);
   const totalSafe=useMemo(()=>banks.reduce((s,b)=>s+safeToSpend(b.id),0),[banks,safeToSpend]);
   const totalIncome=useMemo(()=>txns.filter(t=>t.type==="income"||t.type==="goal_return").reduce((a,t)=>a+t.amount,0),[txns]);
   const totalExp=useMemo(()=>txns.filter(t=>t.type==="expense"||t.type==="goal_withdraw").reduce((a,t)=>a+t.amount,0),[txns]);
-  const curMonth=new Date().toISOString().slice(0,7);
-  const cashFlowPct=totalIncome>0?Math.min(100,Math.round((totalExp/totalIncome)*100)):0;
-  const cashFlowColor=cashFlowPct>=90?C.red:cashFlowPct>=70?C.yellow:C.accent;
+  const curMonth=currentMonth();
+  const selMonth=filterMonth;
+  const isCurrentMonth=selMonth===curMonth;
+  const net=totalIncome-totalExp;
+  const savingsRate=totalIncome>0?Math.round((net/totalIncome)*100):0;
 
   const getPrev=(m)=>{const[y,mo]=m.split("-");const d=new Date(+y,+mo-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;};
-  const prevMonth=filterMonth==="all"?null:getPrev(filterMonth);
-  const prevT=prevMonth?txnsAll.filter(t=>t.date.startsWith(prevMonth)):[];
+  const prevMonth=getPrev(selMonth);
+  const prevT=txnsAll.filter(t=>t.date.startsWith(prevMonth));
   const prevInc=prevT.filter(t=>t.type==="income"||t.type==="goal_return").reduce((a,t)=>a+t.amount,0);
   const prevExp=prevT.filter(t=>t.type==="expense"||t.type==="goal_withdraw").reduce((a,t)=>a+t.amount,0);
+  const prevNet=prevInc-prevExp;
   const incomeDiff=prevInc>0?Math.round(((totalIncome-prevInc)/prevInc)*100):null;
   const expDiff=prevExp>0?Math.round(((totalExp-prevExp)/prevExp)*100):null;
+  const netDiff=Math.abs(prevNet)>0?Math.round(((net-prevNet)/Math.abs(prevNet))*100):null;
 
-  const isCurrentMonth=filterMonth===curMonth||filterMonth==="all";
-  const billsForMonth=isCurrentMonth?curMonth:filterMonth;
-  const paidCount=bills.filter(b=>b.payments?.some(p=>p.month===billsForMonth)).length;
-  const remainingAmt=bills.filter(b=>!b.payments?.some(p=>p.month===billsForMonth)).reduce((s,b)=>s+b.amount,0);
-  const now2=new Date(),daysLeft=Math.max(1,new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate()-now2.getDate()+1);
+  const now2=new Date(),dim=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
+  const daysLeft=Math.max(1,dim-now2.getDate()+1),dayOfMonth=now2.getDate();
+  const dueIn=(dueDay)=>(!isCurrentMonth||!dueDay)?null:dueDay-dayOfMonth;
+  const dueLabel=(dueDay)=>{const d=dueIn(dueDay);if(d===null)return dueDay?`Day ${dueDay}`:"";if(d<0)return `Overdue ${Math.abs(d)}d`;if(d===0)return "Due today";if(d===1)return "Tomorrow";return `In ${d} days`;};
+  const dueColor=(dueDay)=>{const d=dueIn(dueDay);if(d===null)return C.muted;if(d<0)return C.red;if(d<=1)return C.orange;if(d<=3)return C.yellow;return C.accent;};
+
   const recents=txns.filter(t=>{if(recentFilter==="expenses")return t.type==="expense"||t.type==="goal_withdraw";if(recentFilter==="income")return t.type==="income"||t.type==="goal_return";return true;}).slice(0,5);
   const spendingGroups=groups.filter(g=>txns.filter(tx=>(tx.type==="expense"||tx.type==="goal_withdraw")&&g.cats.includes(tx.catId)).reduce((a,tx)=>a+tx.amount,0)>0);
-  const upcomingBills=filterMonth==="all"?bills.filter(b=>!b.payments?.some(p=>p.month===curMonth)).sort((a,b)=>(a.dueDay||99)-(b.dueDay||99)).slice(0,3):null;
+
+  // Bills (selected month)
+  const billPaid=(b)=>b.payments?.some(p=>p.month===selMonth);
+  const billsTotal=bills.reduce((s,b)=>s+b.amount,0);
+  const billsUnpaid=bills.filter(b=>!billPaid(b));
+  const billsPaidCount=bills.length-billsUnpaid.length;
+  const billsRemaining=billsUnpaid.reduce((s,b)=>s+b.amount,0);
+  const billsPaidAmt=billsTotal-billsRemaining;
+  const billsAllPaid=bills.length>0&&billsUnpaid.length===0;
+  const nextBill=isCurrentMonth?[...billsUnpaid].sort((a,b)=>(a.dueDay||99)-(b.dueDay||99))[0]:null;
+  const overdueBillCount=isCurrentMonth?billsUnpaid.filter(b=>b.dueDay&&dueIn(b.dueDay)<0).length:0;
+
+  // Installments (selected month)
+  const instPaidOf=(i)=>i.payments?i.payments.length:(i.paidInstallments||0);
+  const instDone=(i)=>instPaidOf(i)>=i.totalInstallments;
+  const instPaidInMonth=(i,m)=>!!i.payments?.some(p=>p.month===m);
+  const activeInst=installments.filter(i=>!instDone(i));
+  const instMonthly=activeInst.reduce((a,i)=>a+i.installmentAmount,0);
+  const instTotalRemaining=activeInst.reduce((a,i)=>a+Math.max(0,i.totalAmount-instPaidOf(i)*i.installmentAmount),0);
+  const instTotalAll=installments.reduce((a,i)=>a+i.totalAmount,0);
+  const instPaidAll=installments.reduce((a,i)=>a+instPaidOf(i)*i.installmentAmount,0);
+  const instDueThisMonth=activeInst.filter(i=>!instPaidInMonth(i,selMonth));
+  const instPaidCountM=activeInst.length-instDueThisMonth.length;
+  const instAllPaidM=activeInst.length>0&&instDueThisMonth.length===0;
+  const nextInst=isCurrentMonth?[...instDueThisMonth].sort((a,b)=>(a.dueDay||99)-(b.dueDay||99))[0]:null;
+  const instOverallPct=instTotalAll>0?Math.round((instPaidAll/instTotalAll)*100):0;
+  const overdueInstCount=isCurrentMonth?instDueThisMonth.filter(i=>i.dueDay&&dueIn(i.dueDay)<0).length:0;
   const splitCounts={};
   txnsAll.forEach(t=>{if(t.splitGroupId)splitCounts[t.splitGroupId]=(splitCounts[t.splitGroupId]||0)+1;});
   const expTxns=txns.filter(t=>t.type==="expense"||t.type==="goal_withdraw");
@@ -1107,7 +1171,7 @@ function Dashboard({txns,txnsAll,bills,budgets,banks,groups,expCats,savings,filt
 
   return <div style={{padding:"24px 16px 0"}}>
     {username&&<div style={{marginBottom:18}}><div style={{color:C.muted,fontSize:13,fontWeight:500}}>{(()=>{const h=new Date().getHours();return <>{h<12?"☀️":h<18?"👋":"🌙"} {h<12?"Good morning":h<18?"Good afternoon":"Good evening"},</>; })()}</div><div style={{color:C.text,fontSize:24,fontWeight:800,letterSpacing:-0.5}}>{username} 💰</div></div>}
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths}/></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} allowAll={false}/></div>
 
     {txnsAll.length===0&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>👋</div><div style={{color:C.accent,fontWeight:800,fontSize:16,marginBottom:6}}>Welcome to Saver!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>Tap <strong style={{color:C.accent}}>＋</strong> to add your first transaction.</div></div>}
     {txnsAll.length>0&&txns.length===0&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>✨</div><div style={{color:C.text,fontWeight:800,fontSize:16,marginBottom:6}}>Fresh start for {filterMonth!=="all"?MONTHS[+filterMonth.split("-")[1]-1]:"this period"}!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>No transactions yet. Tap <strong style={{color:C.accent}}>＋</strong> to start tracking.</div></div>}
@@ -1139,50 +1203,81 @@ function Dashboard({txns,txnsAll,bills,budgets,banks,groups,expCats,savings,filt
       );
       if(section.id==="overview")return(
         <div key="overview" style={{marginBottom:20}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:totalIncome>0?10:0}}>
-            <Card onClick={()=>totalIncome>0&&!hideTotal&&setInsightsType("income")} className="ic" style={{padding:"14px 14px 12px",cursor:totalIncome>0&&!hideTotal?"pointer":"default"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div><div style={{color:C.accent,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalIncome)}</div>{incomeDiff!==null&&!hideTotal&&<div style={{fontSize:10,fontWeight:700,color:incomeDiff>=0?C.accent:C.red}}>{incomeDiff>=0?"▲":"▼"} {Math.abs(incomeDiff)}% vs last month</div>}</Card>
-            <Card onClick={()=>totalExp>0&&!hideTotal&&setInsightsType("expense")} className="ic" style={{padding:"14px 14px 12px",cursor:totalExp>0&&!hideTotal?"pointer":"default"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalExp)}</div>{expDiff!==null&&!hideTotal&&<div style={{fontSize:10,fontWeight:700,color:expDiff<=0?C.accent:C.red}}>{expDiff<=0?"▼":"▲"} {Math.abs(expDiff)}% vs last month</div>}</Card>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:(totalIncome>0||totalExp>0)?10:0}}>
+            <Card onClick={()=>totalIncome>0&&!hideTotal&&setInsightsType("income")} className="ic" style={{padding:"14px 14px 12px",cursor:totalIncome>0&&!hideTotal?"pointer":"default"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Income</div><div style={{color:C.accent,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalIncome)}</div>{incomeDiff!==null&&!hideTotal&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,color:incomeDiff>=0?C.accent:C.red}}><Ico name={incomeDiff>=0?"up":"down"} size={11} color={incomeDiff>=0?C.accent:C.red} stroke={2.6}/>{Math.abs(incomeDiff)}% vs last month</div>}</Card>
+            <Card onClick={()=>totalExp>0&&!hideTotal&&setInsightsType("expense")} className="ic" style={{padding:"14px 14px 12px",cursor:totalExp>0&&!hideTotal?"pointer":"default"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalExp)}</div>{expDiff!==null&&!hideTotal&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,color:expDiff<=0?C.accent:C.red}}><Ico name={expDiff<=0?"down":"up"} size={11} color={expDiff<=0?C.accent:C.red} stroke={2.6}/>{Math.abs(expDiff)}% vs last month</div>}</Card>
           </div>
-          {totalIncome>0&&!hideTotal&&<div style={{background:C.card,padding:"12px 16px",borderRadius:14,border:`1px solid ${C.border}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:C.muted,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Cash Flow</span><span style={{color:cashFlowColor,fontSize:12,fontWeight:700}}>{cashFlowPct}% Spent</span></div>
-            <ProgressBar value={totalExp} max={totalIncome} color={cashFlowColor} allowOver/>
-          </div>}
+          {(totalIncome>0||totalExp>0)&&!hideTotal&&(()=>{const pos=net>=0,nc=pos?C.accent:C.red;return <div style={{background:C.card,padding:"14px 16px",borderRadius:14,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:44,height:44,borderRadius:13,background:nc+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name={pos?"piggy":"trendDown"} size={24} color={nc} stroke={2}/></div>
+            <div style={{flex:1}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{pos?"Saved this month":"Overspent this month"}</div><div style={{color:nc,fontSize:22,fontWeight:800,letterSpacing:-0.5}}>{pos?"+":"−"}{fmt(Math.abs(net))}</div></div>
+            {totalIncome>0&&<div style={{textAlign:"right"}}><div style={{color:nc,fontSize:18,fontWeight:800}}>{savingsRate}%</div><div style={{color:C.faint,fontSize:10,fontWeight:700}}>savings rate</div></div>}
+          </div>;})()}
         </div>
       );
       if(section.id==="bills"&&bills.length>0)return(
         <div key="bills">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Bills</div>
-          <Card onClick={()=>navigateTo("monthly",true)} className="ic" style={{padding:"14px 14px 12px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
-            {filterMonth==="all"&&upcomingBills!==null?(
-              upcomingBills.length===0?<div style={{color:C.accent,fontWeight:700,fontSize:14}}>✅ All bills paid this month!</div>:(
-                <><div style={{color:C.text,fontWeight:700,fontSize:14,marginBottom:10}}>⚡ Upcoming Bills</div>
-                {upcomingBills.map(b=><div key={b.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,marginBottom:8,borderBottom:`1px solid ${C.border}`}}><div><div style={{color:C.text,fontSize:13,fontWeight:600}}>{b.name}</div>{b.dueDay&&<div style={{color:C.muted,fontSize:11}}>Due {b.dueDay}{b.dueDay===1?"st":b.dueDay===2?"nd":b.dueDay===3?"rd":"th"}</div>}</div><span style={{color:C.red,fontWeight:800,fontSize:14}}>{hideTotal?"••••":fmt(b.amount)}</span></div>)}</>
-              )
-            ):(()=>{const allPaid=paidCount===bills.length,col=allPaid?C.accent:C.red;return <><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>{allPaid?"✅":"⚡"} {allPaid?"All Bills Paid":"Upcoming Payments"}</span><Pill color={col}>{paidCount}/{bills.length} Paid</Pill></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:col,fontSize:18,fontWeight:800}}>{hideTotal?"••••":allPaid?fmt(0):fmt(remainingAmt)}</span><span style={{color:C.muted,fontSize:13}}>{allPaid?"cleared ✓":"remaining"}</span></div><ProgressBar value={paidCount} max={bills.length} color={col}/></>;})()}
+          <Card onClick={()=>navigateTo("monthly",true)} className="ic" style={{padding:"16px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:36,height:36,borderRadius:11,background:(billsAllPaid?C.accent:C.blue)+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="zap" size={20} color={billsAllPaid?C.accent:C.blue} stroke={2}/></div>
+              <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>Monthly Bills</div><div style={{color:C.muted,fontSize:11,marginTop:1}}>{billsPaidCount}/{bills.length} paid{overdueBillCount>0?` · ${overdueBillCount} overdue`:""}</div></div>
+              <Ico name="chevR" size={18} color={C.faint}/>
+            </div>
+            <div style={{marginBottom:12}}><div style={{color:billsAllPaid?C.accent:C.text,fontSize:26,fontWeight:800,letterSpacing:-0.5}}>{hideTotal?"••••":billsAllPaid?"All cleared":fmt(billsRemaining)}</div><div style={{color:C.muted,fontSize:11,marginTop:2,display:"flex",alignItems:"center",gap:4}}>{billsAllPaid?<><Ico name="check" size={12} color={C.accent} stroke={3}/>everything paid this month</>:`remaining of ${hideTotal?"••••":fmt(billsTotal)}`}</div></div>
+            <div style={{display:"flex",gap:3,height:8,marginBottom:nextBill?14:0}}>{bills.map(b=>{const paid=billPaid(b),od=isCurrentMonth&&!paid&&b.dueDay&&dueIn(b.dueDay)<0;return <div key={b.id} style={{flex:1,borderRadius:3,background:paid?C.accent:od?C.red:C.faint,transition:"background .35s ease"}}/>;})}</div>
+            {nextBill&&<div style={{display:"flex",alignItems:"center",gap:8,paddingTop:14,borderTop:`1px solid ${C.border}`}}><Ico name={dueIn(nextBill.dueDay)<0?"alert":"clock"} size={15} color={dueColor(nextBill.dueDay)} stroke={2.2}/><span style={{color:C.text,fontSize:13,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Next: {nextBill.name}</span><span style={{color:dueColor(nextBill.dueDay),fontSize:11,fontWeight:800}}>{dueLabel(nextBill.dueDay)}</span><span style={{color:C.text,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(nextBill.amount)}</span></div>}
           </Card>
         </div>
       );
-      if(section.id==="budgets"&&budgets.length>0)return(
-        <div key="budgets">
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
-          <div style={{marginBottom:20}}>
-            <SortableList items={budgets} onReorder={onBudgets} renderItem={(bdg)=>{
-              const targetMonth=filterMonth==="all"?curMonth:filterMonth;
-              const allExp=txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
-              const spent=allExp.filter(t=>t.date.startsWith(targetMonth)).reduce((a,t)=>a+t.amount,0);
-              if(filterMonth==="all"){
-                const months=[...new Set(allExp.map(t=>t.date.slice(0,7)))];
-                const avg=months.length>0?allExp.reduce((a,t)=>a+t.amount,0)/months.length:0;
-                const totalAllExp=txnsAll.filter(t=>t.type==="expense"||t.type==="goal_withdraw").reduce((a,t)=>a+t.amount,0);
-                const histPct=totalAllExp>0?Math.round((allExp.reduce((a,t)=>a+t.amount,0)/totalAllExp)*100):0;
-                return <Card onClick={()=>onOpenBudget(bdg)} className="ic" style={{padding:"14px",cursor:"pointer",transition:"transform 0.1s ease"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span><Pill color={C.blue}>{histPct}% of all expenses</Pill></div><div style={{color:C.muted,fontSize:11}}>Monthly avg: <span style={{color:C.text,fontWeight:700}}>{hideTotal?"••••":fmt(avg)}</span></div></Card>;
-              }
-              const rem=Math.max(0,bdg.amount-spent);const pct=bdg.amount>0?Math.min(100,Math.round((spent/bdg.amount)*100)):0;const barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
-              return <Card onClick={()=>onOpenBudget(bdg)} className="ic" style={{padding:"14px",cursor:"pointer",transition:"transform 0.1s ease"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span><Pill color={barColor}>{pct}%</Pill></div><div style={{color:C.muted,fontSize:11,marginBottom:6}}>Spent <span style={{color:C.text,fontWeight:700}}>{hideTotal?"••••":fmt(spent)}</span> of {hideTotal?"••••":fmt(bdg.amount)}</div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:rem===0?C.red:C.accent,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(rem)} left</span><span style={{color:C.muted,fontSize:11}}>Daily: {fmt(rem/daysLeft)}</span></div><ProgressBar value={spent} max={bdg.amount} color={barColor}/></Card>;
-            }}/>
-          </div>
+      if(section.id==="installments"&&installments.length>0)return(
+        <div key="installments">
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Installments</div>
+          <Card onClick={()=>navigateTo("monthly",true)} className="ic" style={{padding:"16px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:36,height:36,borderRadius:11,background:(activeInst.length===0?C.accent:C.purple)+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="card" size={20} color={activeInst.length===0?C.accent:C.purple} stroke={2}/></div>
+              <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>Installments</div><div style={{color:C.muted,fontSize:11,marginTop:1}}>{activeInst.length===0?"all plans completed":`${instPaidCountM}/${activeInst.length} paid${overdueInstCount>0?` · ${overdueInstCount} overdue`:""}`}</div></div>
+              <Ico name="chevR" size={18} color={C.faint}/>
+            </div>
+            {activeInst.length===0?(
+              <div style={{display:"flex",alignItems:"center",gap:6,color:C.accent,fontWeight:700,fontSize:15}}><Ico name="checkCircle" size={18} color={C.accent} stroke={2}/>All installments cleared</div>
+            ):(<>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:12}}>
+                <div><div style={{color:C.text,fontSize:26,fontWeight:800,letterSpacing:-0.5}}>{hideTotal?"••••":fmt(instTotalRemaining)}</div><div style={{color:C.muted,fontSize:11,marginTop:2}}>left to clear · {hideTotal?"••••":fmt(instMonthly)}/mo</div></div>
+                <div style={{textAlign:"right"}}><div style={{color:C.purple,fontSize:18,fontWeight:800}}>{instOverallPct}%</div><div style={{color:C.faint,fontSize:10,fontWeight:700}}>paid off</div></div>
+              </div>
+              <div style={{display:"flex",gap:3,height:8,marginBottom:nextInst?14:0}}>{activeInst.map(i=>{const paid=instPaidInMonth(i,selMonth),od=isCurrentMonth&&!paid&&i.dueDay&&dueIn(i.dueDay)<0;return <div key={i.id} style={{flex:1,borderRadius:3,background:paid?C.accent:od?C.red:C.faint,transition:"background .35s ease"}}/>;})}</div>
+              {nextInst&&<div style={{display:"flex",alignItems:"center",gap:8,paddingTop:14,borderTop:`1px solid ${C.border}`}}><Ico name={dueIn(nextInst.dueDay)<0?"alert":"clock"} size={15} color={dueColor(nextInst.dueDay)} stroke={2.2}/><span style={{color:C.text,fontSize:13,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Next: {nextInst.company||nextInst.name||"Installment"}</span><span style={{color:dueColor(nextInst.dueDay),fontSize:11,fontWeight:800}}>{dueLabel(nextInst.dueDay)}</span><span style={{color:C.text,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(nextInst.installmentAmount)}</span></div>}
+            </>)}
+          </Card>
         </div>
       );
+      if(section.id==="budgets"&&budgets.length>0)return(()=>{
+        const budTotal=budgets.reduce((a,b)=>a+b.amount,0);
+        const budSpent=budgets.reduce((a,bd)=>a+txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bd.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((s,t)=>s+t.amount,0),0);
+        const budPct=budTotal>0?Math.min(100,Math.round((budSpent/budTotal)*100)):0;
+        const budCol=budPct>=90?C.red:budPct>=70?C.yellow:C.accent;
+        return <div key="budgets">
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
+          <Card style={{padding:"14px 16px 8px",marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:8}}>
+              <div><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Total Budget</div><div style={{color:C.text,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(budSpent)} <span style={{color:C.muted,fontSize:12,fontWeight:600}}>of {hideTotal?"••••":fmt(budTotal)}</span></div></div>
+              <Pill color={budCol}>{budPct}%</Pill>
+            </div>
+            <ProgressBar value={budSpent} max={budTotal} color={budCol}/>
+            <div style={{marginTop:6}}>
+              <SortableList items={budgets} onReorder={onBudgets} gap={0} renderItem={(bdg,idx)=>{
+                const spent=txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((a,t)=>a+t.amount,0);
+                const rem=Math.max(0,bdg.amount-spent),pct=bdg.amount>0?Math.min(100,Math.round((spent/bdg.amount)*100)):0,barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
+                return <div onClick={()=>onOpenBudget(bdg)} className="ic" style={{padding:"12px 2px",borderTop:`1px solid ${C.border}`,cursor:"pointer"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:rem===0?C.red:C.accent,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(rem)} left</span><Pill color={barColor}>{pct}%</Pill></div></div>
+                  <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}><span style={{color:C.muted,fontSize:11}}>Spent {hideTotal?"••••":fmt(spent)} of {hideTotal?"••••":fmt(bdg.amount)}</span>{isCurrentMonth&&rem>0&&<span style={{color:C.muted,fontSize:11}}>Daily: {hideTotal?"••••":fmt(rem/daysLeft)}</span>}</div>
+                </div>;
+              }}/>
+            </div>
+          </Card>
+        </div>;
+      })();
       if(section.id==="savings"&&savings.length>0)return(
         <div key="savings">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Savings Goals</div>
