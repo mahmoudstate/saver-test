@@ -335,6 +335,8 @@ const MARKS={
   phone:CAT_GLYPHS["smartphone"]||'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
   download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  close:'<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+  circle:'<circle cx="12" cy="12" r="9"/>',
   play:'<polygon points="6 3 20 12 6 21 6 3"/>',
   book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
   chat:'<path d="M7.9 20A9 8 0 1 0 4 16.1L2 22Z"/>',
@@ -623,12 +625,12 @@ function WelcomeScreen({onStart,onManual,onPrivacy}){
       <div style={{textAlign:"center",marginBottom:30}}><img src="https://raw.githubusercontent.com/mahmoudstate/saver-test/main/icon.png" alt="Logo" style={{width:100,height:100,borderRadius:24,boxShadow:"0 10px 30px rgba(0,0,0,0.5)",marginBottom:20}}/><h1 style={{color:C.text,fontSize:28,fontWeight:800,margin:"0 0 10px 0"}}>Welcome to Saver</h1><h2 style={{color:C.accent,fontSize:16,fontWeight:600,margin:0}}>Your Personal Finance, Mastered.</h2></div>
       <p style={{color:C.muted,fontSize:15,lineHeight:1.6,marginBottom:24,textAlign:"center"}}>Simple, fast expense tracking. 100% offline.</p>
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:20,marginBottom:30}}>
-        {[{bg:C.accentDim,c:C.accent,icon:"⚡",t:"Lightning Fast",d:"Log expenses in seconds using Quick Actions."},{bg:C.blueDim,c:C.blue,icon:"🔒",t:"100% Offline & Private",d:"No clouds, no accounts. Your data never leaves your phone."},{bg:C.yellowDim,c:C.yellow,icon:"🎨",t:"Fully Customizable",d:"Drag, drop, and personalize your dashboard."}].map((f,i)=><div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:i<2?16:0}}><span style={{fontSize:20,background:f.bg,color:f.c,padding:8,borderRadius:10}}>{f.icon}</span><div><strong style={{color:C.text,fontSize:15}}>{f.t}</strong><div style={{color:C.muted,fontSize:13,marginTop:4}}>{f.d}</div></div></div>)}
+        {[{bg:C.accentDim,c:C.accent,icon:"zap",t:"Lightning Fast",d:"Log expenses in seconds using Quick Actions."},{bg:C.blueDim,c:C.blue,icon:"shield",t:"100% Offline & Private",d:"No cloud, no accounts. Your data never leaves your device."},{bg:C.yellowDim,c:C.yellow,icon:"sparkles",t:"Fully Customizable",d:"Reorder your dashboard, customize categories, and switch themes."}].map((f,i)=><div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:i<2?16:0}}><span style={{background:f.bg,padding:9,borderRadius:11,display:"flex",flexShrink:0}}><Ico name={f.icon} size={20} color={f.c}/></span><div><strong style={{color:C.text,fontSize:15}}>{f.t}</strong><div style={{color:C.muted,fontSize:13,marginTop:4}}>{f.d}</div></div></div>)}
       </div>
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:"auto"}}>
       <Btn full onClick={()=>isInStandaloneMode?onStart():setShowInstall(true)} style={{padding:"14px",fontSize:16}}>Start Using Saver</Btn>
-      <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px",fontSize:16}}>Read Manual Guide</Btn>
+      <Btn full outline color={C.muted} onClick={onManual} style={{padding:"14px",fontSize:16}}>See how it works</Btn>
     </div>
     <AppFooter onPrivacyClick={onPrivacy}/>
     {showInstall&&<AddToHomeModal onClose={()=>{setShowInstall(false);onStart();}}/>}
@@ -1098,6 +1100,21 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
   const[insightsType,setInsightsType]=useState(null);
   const[balanceMode,setBalanceMode]=useState("total");
   useEffect(()=>{load("et_balance_mode","total").then(setBalanceMode);},[]);
+  // First-run getting-started checklist (dismissible / can be turned off forever)
+  const[obDismissed,setObDismissed]=useState(true);
+  const obTasks=[
+    {label:"Add an account",done:banks.length>0,go:()=>navigateTo("settings")},
+    {label:"Log your first transaction",done:txnsAll.length>0,go:()=>navigateTo("add")},
+    {label:"Create a budget",done:budgets.length>0,go:()=>navigateTo("budgets")},
+    {label:"Set a savings goal",done:savings.length>0,go:()=>navigateTo("savings")},
+  ];
+  const obDone=obTasks.filter(t=>t.done).length,obAll=obDone===obTasks.length;
+  useEffect(()=>{load("et_onboard_done",false).then(v=>{
+    if(v){setObDismissed(true);return;}
+    if(banks.length>0&&txnsAll.length>0&&budgets.length>0&&savings.length>0){setObDismissed(true);save("et_onboard_done",true);}
+    else setObDismissed(false);
+  });},[]);
+  const dismissOb=async()=>{setObDismissed(true);HAPTICS.light?.();await save("et_onboard_done",true);};
 
   const defaultOrder=[
     {id:"accounts",label:"Accounts & Balance"},
@@ -1192,6 +1209,23 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
 
     {txnsAll.length===0&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>👋</div><div style={{color:C.accent,fontWeight:800,fontSize:16,marginBottom:6}}>Welcome to Saver!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>Tap <strong style={{color:C.accent}}>＋</strong> to add your first transaction.</div></div>}
     {txnsAll.length>0&&txns.length===0&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>✨</div><div style={{color:C.text,fontWeight:800,fontSize:16,marginBottom:6}}>Fresh start for {filterMonth!=="all"?MONTHS[+filterMonth.split("-")[1]-1]:"this period"}!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>No transactions yet. Tap <strong style={{color:C.accent}}>＋</strong> to start tracking.</div></div>}
+
+    {!obDismissed&&<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px",marginBottom:20,animation:"fpIn 0.3s ease"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+        <div style={{width:34,height:34,borderRadius:10,background:C.accent+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name={obAll?"checkCircle":"sparkles"} size={18} color={C.accent}/></div>
+        <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>{obAll?"You're all set!":"Getting started"}</div><div style={{color:C.muted,fontSize:11,marginTop:1}}>{obAll?"You've set up the basics":`${obDone} of ${obTasks.length} done`}</div></div>
+        <button onClick={dismissOb} aria-label="Dismiss" style={{background:"none",border:"none",color:C.faint,cursor:"pointer",padding:6,display:"flex"}}><Ico name="close" size={17} color={C.faint}/></button>
+      </div>
+      <ProgressBar value={obDone} max={obTasks.length} color={C.accent}/>
+      <div style={{marginTop:8}}>
+        {obTasks.map((t,idx)=><div key={idx} onClick={()=>{if(!t.done)t.go();}} className={t.done?"":"ic"} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 2px",cursor:t.done?"default":"pointer",borderTop:idx>0?`1px solid ${C.border}`:"none"}}>
+          {t.done?<Ico name="checkCircle" size={20} color={C.accent} stroke={2}/>:<Ico name="circle" size={20} color={C.faint} stroke={2}/>}
+          <span style={{flex:1,color:t.done?C.faint:C.text,fontSize:14,fontWeight:600,textDecoration:t.done?"line-through":"none"}}>{t.label}</span>
+          {!t.done&&<Ico name="chevR" size={16} color={C.faint}/>}
+        </div>)}
+      </div>
+      {obAll&&<div style={{marginTop:12}}><Btn full small onClick={dismissOb} color={C.accent}>Got it</Btn></div>}
+    </div>}
 
     {dashOrder.map(section=>{
       if(section.id==="accounts")return(
