@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
-import Privacy from "./Privacy";
 
 const vibrate = (p) => { if (typeof window !== "undefined" && window.navigator?.vibrate) try { window.navigator.vibrate(p); } catch(e){} };
 const HAPTICS = { light:()=>vibrate(10), medium:()=>vibrate(20), heavy:()=>vibrate(50), success:()=>vibrate([30,50,30]), warning:()=>vibrate(100) };
@@ -331,6 +330,10 @@ const MARKS={
   trendUp:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
   trendDown:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
   target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  shield:CAT_GLYPHS["shield"]||'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>',
+  lock:CAT_GLYPHS["lock"]||'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  phone:CAT_GLYPHS["smartphone"]||'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
 };
 function Ico({ name, size=18, color="currentColor", stroke=2, style={} }){
@@ -1812,6 +1815,38 @@ function FullPage({title,onBack,right,children,maxHeader}){
       </div>
     </div>
   );
+}
+
+function Privacy({onBack}){
+  const sections=[
+    {icon:"phone",color:C.accent,title:"Everything stays on your device",body:<>Your accounts, budgets, bills and transactions are saved <strong style={{color:C.text}}>only</strong> in your device's local storage. Saver works fully offline — nothing is ever uploaded to a server.</>},
+    {icon:"shield",color:C.blue,title:"No tracking, no servers",body:<>We don't run any servers that collect your data, and we don't track how you use the app. There are no ads and no analytics — your financial information belongs to you alone.</>},
+    {icon:"lock",color:C.yellow,title:"Only you can access it",body:<>Your data is protected by your device's built-in security (such as the iOS sandbox). Keep your screen lock and passcode enabled for the strongest protection.</>},
+    {icon:"download",color:C.orange,title:"Back up to stay safe",body:<>Because everything lives on your device, clearing your browser data can erase it. Use the built-in <strong style={{color:C.text}}>Backup</strong> feature regularly so you never lose your records.</>},
+  ];
+  return <FullPage title="Privacy Policy" onBack={onBack}>
+    <div style={{padding:"4px 16px 48px"}}>
+      <div style={{background:`linear-gradient(135deg,${C.accentDim} 0%,${C.blueDim} 100%)`,border:`1px solid ${C.accent}33`,borderRadius:20,padding:"22px 20px",marginBottom:22,display:"flex",alignItems:"center",gap:16}}>
+        <div style={{width:52,height:52,borderRadius:16,background:C.bg+"99",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ico name="shield" size={28} color={C.accent} stroke={2}/></div>
+        <div><div style={{color:C.text,fontSize:18,fontWeight:800,marginBottom:4}}>Private by design</div><div style={{color:C.muted,fontSize:13,lineHeight:1.55}}>Saver keeps your money data <strong style={{color:C.accent}}>100% on your device</strong> — no account, no cloud, no tracking.</div></div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {sections.map((s,i)=>(
+          <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 18px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+              <div style={{width:40,height:40,borderRadius:12,background:s.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ico name={s.icon} size={21} color={s.color} stroke={2}/></div>
+              <h3 style={{color:C.text,margin:0,fontSize:15.5,fontWeight:800,lineHeight:1.25}}>{s.title}</h3>
+            </div>
+            <p style={{margin:0,fontSize:13.5,lineHeight:1.6,color:C.muted}}>{s.body}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{textAlign:"center",marginTop:32}}>
+        <div style={{color:C.accent,opacity:0.85,fontSize:13,fontWeight:700,marginBottom:4}}>Saver One V1.2</div>
+        <div style={{color:C.faint,fontSize:10,fontWeight:500}}>Offline & 100% Private · Powered by Mahmoud © 2026</div>
+      </div>
+    </div>
+  </FullPage>;
 }
 
 // ── MonthlyBillsPage (Subscriptions + Installments) ───────────────────────────
