@@ -91,23 +91,23 @@ const ICONS = {
 
 const DEFAULT_BANKS = [{id:"b1",name:"CIB",color:"#60a5fa"},{id:"b2",name:"NBE",color:"#6ee7b7"},{id:"b3",name:"Cash",color:"#fbbf24"}];
 const DEFAULT_EXP_CATS = [
-  {id:"food",name:"Food",icon:"food",group:"daily"},{id:"coffee",name:"Coffee",icon:"coffee",group:"daily"},
-  {id:"transport",name:"Transport",icon:"transport",group:"daily"},{id:"bills",name:"Bills",icon:"bills",group:"fixed"},
-  {id:"shopping",name:"Shopping",icon:"shopping",group:"lifestyle"},{id:"entertainment",name:"Fun",icon:"entertainment",group:"lifestyle"},
-  {id:"personal",name:"Personal",icon:"personal",group:"daily"},{id:"health",name:"Health",icon:"health",group:"daily"},
-  {id:"rent",name:"Rent",icon:"rent",group:"fixed"},{id:"education",name:"Education",icon:"education",group:"growth"},
-  {id:"tech",name:"Tech",icon:"tech",group:"lifestyle"},{id:"parking",name:"Parking",icon:"parking",group:"daily"},
-  {id:"fuel",name:"Fuel",icon:"fuel",group:"daily"},{id:"car_repair",name:"Car Repair",icon:"car_repair",group:"fixed"},
-  {id:"takeaway",name:"Takeaway",icon:"takeaway",group:"daily"},{id:"barber",name:"Barber",icon:"barber",group:"personal"},
-  {id:"pets",name:"Pets",icon:"pets",group:"personal"},{id:"travel",name:"Travel",icon:"travel",group:"lifestyle"},
-  {id:"gaming",name:"Gaming",icon:"gaming",group:"lifestyle"},{id:"pharmacy",name:"Pharmacy",icon:"pharmacy",group:"health"},
-  {id:"laundry",name:"Laundry",icon:"laundry",group:"daily"},{id:"tuition",name:"Tuition",icon:"tuition",group:"growth"},
-  {id:"gym",name:"Gym",icon:"gym",group:"health"},{id:"others",name:"Others",icon:"others",group:"other"}
+  {id:"food",name:"Food",icon:"food",glyph:"utensils",color:"#fb923c",group:"daily"},{id:"coffee",name:"Coffee",icon:"coffee",glyph:"coffee",color:"#d97706",group:"daily"},
+  {id:"transport",name:"Transport",icon:"transport",glyph:"car",color:"#60a5fa",group:"daily"},{id:"bills",name:"Bills",icon:"bills",glyph:"zap",color:"#fbbf24",group:"fixed"},
+  {id:"shopping",name:"Shopping",icon:"shopping",glyph:"shopping-bag",color:"#f472b6",group:"lifestyle"},{id:"entertainment",name:"Fun",icon:"entertainment",glyph:"clapperboard",color:"#a78bfa",group:"lifestyle"},
+  {id:"personal",name:"Personal",icon:"personal",glyph:"user",color:"#38bdf8",group:"daily"},{id:"health",name:"Health",icon:"health",glyph:"heart-pulse",color:"#f87171",group:"daily"},
+  {id:"rent",name:"Rent",icon:"rent",glyph:"house",color:"#34d399",group:"fixed"},{id:"education",name:"Education",icon:"education",glyph:"graduation-cap",color:"#818cf8",group:"growth"},
+  {id:"tech",name:"Tech",icon:"tech",glyph:"laptop",color:"#2dd4bf",group:"lifestyle"},{id:"parking",name:"Parking",icon:"parking",glyph:"parking-meter",color:"#94a3b8",group:"daily"},
+  {id:"fuel",name:"Fuel",icon:"fuel",glyph:"fuel",color:"#fb7185",group:"daily"},{id:"car_repair",name:"Car Repair",icon:"car_repair",glyph:"wrench",color:"#f59e0b",group:"fixed"},
+  {id:"takeaway",name:"Takeaway",icon:"takeaway",glyph:"pizza",color:"#f97316",group:"daily"},{id:"barber",name:"Barber",icon:"barber",glyph:"scissors",color:"#c084fc",group:"personal"},
+  {id:"pets",name:"Pets",icon:"pets",glyph:"paw-print",color:"#4ade80",group:"personal"},{id:"travel",name:"Travel",icon:"travel",glyph:"plane",color:"#22d3ee",group:"lifestyle"},
+  {id:"gaming",name:"Gaming",icon:"gaming",glyph:"gamepad-2",color:"#a855f7",group:"lifestyle"},{id:"pharmacy",name:"Pharmacy",icon:"pharmacy",glyph:"pill",color:"#ef4444",group:"health"},
+  {id:"laundry",name:"Laundry",icon:"laundry",glyph:"washing-machine",color:"#0ea5e9",group:"daily"},{id:"tuition",name:"Tuition",icon:"tuition",glyph:"book-open",color:"#6366f1",group:"growth"},
+  {id:"gym",name:"Gym",icon:"gym",glyph:"dumbbell",color:"#10b981",group:"health"},{id:"others",name:"Others",icon:"others",glyph:"shapes",color:"#94a3b8",group:"other"}
 ];
 const DEFAULT_INC_CATS = [
-  {id:"salary",name:"Salary",icon:"salary"},{id:"freelance",name:"Freelance",icon:"freelance"},
-  {id:"gift",name:"Gift",icon:"gift"},{id:"investment",name:"Investment",icon:"investment"},
-  {id:"other_income",name:"Other Income",icon:"other_income"}
+  {id:"salary",name:"Salary",icon:"salary",glyph:"briefcase",color:"#34d399"},{id:"freelance",name:"Freelance",icon:"freelance",glyph:"lightbulb",color:"#60a5fa"},
+  {id:"gift",name:"Gift",icon:"gift",glyph:"gift",color:"#f472b6"},{id:"investment",name:"Investment",icon:"investment",glyph:"trending-up",color:"#fbbf24"},
+  {id:"other_income",name:"Other Income",icon:"other_income",glyph:"wallet",color:"#a78bfa"}
 ];
 const DEFAULT_GROUPS = [
   {id:"daily",name:"Daily Life",color:"#6ee7b7",cats:["food","coffee","transport"]},
@@ -319,7 +319,7 @@ const MARKS={
   card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
   checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
-  alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+  bell:'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
   up:'<line x1="12" x2="12" y1="19" y2="5"/><polyline points="5 12 12 5 19 12"/>',
@@ -331,7 +331,6 @@ const MARKS={
   trendUp:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
   trendDown:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
   target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-  piggy:CAT_GLYPHS["piggy-bank"]||'<circle cx="12" cy="12" r="9"/>',
   layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
 };
 function Ico({ name, size=18, color="currentColor", stroke=2, style={} }){
@@ -673,6 +672,7 @@ function SaverApp(){
   const[ledgerSaving,setLedgerSaving]=useState(null);
   const[ledgerBudget,setLedgerBudget]=useState(null);
   const[goalToast,setGoalToast]=useState(null);
+  const[monthlyTab,setMonthlyTab]=useState("subscriptions");
   const[pendingCurrency,setPendingCurrency]=useState(null);
 
   useEffect(()=>{if("Notification" in window&&Notification.permission!=="granted"&&Notification.permission!=="denied")Notification.requestPermission();},[]);
@@ -686,7 +686,9 @@ function SaverApp(){
         load(KEYS.lastBackup,null),load(KEYS.quickActions,DEFAULT_QUICK_ACTIONS),load(KEYS.seenWelcome,false),
         load(KEYS.theme,"dark"),load(KEYS.installments,[]),
       ]);
-      setTxns(t);setBanks(b);setExpCats(ec);setIncCats(ic);setGroups(g);setSavings(s);
+      const _dmap=Object.fromEntries([...DEFAULT_EXP_CATS,...DEFAULT_INC_CATS].map(c=>[c.id,{glyph:c.glyph,color:c.color}]));
+      const _migCats=(arr)=>arr.map(c=>(!c.glyph&&!c.emoji&&_dmap[c.id])?{...c,glyph:_dmap[c.id].glyph,color:c.color||_dmap[c.id].color}:c);
+      setTxns(t);setBanks(b);setExpCats(_migCats(ec));setIncCats(_migCats(ic));setGroups(g);setSavings(s);
       setCurrencyState(cur);setCurrencyGlobal(cur);setUsernameState(uname);setBills(bl);setBudgets(bdg);setLastBackup(lb);
       setQuickActions(qa);setHasSeenWelcome(seen);setThemeState(th);setCGlobal(th);IS=getIS();
       setInstallments(inst);
@@ -713,6 +715,10 @@ function SaverApp(){
     else{setScrollState({y:0,restore:false});window.scrollTo(0,0);}
     setTab(newTab);
   },[]);
+  // Open the Bills page on a specific tab, remembering the home scroll position
+  const openMonthly=useCallback((which)=>{setMonthlyTab(which);setScrollState({y:window.scrollY,restore:true});setTab("monthly");},[]);
+  // Home button: if already home, jump to top; otherwise return to where we left off
+  const goHome=useCallback(()=>{if(tab==="dashboard"){window.scrollTo(0,0);setScrollState({y:0,restore:false});}else setTab("dashboard");},[tab]);
 
   const persist=useCallback(async(key,val)=>{await save(key,val);},[]);
   const bankBalance=useCallback((bankId)=>calcBankBalance(bankId,txns),[txns]);
@@ -853,17 +859,17 @@ function SaverApp(){
 
       {!ledgerBank&&!ledgerGroup&&!ledgerSaving&&!ledgerBudget?(
         <>
-          {tab==="dashboard"&&<Dashboard txns={filteredTxns} txnsAll={txns} bills={bills} installments={installments} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={activeSavings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} {...sharedProps} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBank(b);}} onOpenGroup={(g)=>{setScrollState({y:window.scrollY,restore:true});setLedgerGroup(g);}} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}} onOpenBudget={(bdg)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBudget(bdg);}} hideTotal={hideTotal} setHideTotal={setHideTotal} navigateTo={navigateTo} scrollState={scrollState} setScrollState={setScrollState} onBanks={saveBanks} onBudgets={saveBudgets} onSavings={saveSavings} onGroups={saveGroups}/>}
+          {tab==="dashboard"&&<Dashboard txns={filteredTxns} txnsAll={txns} bills={bills} installments={installments} budgets={budgets} banks={banks} groups={groups} expCats={expCats} savings={activeSavings} filterMonth={filterMonth} setFilterMonth={setFilterMonth} availMonths={availMonths} username={username} {...sharedProps} onDeleteTxn={delTxn} onUpdateTxn={updateTxn} onOpenBank={(b)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBank(b);}} onOpenGroup={(g)=>{setScrollState({y:window.scrollY,restore:true});setLedgerGroup(g);}} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}} onOpenBudget={(bdg)=>{setScrollState({y:window.scrollY,restore:true});setLedgerBudget(bdg);}} hideTotal={hideTotal} setHideTotal={setHideTotal} navigateTo={navigateTo} openMonthly={openMonthly} scrollState={scrollState} setScrollState={setScrollState} onBanks={saveBanks} onBudgets={saveBudgets} onSavings={saveSavings} onGroups={saveGroups}/>}
           {tab==="add"&&<AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={activeSavings} currency={currency} onAdd={addTxn} onDone={()=>navigateTo("dashboard")} {...sharedProps} setAppAlert={setAppAlert} onGoalToast={setGoalToast} txns={txns}/>}
           {tab==="savings"&&<SavingsPage savings={savings} onSave={saveSavings} txns={txns} banks={banks} onBack={()=>navigateTo("settings")} addTxn={addTxn} delTxn={delTxn} onGoalToast={setGoalToast} {...sharedProps} setAppAlert={setAppAlert} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}}/>}
           {tab==="history"&&<History txns={txns} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths} savings={savings} setAppAlert={setAppAlert}/>}
           {tab==="budgets"&&<BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>navigateTo("settings")} currency={currency} txns={txns}/>}
           {tab==="quickactions"&&<QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>navigateTo("settings")}/>}
           {tab==="manual"&&<UserManual onBack={()=>navigateTo("settings")} navigateTo={navigateTo}/>}
-          {tab==="monthly"&&<MonthlyBillsPage bills={bills} installments={installments} onSaveBills={saveBills} onSaveInstallments={saveInstallments} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} currency={currency} setAppAlert={setAppAlert}/>}
+          {tab==="monthly"&&<MonthlyBillsPage bills={bills} installments={installments} initialTab={monthlyTab} onSaveBills={saveBills} onSaveInstallments={saveInstallments} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} currency={currency} setAppAlert={setAppAlert}/>}
           {tab==="settings"&&<Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} theme={theme} onTheme={saveThemeHandler} {...sharedProps} onOpenSavings={()=>navigateTo("savings")} onOpenBudgets={()=>navigateTo("budgets")} onOpenQuickActions={()=>navigateTo("quickactions")} onOpenManual={()=>navigateTo("manual")} setLastBackup={setLastBackup} txns={txns} bills={bills} installments={installments} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert} navigateTo={navigateTo}/>}
           {tab==="privacy"&&<Privacy onBack={()=>navigateTo("dashboard")}/>}
-          {tab!=="privacy"&&<BottomNav tab={tab} navigateTo={navigateTo} expCats={expCats} banks={banks} savings={activeSavings} onAdd={addTxn} currency={currency} {...sharedProps} setAppAlert={setAppAlert} quickActions={quickActions} txns={txns}/>}
+          {tab!=="privacy"&&<BottomNav tab={tab} navigateTo={navigateTo} goHome={goHome} expCats={expCats} banks={banks} savings={activeSavings} onAdd={addTxn} currency={currency} {...sharedProps} setAppAlert={setAppAlert} quickActions={quickActions} txns={txns}/>}
         </>
       ):(
         <>
@@ -879,12 +885,12 @@ function SaverApp(){
   </ThemeContext.Provider>;
 }
 
-function NavBtn({id,icon,label,tab,navigateTo}){
+function NavBtn({id,icon,label,tab,navigateTo,onPress}){
   const a=tab===id;
-  return <button onClick={()=>navigateTo(id,false)} style={{background:"none",border:"none",color:a?C.accent:C.muted,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"4px 0",cursor:"pointer",transition:"color .2s",width:55,fontFamily:"'DM Sans', sans-serif"}}><span style={{fontSize:22}}>{icon}</span><span style={{fontSize:10,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{label}</span></button>;
+  return <button onClick={onPress?onPress:()=>navigateTo(id,false)} style={{background:"none",border:"none",color:a?C.accent:C.muted,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"4px 0",cursor:"pointer",transition:"color .2s",width:55,fontFamily:"'DM Sans', sans-serif"}}><span style={{fontSize:22}}>{icon}</span><span style={{fontSize:10,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{label}</span></button>;
 }
 
-function BottomNav({tab,navigateTo,expCats,banks,savings,onAdd,currency,safeToSpend,goalSaved,setAppAlert,quickActions,txns}){
+function BottomNav({tab,navigateTo,goHome,expCats,banks,savings,onAdd,currency,safeToSpend,goalSaved,setAppAlert,quickActions,txns}){
   const[showQuick,setShowQuick]=useState(false);
   const[quickForm,setQuickForm]=useState(null);
   const pressTimer=useRef(null);
@@ -934,7 +940,7 @@ function BottomNav({tab,navigateTo,expCats,banks,savings,onAdd,currency,safeToSp
     <nav style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,zIndex:50}}>
       <div style={{position:"absolute",bottom:0,width:"100%",height:95,background:C.surface,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",padding:"0 12px"}}>
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-around",paddingRight:48,marginBottom:16}}>
-          <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} navigateTo={navigateTo}/>
+          <NavBtn id="dashboard" icon={ICONS.dashboard} label="Home" tab={tab} navigateTo={navigateTo} onPress={goHome}/>
           <NavBtn id="monthly" icon={ICONS.bills_nav} label="Bills" tab={tab} navigateTo={navigateTo}/>
         </div>
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-around",paddingLeft:48,marginBottom:16}}>
@@ -1073,7 +1079,7 @@ function EditTxnModal({txn,banks,expCats,incCats,currency,onSave,onClose}){
   </Modal>;
 }
 
-function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expCats,savings,filterMonth,setFilterMonth,availMonths,username,bankBalance,safeToSpend,frozenForBank,goalSaved,onDeleteTxn,onUpdateTxn,onOpenBank,onOpenGroup,onOpenSaving,onOpenBudget,hideTotal,setHideTotal,navigateTo,scrollState,setScrollState,onBanks,onBudgets,onSavings,onGroups}){
+function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expCats,savings,filterMonth,setFilterMonth,availMonths,username,bankBalance,safeToSpend,frozenForBank,goalSaved,onDeleteTxn,onUpdateTxn,onOpenBank,onOpenGroup,onOpenSaving,onOpenBudget,hideTotal,setHideTotal,navigateTo,openMonthly,scrollState,setScrollState,onBanks,onBudgets,onSavings,onGroups}){
   useEffect(()=>{if(scrollState.restore){setTimeout(()=>window.scrollTo(0,scrollState.y),50);setScrollState(s=>({...s,restore:false}));}else window.scrollTo(0,0);},[]);
   const[recentFilter,setRecentFilter]=useState("all");
   const[viewTxn,setViewTxn]=useState(null);
@@ -1208,7 +1214,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
             <Card onClick={()=>totalExp>0&&!hideTotal&&setInsightsType("expense")} className="ic" style={{padding:"14px 14px 12px",cursor:totalExp>0&&!hideTotal?"pointer":"default"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Expenses</div><div style={{color:C.red,fontSize:20,fontWeight:800,marginBottom:4}}>{hideTotal?"••••":fmt(totalExp)}</div>{expDiff!==null&&!hideTotal&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:10,fontWeight:700,color:expDiff<=0?C.accent:C.red}}><Ico name={expDiff<=0?"down":"up"} size={11} color={expDiff<=0?C.accent:C.red} stroke={2.6}/>{Math.abs(expDiff)}% vs last month</div>}</Card>
           </div>
           {(totalIncome>0||totalExp>0)&&!hideTotal&&(()=>{const pos=net>=0,nc=pos?C.accent:C.red;return <div style={{background:C.card,padding:"14px 16px",borderRadius:14,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:44,height:44,borderRadius:13,background:nc+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name={pos?"piggy":"trendDown"} size={24} color={nc} stroke={2}/></div>
+            <div style={{width:44,height:44,borderRadius:13,background:nc+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name={pos?"coins":"trendDown"} size={24} color={nc} stroke={2}/></div>
             <div style={{flex:1}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{pos?"Saved this month":"Overspent this month"}</div><div style={{color:nc,fontSize:22,fontWeight:800,letterSpacing:-0.5}}>{pos?"+":"−"}{fmt(Math.abs(net))}</div></div>
             {totalIncome>0&&<div style={{textAlign:"right"}}><div style={{color:nc,fontSize:18,fontWeight:800}}>{savingsRate}%</div><div style={{color:C.faint,fontSize:10,fontWeight:700}}>savings rate</div></div>}
           </div>;})()}
@@ -1217,7 +1223,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
       if(section.id==="bills"&&bills.length>0)return(
         <div key="bills">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Bills</div>
-          <Card onClick={()=>navigateTo("monthly",true)} className="ic" style={{padding:"16px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
+          <Card onClick={()=>openMonthly("subscriptions")} className="ic" style={{padding:"16px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
               <div style={{width:36,height:36,borderRadius:11,background:(billsAllPaid?C.accent:C.blue)+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="zap" size={20} color={billsAllPaid?C.accent:C.blue} stroke={2}/></div>
               <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>Monthly Bills</div><div style={{color:C.muted,fontSize:11,marginTop:1}}>{billsPaidCount}/{bills.length} paid{overdueBillCount>0?` · ${overdueBillCount} overdue`:""}</div></div>
@@ -1225,14 +1231,14 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
             </div>
             <div style={{marginBottom:12}}><div style={{color:billsAllPaid?C.accent:C.text,fontSize:26,fontWeight:800,letterSpacing:-0.5}}>{hideTotal?"••••":billsAllPaid?"All cleared":fmt(billsRemaining)}</div><div style={{color:C.muted,fontSize:11,marginTop:2,display:"flex",alignItems:"center",gap:4}}>{billsAllPaid?<><Ico name="check" size={12} color={C.accent} stroke={3}/>everything paid this month</>:`remaining of ${hideTotal?"••••":fmt(billsTotal)}`}</div></div>
             <div style={{display:"flex",gap:3,height:8,marginBottom:nextBill?14:0}}>{bills.map(b=>{const paid=billPaid(b),od=isCurrentMonth&&!paid&&b.dueDay&&dueIn(b.dueDay)<0;return <div key={b.id} style={{flex:1,borderRadius:3,background:paid?C.accent:od?C.red:C.faint,transition:"background .35s ease"}}/>;})}</div>
-            {nextBill&&<div style={{display:"flex",alignItems:"center",gap:8,paddingTop:14,borderTop:`1px solid ${C.border}`}}><Ico name={dueIn(nextBill.dueDay)<0?"alert":"clock"} size={15} color={dueColor(nextBill.dueDay)} stroke={2.2}/><span style={{color:C.text,fontSize:13,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Next: {nextBill.name}</span><span style={{color:dueColor(nextBill.dueDay),fontSize:11,fontWeight:800}}>{dueLabel(nextBill.dueDay)}</span><span style={{color:C.text,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(nextBill.amount)}</span></div>}
+            {nextBill&&<div style={{display:"flex",alignItems:"center",gap:8,paddingTop:14,borderTop:`1px solid ${C.border}`}}><Ico name={dueIn(nextBill.dueDay)<=0?"bell":"clock"} size={15} color={dueColor(nextBill.dueDay)} stroke={2.2}/><span style={{color:C.text,fontSize:13,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Next: {nextBill.name}</span><span style={{color:dueColor(nextBill.dueDay),fontSize:11,fontWeight:800}}>{dueLabel(nextBill.dueDay)}</span><span style={{color:C.text,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(nextBill.amount)}</span></div>}
           </Card>
         </div>
       );
       if(section.id==="installments"&&installments.length>0)return(
         <div key="installments">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Installments</div>
-          <Card onClick={()=>navigateTo("monthly",true)} className="ic" style={{padding:"16px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
+          <Card onClick={()=>openMonthly("installments")} className="ic" style={{padding:"16px",marginBottom:20,cursor:"pointer",transition:"transform 0.1s ease"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
               <div style={{width:36,height:36,borderRadius:11,background:(activeInst.length===0?C.accent:C.purple)+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="card" size={20} color={activeInst.length===0?C.accent:C.purple} stroke={2}/></div>
               <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:15}}>Installments</div><div style={{color:C.muted,fontSize:11,marginTop:1}}>{activeInst.length===0?"all plans completed":`${instPaidCountM}/${activeInst.length} paid${overdueInstCount>0?` · ${overdueInstCount} overdue`:""}`}</div></div>
@@ -1246,7 +1252,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
                 <div style={{textAlign:"right"}}><div style={{color:C.purple,fontSize:18,fontWeight:800}}>{instOverallPct}%</div><div style={{color:C.faint,fontSize:10,fontWeight:700}}>paid off</div></div>
               </div>
               <div style={{display:"flex",gap:3,height:8,marginBottom:nextInst?14:0}}>{activeInst.map(i=>{const paid=instPaidInMonth(i,selMonth),od=isCurrentMonth&&!paid&&i.dueDay&&dueIn(i.dueDay)<0;return <div key={i.id} style={{flex:1,borderRadius:3,background:paid?C.accent:od?C.red:C.faint,transition:"background .35s ease"}}/>;})}</div>
-              {nextInst&&<div style={{display:"flex",alignItems:"center",gap:8,paddingTop:14,borderTop:`1px solid ${C.border}`}}><Ico name={dueIn(nextInst.dueDay)<0?"alert":"clock"} size={15} color={dueColor(nextInst.dueDay)} stroke={2.2}/><span style={{color:C.text,fontSize:13,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Next: {nextInst.company||nextInst.name||"Installment"}</span><span style={{color:dueColor(nextInst.dueDay),fontSize:11,fontWeight:800}}>{dueLabel(nextInst.dueDay)}</span><span style={{color:C.text,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(nextInst.installmentAmount)}</span></div>}
+              {nextInst&&<div style={{display:"flex",alignItems:"center",gap:8,paddingTop:14,borderTop:`1px solid ${C.border}`}}><Ico name={dueIn(nextInst.dueDay)<=0?"bell":"clock"} size={15} color={dueColor(nextInst.dueDay)} stroke={2.2}/><span style={{color:C.text,fontSize:13,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Next: {nextInst.company||nextInst.name||"Installment"}</span><span style={{color:dueColor(nextInst.dueDay),fontSize:11,fontWeight:800}}>{dueLabel(nextInst.dueDay)}</span><span style={{color:C.text,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(nextInst.installmentAmount)}</span></div>}
             </>)}
           </Card>
         </div>
@@ -1258,23 +1264,32 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
         const budCol=budPct>=90?C.red:budPct>=70?C.yellow:C.accent;
         return <div key="budgets">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
-          <Card style={{padding:"14px 16px 8px",marginBottom:20}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:8}}>
-              <div><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Total Budget</div><div style={{color:C.text,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(budSpent)} <span style={{color:C.muted,fontSize:12,fontWeight:600}}>of {hideTotal?"••••":fmt(budTotal)}</span></div></div>
+          <Card style={{padding:"16px",marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+              <div style={{width:38,height:38,borderRadius:12,background:budCol+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="layers" size={20} color={budCol} stroke={2}/></div>
+              <div style={{flex:1}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Total Budget</div><div style={{color:C.text,fontSize:18,fontWeight:800,marginTop:2}}>{hideTotal?"••••":fmt(budSpent)} <span style={{color:C.muted,fontSize:12,fontWeight:600}}>of {hideTotal?"••••":fmt(budTotal)}</span></div></div>
               <Pill color={budCol}>{budPct}%</Pill>
             </div>
             <ProgressBar value={budSpent} max={budTotal} color={budCol}/>
-            <div style={{marginTop:6}}>
-              <SortableList items={budgets} onReorder={onBudgets} gap={0} renderItem={(bdg,idx)=>{
-                const spent=txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((a,t)=>a+t.amount,0);
-                const rem=Math.max(0,bdg.amount-spent),pct=bdg.amount>0?Math.min(100,Math.round((spent/bdg.amount)*100)):0,barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
-                return <div onClick={()=>onOpenBudget(bdg)} className="ic" style={{padding:"12px 2px",borderTop:`1px solid ${C.border}`,cursor:"pointer"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bdg.name}</span><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:rem===0?C.red:C.accent,fontSize:13,fontWeight:800}}>{hideTotal?"••••":fmt(rem)} left</span><Pill color={barColor}>{pct}%</Pill></div></div>
-                  <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}><span style={{color:C.muted,fontSize:11}}>Spent {hideTotal?"••••":fmt(spent)} of {hideTotal?"••••":fmt(bdg.amount)}</span>{isCurrentMonth&&rem>0&&<span style={{color:C.muted,fontSize:11}}>Daily: {hideTotal?"••••":fmt(rem/daysLeft)}</span>}</div>
-                </div>;
-              }}/>
-            </div>
+            <div style={{height:1,background:C.border,margin:"16px 0 14px"}}/>
+            <SortableList items={budgets} onReorder={onBudgets} gap={10} renderItem={(bdg)=>{
+              const spent=txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((a,t)=>a+t.amount,0);
+              const rem=Math.max(0,bdg.amount-spent),pct=bdg.amount>0?Math.min(100,Math.round((spent/bdg.amount)*100)):0,barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
+              const fc=expCats.find(c=>bdg.cats.includes(c.id));
+              return <div onClick={()=>onOpenBudget(bdg)} className="ic" style={{padding:"13px 14px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,cursor:"pointer",transition:"transform 0.1s ease"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                  <CatIcon cat={fc} color={fc?undefined:barColor} name={bdg.name} size={30}/>
+                  <span style={{color:C.text,fontSize:14,fontWeight:700,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bdg.name}</span>
+                  <Pill color={barColor}>{pct}%</Pill>
+                </div>
+                <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
+                  <span style={{color:C.muted,fontSize:11}}>Spent {hideTotal?"••••":fmt(spent)} of {hideTotal?"••••":fmt(bdg.amount)}</span>
+                  <span style={{color:rem===0?C.red:C.accent,fontSize:12,fontWeight:800}}>{hideTotal?"••••":fmt(rem)} left</span>
+                </div>
+                {isCurrentMonth&&rem>0&&!hideTotal&&<div style={{color:C.faint,fontSize:10,fontWeight:600,marginTop:4}}>≈ {fmt(rem/daysLeft)}/day for {daysLeft} day{daysLeft!==1?"s":""} left</div>}
+              </div>;
+            }}/>
           </Card>
         </div>;
       })();
@@ -1287,7 +1302,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
               const mainColor=isSpending?C.orange:C.yellow;
               return <Card onClick={()=>onOpenSaving(s)} className="ic" style={{padding:"14px 14px 12px",cursor:"pointer",transition:"transform 0.1s ease",border:`1px solid ${isSpending?C.orange+"66":C.border}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:C.text,fontWeight:700,fontSize:14}}>{isSpending?"💳":"🎯"} {s.name}</span>{isSpending&&<Pill color={C.orange} style={{fontSize:10}}>Spending</Pill>}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:7}}><Ico name={isSpending?"card":"target"} size={16} color={mainColor} stroke={2}/><span style={{color:C.text,fontWeight:700,fontSize:14}}>{s.name}</span>{isSpending&&<Pill color={C.orange} style={{fontSize:10}}>Spending</Pill>}</div>
                   <Pill color={pct>=100?C.accent:mainColor}>{pct}%</Pill>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:mainColor,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div>
@@ -1406,7 +1421,7 @@ function DeepLedgerView({title,headerType,headerData,txns,onDelete,onUpdate,bank
   return <div style={{padding:"24px 16px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><span style={{color:C.text,fontWeight:800,fontSize:22}}>{title}</span><button onClick={onClose} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,width:44,height:44,borderRadius:99,cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button></div>
     <LedgerHeader type={headerType} data={headerData}/>
-    <div style={{display:"flex",gap:6,marginBottom:18}}>{["all","in","out"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 14px",borderRadius:10,border:`1px solid ${filter===f?C.accent:C.border}`,background:filter===f?C.accentDim:"transparent",color:filter===f?C.accent:C.muted,fontWeight:700,fontSize:11,cursor:"pointer",textTransform:"uppercase",fontFamily:"'DM Sans', sans-serif"}}>{f}</button>)}</div>
+    {headerType!=="budget"&&headerType!=="group"&&<div style={{display:"flex",gap:6,marginBottom:18}}>{["all","in","out"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 14px",borderRadius:10,border:`1px solid ${filter===f?C.accent:C.border}`,background:filter===f?C.accentDim:"transparent",color:filter===f?C.accent:C.muted,fontWeight:700,fontSize:11,cursor:"pointer",textTransform:"uppercase",fontFamily:"'DM Sans', sans-serif"}}>{f}</button>)}</div>}
     <div style={{display:"flex",flexDirection:"column",gap:2}}>
       {list.length===0&&<div style={{padding:"40px 0",textAlign:"center",color:C.faint,fontSize:13}}>No transactions found.</div>}
       {list.map(t=><SwipeRow key={t.id} onEdit={()=>handleEditClick(t)} onDelete={()=>setConfirmId(t.id)}><TxnRow txn={t} hideTotal={false} onClick={()=>setViewTxn(t)}/></SwipeRow>)}
@@ -1800,9 +1815,9 @@ function FullPage({title,onBack,right,children,maxHeader}){
 }
 
 // ── MonthlyBillsPage (Subscriptions + Installments) ───────────────────────────
-function MonthlyBillsPage({bills,installments,onSaveBills,onSaveInstallments,banks,expCats,onAddTxn,delTxn,currency,setAppAlert}){
+function MonthlyBillsPage({bills,installments,initialTab,onSaveBills,onSaveInstallments,banks,expCats,onAddTxn,delTxn,currency,setAppAlert}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
-  const[activeTab,setActiveTab]=useState("subscriptions");
+  const[activeTab,setActiveTab]=useState(initialTab||"subscriptions");
   return <div style={{padding:"24px 16px 0",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
     <div style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:16}}>Bills</div>
     <div style={{display:"flex",gap:8,marginBottom:20}}>
