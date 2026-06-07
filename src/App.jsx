@@ -686,6 +686,7 @@ function SaverApp(){
   const[ledgerBudget,setLedgerBudget]=useState(null);
   const[goalToast,setGoalToast]=useState(null);
   const[monthlyTab,setMonthlyTab]=useState("subscriptions");
+  const[coachTour,setCoachTour]=useState(false);
   const[pendingCurrency,setPendingCurrency]=useState(null);
 
   useEffect(()=>{if("Notification" in window&&Notification.permission!=="granted"&&Notification.permission!=="denied")Notification.requestPermission();},[]);
@@ -732,6 +733,8 @@ function SaverApp(){
   const openMonthly=useCallback((which)=>{setMonthlyTab(which);setScrollState({y:window.scrollY,restore:true});setTab("monthly");},[]);
   // Home button: if already home, jump to top; otherwise return to where we left off
   const goHome=useCallback(()=>{if(tab==="dashboard"){window.scrollTo(0,0);setScrollState({y:0,restore:false});}else setTab("dashboard");},[tab]);
+  // Live coach-marks tour on the real dashboard (Skippable)
+  const startCoach=useCallback(()=>{setScrollState({y:0,restore:false});window.scrollTo(0,0);setTab("dashboard");setTimeout(()=>setCoachTour(true),450);},[]);
 
   const persist=useCallback(async(key,val)=>{await save(key,val);},[]);
   const bankBalance=useCallback((bankId)=>calcBankBalance(bankId,txns),[txns]);
@@ -878,7 +881,7 @@ function SaverApp(){
           {tab==="history"&&<History txns={txns} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths} savings={savings} setAppAlert={setAppAlert}/>}
           {tab==="budgets"&&<BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>navigateTo("settings")} currency={currency} txns={txns}/>}
           {tab==="quickactions"&&<QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>navigateTo("settings")}/>}
-          {tab==="manual"&&<UserManual onBack={()=>navigateTo("settings")} navigateTo={navigateTo}/>}
+          {tab==="manual"&&<UserManual onBack={()=>navigateTo("settings")} navigateTo={navigateTo} onCoach={startCoach}/>}
           {tab==="monthly"&&<MonthlyBillsPage bills={bills} installments={installments} initialTab={monthlyTab} onSaveBills={saveBills} onSaveInstallments={saveInstallments} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} currency={currency} setAppAlert={setAppAlert}/>}
           {tab==="settings"&&<Settings banks={banks} expCats={expCats} incCats={incCats} groups={groups} onBanks={saveBanks} onExpCats={saveExpCats} onIncCats={saveIncCats} onGroups={saveGroups} currency={currency} onCurrency={saveCurrencyHandler} username={username} onUsername={saveUsernameHandler} theme={theme} onTheme={saveThemeHandler} {...sharedProps} onOpenSavings={()=>navigateTo("savings")} onOpenBudgets={()=>navigateTo("budgets")} onOpenQuickActions={()=>navigateTo("quickactions")} onOpenManual={()=>navigateTo("manual")} setLastBackup={setLastBackup} txns={txns} bills={bills} installments={installments} savings={savings} budgets={budgets} onRestore={handleRestorePayload} setAppAlert={setAppAlert} navigateTo={navigateTo}/>}
           {tab==="privacy"&&<Privacy onBack={()=>navigateTo("dashboard")}/>}
@@ -892,6 +895,7 @@ function SaverApp(){
           {ledgerBudget&&(()=>{const spent=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&ledgerBudget.cats.includes(t.catId)).reduce((a,t)=>a+t.amount,0);return <DeepLedgerView title={ledgerBudget.name} headerType="budget" headerData={{spent,limit:ledgerBudget.amount}} txns={txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&ledgerBudget.cats.includes(t.catId))} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} onClose={()=>setLedgerBudget(null)}/>;})()}
         </>
       )}
+      {coachTour&&tab==="dashboard"&&!isSubPageActive&&<CoachTour onClose={()=>setCoachTour(false)}/>}
       {appAlert&&<AlertModal title={appAlert.title} message={appAlert.message} btnColor={appAlert.color} onClose={()=>setAppAlert(null)}/>}
       {pendingCurrency&&<ConfirmModal title="Change Currency?" message={`Switching from ${currency} to ${pendingCurrency} only changes how amounts are displayed. Your actual numbers will NOT be converted.\n\nContinue?`} confirmColor={C.blue} onClose={()=>setPendingCurrency(null)} onConfirm={confirmCurrencyChange}/>}
     </div>
@@ -961,7 +965,7 @@ function BottomNav({tab,navigateTo,goHome,expCats,banks,savings,onAdd,currency,s
           <NavBtn id="settings" icon={ICONS.settings} label="Settings" tab={tab} navigateTo={navigateTo}/>
         </div>
       </div>
-      <div style={{position:"absolute",left:"50%",transform:"translateX(-50%)",bottom:38,width:84,height:84,borderRadius:"50%",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div data-coach="add" style={{position:"absolute",left:"50%",transform:"translateX(-50%)",bottom:38,width:84,height:84,borderRadius:"50%",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
         <button onTouchStart={pStart} onTouchEnd={pEnd} onMouseDown={pStart} onMouseUp={pEnd} onMouseLeave={()=>clearTimeout(pressTimer.current)} onContextMenu={e=>e.preventDefault()} style={{width:68,height:68,borderRadius:"50%",background:C.accent,color:"#111",fontSize:36,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"transform 0.1s",userSelect:"none",WebkitUserSelect:"none"}} onPointerDown={e=>e.currentTarget.style.transform="scale(0.9)"} onPointerUp={e=>e.currentTarget.style.transform="scale(1)"}>+</button>
       </div>
       {showQuick&&active.length===0&&<div style={{position:"fixed",bottom:135,left:"50%",transform:"translateX(-50%)",background:C.card,border:`1px solid ${C.border}`,borderRadius:18,padding:"16px 20px",maxWidth:"85%",boxShadow:"0 12px 32px rgba(0,0,0,0.7)",zIndex:60,textAlign:"center"}}><div style={{fontSize:24,marginBottom:8}}>⚡</div><div style={{color:C.text,fontWeight:700,fontSize:14,marginBottom:4}}>No shortcuts configured</div><div style={{color:C.muted,fontSize:12}}>Go to Settings → Quick Actions.</div></div>}
@@ -1205,7 +1209,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
 
   return <div style={{padding:"24px 16px 0"}}>
     {username&&<div style={{marginBottom:18}}><div style={{color:C.muted,fontSize:13,fontWeight:500}}>{(()=>{const h=new Date().getHours();return <>{h<12?"☀️":h<18?"👋":"🌙"} {h<12?"Good morning":h<18?"Good afternoon":"Good evening"},</>; })()}</div><div style={{color:C.text,fontSize:24,fontWeight:800,letterSpacing:-0.5}}>{username} 💰</div></div>}
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} allowAll={false}/></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div><span data-coach="month" style={{display:"inline-flex"}}><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} allowAll={false}/></span></div>
 
     {txnsAll.length===0&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>👋</div><div style={{color:C.accent,fontWeight:800,fontSize:16,marginBottom:6}}>Welcome to Saver!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>Tap <strong style={{color:C.accent}}>＋</strong> to add your first transaction.</div></div>}
     {txnsAll.length>0&&txns.length===0&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>✨</div><div style={{color:C.text,fontWeight:800,fontSize:16,marginBottom:6}}>Fresh start for {filterMonth!=="all"?MONTHS[+filterMonth.split("-")[1]-1]:"this period"}!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>No transactions yet. Tap <strong style={{color:C.accent}}>＋</strong> to start tracking.</div></div>}
@@ -1231,7 +1235,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
       if(section.id==="accounts")return(
         <div key="accounts">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Accounts</div>
-          <BalanceCarousel totalBalance={totalBalance} totalSafe={totalSafe} hideTotal={hideTotal} setHideTotal={setHideTotal} initialMode={balanceMode} onModeChange={async(mode)=>{setBalanceMode(mode);await save("et_balance_mode",mode);}}/>
+          <div data-coach="balance"><BalanceCarousel totalBalance={totalBalance} totalSafe={totalSafe} hideTotal={hideTotal} setHideTotal={setHideTotal} initialMode={balanceMode} onModeChange={async(mode)=>{setBalanceMode(mode);await save("et_balance_mode",mode);}}/></div>
           <div style={{marginBottom:20}}>
             <SortableList grid items={banks} onReorder={onBanks} renderItem={(b)=>{
               const bal=bankBalance(b.id),safe=safeToSpend(b.id),frozen=frozenForBank(b.id),hasFrozen=frozen>0;
@@ -1391,7 +1395,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
     ):<div style={{padding:"20px 0",textAlign:"center",color:C.faint,fontSize:12,marginBottom:20}}>No transactions match.</div>}
 
     <div style={{textAlign:"center",marginBottom:20}}>
-      <button onClick={()=>setShowCustomize(true)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.text,padding:"10px 20px",borderRadius:99,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>⚙️ Customize Layout</button>
+      <button data-coach="customize" onClick={()=>setShowCustomize(true)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.text,padding:"10px 20px",borderRadius:99,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans', sans-serif",display:"inline-flex",alignItems:"center",gap:7}}><Ico name="layers" size={15} color={C.text}/>Customize Layout</button>
     </div>
 
     {viewTxn&&<TxnViewModal txn={viewTxn} onClose={()=>setViewTxn(null)}/>}
@@ -1857,6 +1861,54 @@ function FullPage({title,onBack,right,children,maxHeader}){
       </div>
     </div>
   );
+}
+
+function CoachTour({onClose}){
+  const steps=[
+    {sel:'[data-coach="month"]',title:"Pick a month",text:"Every card on the home screen updates to the month you choose here."},
+    {sel:'[data-coach="balance"]',title:"Your balance",text:"See your total, or swipe across to Safe-to-Spend. Tap the icon to hide amounts."},
+    {sel:'[data-coach="customize"]',title:"Make it yours",text:"Reorder the whole dashboard — drag the sections into the order you like."},
+    {sel:'[data-coach="add"]',title:"Add anything",text:"Tap + to log an expense, income, saving or transfer. Long-press it for Quick Actions."},
+  ];
+  const[i,setI]=useState(0);
+  const[rect,setRect]=useState(null);
+  const last=i===steps.length-1;
+  useEffect(()=>{
+    let cancelled=false,raf;
+    const el=document.querySelector(steps[i].sel);
+    if(!el){ if(!last)setI(i+1); else onClose(); return; }
+    try{el.scrollIntoView({behavior:"smooth",block:"center"});}catch{}
+    const measure=()=>{ if(cancelled)return; const r=el.getBoundingClientRect(); setRect({top:r.top,left:r.left,width:r.width,height:r.height}); };
+    const t=setTimeout(measure,360);
+    const onMove=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(measure);};
+    window.addEventListener("resize",onMove);window.addEventListener("scroll",onMove,true);
+    return()=>{cancelled=true;clearTimeout(t);cancelAnimationFrame(raf);window.removeEventListener("resize",onMove);window.removeEventListener("scroll",onMove,true);};
+  },[i]);
+  const next=()=>{ if(!last)setI(i+1); else onClose(); };
+  const prev=()=>{ if(i>0)setI(i-1); };
+  const pad=8;
+  const h=rect?{top:rect.top-pad,left:rect.left-pad,w:rect.width+pad*2,height:rect.height+pad*2}:null;
+  const below=h?(h.top+h.height < window.innerHeight*0.55):true;
+  return <div style={{position:"fixed",inset:0,zIndex:300,fontFamily:"'DM Sans', sans-serif"}}>
+    <style>{`@keyframes ctIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    {!h&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.72)"}}/>}
+    {h&&<>
+      <div style={{position:"fixed",top:h.top,left:h.left,width:h.w,height:h.height,borderRadius:14,boxShadow:"0 0 0 9999px rgba(0,0,0,0.72)",transition:"all .3s cubic-bezier(0.2,0.8,0.2,1)",pointerEvents:"none"}}/>
+      <div style={{position:"fixed",top:h.top,left:h.left,width:h.w,height:h.height,borderRadius:14,border:`2px solid ${C.accent}`,transition:"all .3s cubic-bezier(0.2,0.8,0.2,1)",pointerEvents:"none"}}/>
+    </>}
+    <div key={i} style={{position:"fixed",left:16,right:16,maxWidth:400,margin:"0 auto",background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px",boxShadow:"0 12px 30px rgba(0,0,0,0.45)",animation:"ctIn .3s ease",...(below?{top:(h?h.top+h.height:80)+12}:{bottom:window.innerHeight-(h?h.top:0)+12})}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{display:"flex",gap:5}}>{steps.map((_,idx)=><div key={idx} style={{width:idx===i?18:6,height:6,borderRadius:3,background:idx===i?C.accent:C.border,transition:"all .3s"}}/>)}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:12,fontWeight:700,cursor:"pointer",padding:"4px 6px",fontFamily:"'DM Sans', sans-serif"}}>Skip</button>
+      </div>
+      <div style={{color:C.text,fontSize:16,fontWeight:800,marginBottom:5}}>{steps[i].title}</div>
+      <div style={{color:C.muted,fontSize:13.5,lineHeight:1.55,marginBottom:14}}>{steps[i].text}</div>
+      <div style={{display:"flex",gap:10}}>
+        {i>0&&<button onClick={prev} style={{flex:"0 0 auto",background:"transparent",border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"10px 16px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>Back</button>}
+        <Btn full onClick={next}>{last?"Done":"Next"}</Btn>
+      </div>
+    </div>
+  </div>;
 }
 
 function Privacy({onBack}){
@@ -2751,7 +2803,7 @@ function StoryTour({onClose}){
   </div>;
 }
 
-function UserManual({onBack,navigateTo}){
+function UserManual({onBack,navigateTo,onCoach}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
   const[tour,setTour]=useState(false);
   const[open,setOpen]=useState(null);
@@ -2794,6 +2846,11 @@ function UserManual({onBack,navigateTo}){
         <div style={{flex:1}}><div style={{color:C.text,fontSize:17,fontWeight:800,marginBottom:3}}>Take the 60-second tour</div><div style={{color:C.muted,fontSize:13,lineHeight:1.5}}>A quick, visual walkthrough of everything Saver can do.</div></div>
         <Ico name="chevR" size={20} color={C.muted}/>
       </div>
+      {onCoach&&<button onClick={onCoach} style={{width:"100%",boxSizing:"border-box",background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px",marginBottom:26,display:"flex",alignItems:"center",gap:12,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>
+        <div style={{width:38,height:38,borderRadius:11,background:C.blue+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ico name="target" size={19} color={C.blue}/></div>
+        <div style={{flex:1,textAlign:"left"}}><div style={{color:C.text,fontSize:14,fontWeight:800}}>Show me on my screen</div><div style={{color:C.muted,fontSize:12,marginTop:1}}>A guided walkthrough on the real home screen.</div></div>
+        <Ico name="chevR" size={18} color={C.faint}/>
+      </button>}
       <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Browse topics</div>
       <div style={{position:"relative",marginBottom:16}}>
         <div style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",display:"flex"}}><Ico name="search" size={17} color={C.faint}/></div>
