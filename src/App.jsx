@@ -1741,6 +1741,27 @@ function SavingsPage({savings,onSave,txns,banks,onBack,addTxn,delTxn,onGoalToast
   </div>;
 }
 
+function MiniRing({pct,color,main,sub,size=120,stroke=12}){
+  const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-Math.max(0,Math.min(1,pct/100)));
+  return <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
+    <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={C.border} strokeWidth={stroke}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off} style={{transition:"stroke-dashoffset .6s cubic-bezier(0.2,0.8,0.2,1)"}}/>
+    </svg>
+    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+      <div style={{color:C.text,fontSize:size*0.22,fontWeight:800,letterSpacing:-1}}>{main}</div>
+      {sub&&<div style={{color:C.muted,fontSize:9.5,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",marginTop:2}}>{sub}</div>}
+    </div>
+  </div>;
+}
+function Sparkbars({data,color,height=40}){
+  const max=Math.max(1,...data);
+  return <div style={{display:"flex",alignItems:"flex-end",gap:4,height}}>
+    {data.map((v,i)=>{const h=Math.max(3,Math.round(v/max*height));const last=i===data.length-1;
+      return <div key={i} style={{flex:1,height:h,borderRadius:3,background:last?color:color+"40",transition:"height .4s ease"}}/>;})}
+  </div>;
+}
+
 function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
   const getLocalMonth=()=>{const d=new Date();const offset=d.getTimezoneOffset()*60000;return new Date(d.getTime()-offset).toISOString().slice(0,7);};
@@ -1759,73 +1780,111 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
     setShowAdd(false);setEditId(null);resetForm();
   };
   const now2=new Date(),daysLeft=Math.max(1,new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate()-now2.getDate()+1);
-  const displayBudgets=filterMonth==="all"?budgets:budgets.filter(b=>!b.startMonth||b.startMonth<=filterMonth);
-  let mostSaved=null,mostOverspent=null;
-  if(filterMonth==="all"&&budgets.length>0){
-    let maxSaveAmt=-999999,maxOverAmt=-999999;
-    budgets.forEach(bdg=>{
-      if(!bdg.amount)return;
-      const allExp=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
-      const activeMonths=availMonths.filter(m=>!bdg.startMonth||m>=bdg.startMonth);
-      const monthsCount=activeMonths.length||1;
-      const totalSpent=allExp.filter(t=>activeMonths.includes(t.date.slice(0,7))).reduce((a,t)=>a+t.amount,0);
-      const avgSpent=totalSpent/monthsCount;const diff=bdg.amount-avgSpent;
-      if(diff>0&&diff>maxSaveAmt){maxSaveAmt=diff;mostSaved={...bdg,avgSpent,diff};}
-      if(diff<0&&Math.abs(diff)>maxOverAmt){maxOverAmt=Math.abs(diff);mostOverspent={...bdg,avgSpent,diff:Math.abs(diff)};}
-    });
-  }
+  const isAll=filterMonth==="all",refMonth=isAll?curMonth:filterMonth,isCurrent=refMonth===curMonth;
+  const displayBudgets=isAll?budgets:budgets.filter(b=>!b.startMonth||b.startMonth<=filterMonth);
+  const monthBack=(base,n)=>{const[y,m]=base.split("-").map(Number);const d=new Date(y,m-1-n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;};
+  const trendMonths=[5,4,3,2,1,0].map(n=>monthBack(refMonth,n));
+  const mLabel=(m)=>MONTHS[+m.split("-")[1]-1].slice(0,3);
+  const spentBM=(b,m)=>txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&b.cats.includes(t.catId)&&t.date.startsWith(m)).reduce((a,t)=>a+t.amount,0);
+  const monthsActive=(b)=>availMonths.filter(m=>!b.startMonth||m>=b.startMonth);
+  const avgSpentB=(b)=>{const ms=monthsActive(b);return ms.length?ms.reduce((a,m)=>a+spentBM(b,m),0)/ms.length:0;};
+  // budget stat for the selected view
+  const statB=(b)=>{
+    const hasLimit=b.amount>0,spark=trendMonths.map(m=>spentBM(b,m));
+    const spent=isAll?avgSpentB(b):spentBM(b,refMonth);
+    const cur=spark[5],prev=spark[4],trendPct=prev>0?Math.round((cur-prev)/prev*100):null;
+    const pct=hasLimit?Math.min(100,Math.round((spent/b.amount)*100)):0,over=hasLimit&&spent>b.amount;
+    const col=!hasLimit?C.blue:over?C.red:pct>=80?C.yellow:C.accent;
+    const ms=monthsActive(b),onTrackMonths=ms.filter(m=>spentBM(b,m)<=b.amount).length;
+    return {hasLimit,spark,spent,trendPct,pct,over,col,monthsCount:ms.length,onTrackMonths};
+  };
+  // hero aggregates (limited budgets only)
+  const limited=displayBudgets.filter(b=>b.amount>0);
+  const totalLimit=limited.reduce((a,b)=>a+b.amount,0);
+  const heroSpent=limited.reduce((a,b)=>a+(isAll?avgSpentB(b):spentBM(b,refMonth)),0);
+  const usedPct=totalLimit>0?Math.round((heroSpent/totalLimit)*100):0;
+  const ringCol=usedPct>=100?C.red:usedPct>=80?C.yellow:C.accent;
+  const onTrack=limited.filter(b=>(isAll?avgSpentB(b):spentBM(b,refMonth))<=b.amount).length;
+  const allCats=[...new Set(displayBudgets.flatMap(b=>b.cats))];
+  const trendData=trendMonths.map(m=>txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&allCats.includes(t.catId)&&t.date.startsWith(m)).reduce((a,t)=>a+t.amount,0));
+  // single smart insight
+  let worst=null;limited.forEach(b=>{const sp=isAll?avgSpentB(b):spentBM(b,refMonth);if(sp>b.amount){const ov=sp-b.amount;if(!worst||ov>worst.ov)worst={name:b.name,ov};}});
   const is=getIS();
+  const KPI=({label,value,color})=>(<div><div style={{color:C.muted,fontSize:9.5,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",marginBottom:2}}>{label}</div><div style={{color:color||C.text,fontSize:16,fontWeight:800}}>{value}</div></div>);
   return <div style={{padding:"24px 16px 130px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-      <div style={{display:"flex",alignItems:"center",gap:8}}><button onClick={onBack} style={{background:"transparent",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"10px 15px 10px 0",display:"flex",alignItems:"center"}}><span style={{display:"block",transform:"translateY(-1px)"}}>❮</span></button><div style={{color:C.text,fontSize:22,fontWeight:800}}>Budgets</div></div>
-      <Btn small onClick={openNew}>+ Add Budget</Btn>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><button onClick={onBack} style={{background:"transparent",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"10px 15px 10px 0",display:"flex",alignItems:"center"}}><span style={{display:"block",transform:"translateY(-1px)"}}>❮</span></button><div style={{color:C.text,fontSize:22,fontWeight:800}}>Budget Report</div></div>
+      <Btn small onClick={openNew}>+ Add</Btn>
     </div>
     {budgets.length>0&&<div style={{marginBottom:16}}><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths}/></div>}
-    {budgets.length===0&&<EmptyState glyph="layers" message="Set monthly spending limits per category group."/>}
-    {filterMonth==="all"&&budgets.length>0&&(
-      <div style={{marginBottom:24}}>
-        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Performance Insights</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-          <Card style={{padding:"14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Most Saved</div>{mostSaved?(<><div style={{color:C.text,fontWeight:800,fontSize:14,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{mostSaved.name}</div><div style={{color:C.accent,fontSize:12,fontWeight:700}}>Saves avg {fmt(mostSaved.diff)}</div></>):<div style={{color:C.faint,fontSize:12}}>No data yet</div>}</Card>
-          <Card style={{padding:"14px 12px"}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Most Overspent</div>{mostOverspent?(<><div style={{color:C.text,fontWeight:800,fontSize:14,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{mostOverspent.name}</div><div style={{color:C.red,fontSize:12,fontWeight:700}}>Over by avg {fmt(mostOverspent.diff)}</div></>):<div style={{color:C.faint,fontSize:12}}>Looking good</div>}</Card>
-        </div>
-      </div>
-    )}
-    {displayBudgets.length===0&&filterMonth!=="all"&&budgets.length>0&&<EmptyState glyph="clock" message="No active budgets for this month."/>}
-    <div style={{marginBottom:20}}>
-      <SortableList items={displayBudgets} onReorder={onSave} renderItem={(bdg)=>{
-        const hasLimit=bdg.amount>0;
-        if(filterMonth==="all"){
-          const allExp=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
-          const activeMonths=availMonths.filter(m=>!bdg.startMonth||m>=bdg.startMonth);const monthsCount=activeMonths.length||1;
-          const totalSpent=allExp.filter(t=>activeMonths.includes(t.date.slice(0,7))).reduce((a,t)=>a+t.amount,0);
-          const avg=totalSpent/monthsCount;const isSafe=avg<=bdg.amount;
+    {budgets.length===0&&<EmptyState glyph="layers" message="Create a budget to start tracking your spending."/>}
+
+    {budgets.length>0&&<>
+      {/* Hero summary */}
+      {totalLimit>0?(
+        <Card style={{padding:"18px",marginBottom:14,display:"flex",alignItems:"center",gap:20}}>
+          <MiniRing pct={usedPct} color={ringCol} main={`${usedPct}%`} sub={isAll?"avg used":"used"}/>
+          <div style={{flex:1,display:"flex",flexDirection:"column",gap:13}}>
+            <KPI label={isAll?"Avg spent / mo":"Spent"} value={fmt(heroSpent)} color={ringCol}/>
+            <KPI label={isAll?"Total limit":"Budgeted"} value={fmt(totalLimit)}/>
+            <KPI label="On track" value={`${onTrack} / ${limited.length}`} color={C.accent}/>
+          </div>
+        </Card>
+      ):(
+        <Card style={{padding:"16px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:46,height:46,borderRadius:14,background:C.blue+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="layers" size={24} color={C.blue}/></div>
+          <div style={{flex:1}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{isAll?"Avg spent / mo":"Spent this month"}</div><div style={{color:C.text,fontSize:20,fontWeight:800,marginTop:2}}>{fmt(heroSpent||trendData[5])}</div></div>
+          <Pill color={C.faint}>No limits set</Pill>
+        </Card>
+      )}
+
+      {/* Smart insight */}
+      {limited.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 14px",borderRadius:12,marginBottom:14,background:(worst?C.red:C.accent)+"18",border:`1px solid ${(worst?C.red:C.accent)}33`}}>
+        <Ico name={worst?"trendUp":"checkCircle"} size={16} color={worst?C.red:C.accent} stroke={2.2}/>
+        <span style={{color:worst?C.red:C.accent,fontSize:12.5,fontWeight:700}}>{worst?`${worst.name} is ${fmt(worst.ov)} over ${isAll?"on average":"this month"}`:`All budgets on track${isAll?" on average":""}`}</span>
+      </div>}
+
+      {/* 6-month trend */}
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Spending · last 6 months</div>
+      <Card style={{padding:"16px",marginBottom:18}}>
+        <Sparkbars data={trendData} color={C.accent} height={48}/>
+        <div style={{display:"flex",gap:4,marginTop:6}}>{trendMonths.map((m,i)=><div key={m} style={{flex:1,textAlign:"center",color:i===5?C.text:C.faint,fontSize:9.5,fontWeight:700}}>{mLabel(m)}</div>)}</div>
+      </Card>
+
+      {/* Per-budget report cards */}
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>{isAll?"All-time performance":"Budgets"}</div>
+      {displayBudgets.length===0&&<EmptyState glyph="clock" message="No active budgets for this month."/>}
+      <div style={{marginBottom:20}}>
+        <SortableList items={displayBudgets} onReorder={onSave} renderItem={(bdg)=>{
+          const st=statB(bdg);
           return <SwipeRow key={bdg.id} onEdit={()=>startEdit(bdg)} onDelete={()=>setConfirmId(bdg.id)}>
-            <div style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon glyph={bdg.glyph} color={bdg.color} name={bdg.name} size={26} style={{borderRadius:8}}/><span style={{color:C.text,fontSize:16,fontWeight:700}}>{bdg.name}</span>{hasLimit?<Pill color={isSafe?C.accent:C.red} style={{fontSize:10}}>{isSafe?"Safe":"Over"}</Pill>:<Pill color={C.faint} style={{fontSize:10}}>No limit</Pill>}</div>
-                {hasLimit&&<div style={{color:C.text,fontWeight:800}}>{fmt(bdg.amount)} <span style={{color:C.muted,fontSize:10,fontWeight:500}}>limit</span></div>}
+            <div style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <CatIcon glyph={bdg.glyph} color={bdg.color} name={bdg.name} size={34}/>
+                <div style={{flex:1,minWidth:0}}><div style={{color:C.text,fontSize:15,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bdg.name}</div><div style={{color:C.muted,fontSize:10.5,fontWeight:600}}>{isAll?"average / month":isCurrent?"this month":mLabel(refMonth)}</div></div>
+                {st.hasLimit?<Pill color={st.col}>{st.over?"Over":`${st.pct}%`}</Pill>:<Pill color={C.faint}>No limit</Pill>}
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{color:C.muted,fontSize:12}}>Average Spent</div><div style={{color:hasLimit?(isSafe?C.accent:C.red):C.text,fontWeight:800}}>{fmt(avg)} / mo</div></div>
-              {hasLimit&&<ProgressBar value={avg} max={bdg.amount} color={isSafe?C.accent:C.red}/>}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:st.hasLimit?9:12}}>
+                <div style={{color:st.col,fontSize:22,fontWeight:800,letterSpacing:-0.5}}>{fmt(st.spent)}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {st.hasLimit&&<span style={{color:C.muted,fontSize:12,fontWeight:600}}>of {fmt(bdg.amount)}</span>}
+                  {st.trendPct!==null&&<span style={{display:"inline-flex",alignItems:"center",gap:2,color:st.trendPct>0?C.red:C.accent,fontSize:11,fontWeight:700}}><Ico name={st.trendPct>0?"up":"down"} size={11} color={st.trendPct>0?C.red:C.accent} stroke={2.6}/>{Math.abs(st.trendPct)}%</span>}
+                </div>
+              </div>
+              {st.hasLimit&&<><ProgressBar value={st.spent} max={bdg.amount} color={st.col}/>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:8,color:C.muted,fontSize:11}}>
+                  <span>{st.over?<span style={{color:C.red,fontWeight:700}}>{fmt(st.spent-bdg.amount)} over</span>:<span><span style={{color:C.accent,fontWeight:700}}>{fmt(bdg.amount-st.spent)}</span> left</span>}</span>
+                  <span>{isAll?`on track ${st.onTrackMonths}/${st.monthsCount} mo`:(isCurrent&&!st.over?`≈ ${fmt((bdg.amount-st.spent)/daysLeft)}/day`:"")}</span>
+                </div></>}
+              <div style={{marginTop:12}}>
+                <Sparkbars data={st.spark} color={bdg.color||C.accent} height={30}/>
+                <div style={{display:"flex",gap:4,marginTop:5}}>{trendMonths.map((m,i)=><div key={m} style={{flex:1,textAlign:"center",color:i===5?C.muted:C.faint,fontSize:8.5,fontWeight:700}}>{mLabel(m)}</div>)}</div>
+              </div>
             </div>
           </SwipeRow>;
-        }
-        const allExp=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
-        const spent=allExp.filter(t=>t.date.startsWith(filterMonth)).reduce((a,t)=>a+t.amount,0);
-        const rem=Math.max(0,bdg.amount-spent);const pct=hasLimit?Math.min(100,Math.round((spent/bdg.amount)*100)):0;const barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
-        return <SwipeRow key={bdg.id} onEdit={()=>startEdit(bdg)} onDelete={()=>setConfirmId(bdg.id)}>
-          <div style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon glyph={bdg.glyph} color={bdg.color} name={bdg.name} size={26} style={{borderRadius:8}}/><span style={{color:C.text,fontSize:16,fontWeight:700}}>{bdg.name}</span></div>{hasLimit?<Pill color={barColor}>{pct}%</Pill>:<Pill color={C.faint}>No limit</Pill>}</div>
-            {hasLimit?<>
-              <div style={{color:C.muted,fontSize:12,marginBottom:8}}>Spent <span style={{color:C.text,fontWeight:700}}>{fmt(spent)}</span> of {fmt(bdg.amount)}</div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:rem===0?C.red:C.accent,fontSize:18,fontWeight:800}}>{fmt(rem)} left</span><span style={{color:C.muted,fontSize:11}}>Daily: {fmt(rem/daysLeft)}</span></div>
-              <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
-            </>:<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:C.muted,fontSize:12}}>Spent this month</span><span style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(spent)}</span></div>}
-          </div>
-        </SwipeRow>;
-      }}/>
-    </div>
+        }}/>
+      </div>
+    </>}
     {showAdd&&<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
       <div style={{display:"flex",justifyContent:"center",marginBottom:16,marginTop:4}}><CatIcon glyph={glyph} color={color} name={name} size={72} style={{borderRadius:20}}/></div>
       <Input label="Budget Name" placeholder="e.g. Dining & Coffee" value={name} onChange={e=>setName(e.target.value)}/>
