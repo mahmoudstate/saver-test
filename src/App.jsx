@@ -729,6 +729,8 @@ function SaverApp(){
   useEffect(()=>{ setCGlobal(theme); IS=getIS(); },[theme]);
   const[username,setUsernameState]=useState("");
   const[lastBackup,setLastBackup]=useState(null);
+  const[backupSnooze,setBackupSnooze]=useState(0);
+  useEffect(()=>{load("et_backup_snooze",0).then(setBackupSnooze);},[]);
   const[appAlert,setAppAlert]=useState(null);
   const[hideTotal,setHideTotal]=useState(true);
   const[ledgerBank,setLedgerBank]=useState(null);
@@ -921,7 +923,9 @@ function SaverApp(){
   const curMonth=currentMonth();
   const filteredTxns=filterMonth==="all"?txns:txns.filter(t=>t.date.startsWith(filterMonth));
   const availMonths=[...new Set([curMonth,...txns.map(t=>t.date.slice(0,7))])].sort().reverse();
-  const showBackupAlert=!lastBackup||(Date.now()-lastBackup>3*24*60*60*1000);
+  const THREE_DAYS=3*24*60*60*1000;
+  const showBackupAlert=(!lastBackup||(Date.now()-lastBackup>THREE_DAYS))&&(Date.now()-backupSnooze>THREE_DAYS);
+  const dismissBackup=async()=>{const n=Date.now();setBackupSnooze(n);await save("et_backup_snooze",n);};
   const isSubPageActive=ledgerBank||ledgerGroup||ledgerSaving||ledgerBudget||["savings","budgets","quickactions","manual","privacy"].includes(tab);
   const activeSavings=savings.filter(s=>s.status!=="archived");
   const sharedProps={bankBalance,safeToSpend,frozenForBank,goalSaved};
@@ -930,7 +934,7 @@ function SaverApp(){
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans', sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130,position:"relative",userSelect:"none",WebkitUserSelect:"none"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
       {goalToast&&<GoalToast message={goalToast} onClose={()=>setGoalToast(null)}/>}
-      {showBackupAlert&&tab==="dashboard"&&!isSubPageActive&&<div style={{background:C.yellowDim,color:C.yellow,padding:"10px 16px",fontSize:12,fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><Ico name="bell" size={14} color={C.yellow}/>{lastBackup?"Over 3 days since last backup!":"Back up your data to keep it safe!"}</span><button onClick={()=>navigateTo("settings")} style={{background:"transparent",border:`1px solid ${C.yellow}`,color:C.yellow,borderRadius:8,padding:"4px 8px",fontSize:10,cursor:"pointer"}}>Backup Now</button></div>}
+      {showBackupAlert&&tab==="dashboard"&&!isSubPageActive&&<div style={{background:C.yellowDim,color:C.yellow,padding:"10px 16px",fontSize:12,fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}><span style={{display:"inline-flex",alignItems:"center",gap:6,minWidth:0}}><Ico name="bell" size={14} color={C.yellow}/><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{lastBackup?"Over 3 days since last backup!":"Back up your data to keep it safe!"}</span></span><div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><button onClick={()=>navigateTo("settings")} style={{background:"transparent",border:`1px solid ${C.yellow}`,color:C.yellow,borderRadius:8,padding:"4px 8px",fontSize:10,cursor:"pointer"}}>Backup Now</button><button onClick={dismissBackup} aria-label="Dismiss" style={{background:"transparent",border:"none",color:C.yellow,cursor:"pointer",padding:4,display:"flex",alignItems:"center"}}><Ico name="close" size={15} color={C.yellow}/></button></div></div>}
 
       {!ledgerBank&&!ledgerGroup&&!ledgerSaving&&!ledgerBudget?(
         <>
