@@ -717,8 +717,16 @@ function SaverApp(){
       ]);
       const _dmap=Object.fromEntries([...DEFAULT_EXP_CATS,...DEFAULT_INC_CATS].map(c=>[c.id,{glyph:c.glyph,color:c.color}]));
       const _migCats=(arr)=>arr.map(c=>(!c.glyph&&!c.emoji&&_dmap[c.id])?{...c,glyph:_dmap[c.id].glyph,color:c.color||_dmap[c.id].color}:c);
-      setTxns(t);setBanks(b);setExpCats(_migCats(ec));setIncCats(_migCats(ic));setGroups(g);setSavings(s);
-      setCurrencyState(cur);setCurrencyGlobal(cur);setUsernameState(uname);setBills(bl);setBudgets(bdg);setLastBackup(lb);
+      // Merge legacy spending Groups into Budgets (as limit-less budgets), then retire Groups
+      let _budgets=bdg,_groups=g;
+      if(g&&g.length>0){
+        const ids=new Set(bdg.map(x=>x.id));
+        const fromGroups=g.filter(gr=>!ids.has(gr.id)).map(gr=>({id:gr.id,name:gr.name,cats:gr.cats||[],glyph:gr.glyph,color:gr.color,amount:0}));
+        _budgets=[...bdg,...fromGroups];_groups=[];
+        save(KEYS.budgets,_budgets);save(KEYS.groups,[]);
+      }
+      setTxns(t);setBanks(b);setExpCats(_migCats(ec));setIncCats(_migCats(ic));setGroups(_groups);setSavings(s);
+      setCurrencyState(cur);setCurrencyGlobal(cur);setUsernameState(uname);setBills(bl);setBudgets(_budgets);setLastBackup(lb);
       setQuickActions(qa);setHasSeenWelcome(seen);setThemeState(th);setCGlobal(th);IS=getIS();
       setInstallments(inst);
       const localCurMonth=currentMonth();
@@ -1141,8 +1149,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
     {id:"bills",label:"Monthly Bills"},
     {id:"installments",label:"Installments"},
     {id:"budgets",label:"Monthly Budgets"},
-    {id:"savings",label:"Savings Goals"},
-    {id:"spending",label:"Spending Groups"}
+    {id:"savings",label:"Savings Goals"}
   ];
   const[dashOrder,setDashOrder]=useState(defaultOrder);
   useEffect(()=>{load("et_dash_order",defaultOrder).then(saved=>{
@@ -1322,36 +1329,41 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
         </div>
       );
       if(section.id==="budgets"&&budgets.length>0)return(()=>{
-        const budTotal=budgets.reduce((a,b)=>a+b.amount,0);
-        const budSpent=budgets.reduce((a,bd)=>a+txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bd.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((s,t)=>s+t.amount,0),0);
+        const spentOf=(bd)=>txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bd.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((s,t)=>s+t.amount,0);
+        const limited=budgets.filter(b=>b.amount>0);
+        const budTotal=limited.reduce((a,b)=>a+b.amount,0);
+        const budSpent=limited.reduce((a,b)=>a+spentOf(b),0);
         const budPct=budTotal>0?Math.min(100,Math.round((budSpent/budTotal)*100)):0;
         const budCol=budPct>=90?C.red:budPct>=70?C.yellow:C.accent;
+        const hasLimited=limited.length>0;
         return <div key="budgets">
           <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Monthly Budgets</div>
           <Card style={{padding:"16px",marginBottom:20}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-              <div style={{width:38,height:38,borderRadius:12,background:budCol+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="layers" size={20} color={budCol} stroke={2}/></div>
-              <div style={{flex:1}}><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Total Budget</div><div style={{color:C.text,fontSize:18,fontWeight:800,marginTop:2}}>{hideTotal?"••••":fmt(budSpent)} <span style={{color:C.muted,fontSize:12,fontWeight:600}}>of {hideTotal?"••••":fmt(budTotal)}</span></div></div>
-              <Pill color={budCol}>{budPct}%</Pill>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:hasLimited?12:0}}>
+              <div style={{width:38,height:38,borderRadius:12,background:(hasLimited?budCol:C.blue)+"22",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico name="layers" size={20} color={hasLimited?budCol:C.blue} stroke={2}/></div>
+              <div style={{flex:1}}>{hasLimited?<><div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Total Budget</div><div style={{color:C.text,fontSize:18,fontWeight:800,marginTop:2}}>{hideTotal?"••••":fmt(budSpent)} <span style={{color:C.muted,fontSize:12,fontWeight:600}}>of {hideTotal?"••••":fmt(budTotal)}</span></div></>:<><div style={{color:C.text,fontWeight:800,fontSize:15}}>Budgets</div><div style={{color:C.muted,fontSize:11,marginTop:1}}>Tracking {budgets.length} {budgets.length===1?"budget":"budgets"}</div></>}</div>
+              {hasLimited&&<Pill color={budCol}>{budPct}%</Pill>}
             </div>
-            <ProgressBar value={budSpent} max={budTotal} color={budCol}/>
+            {hasLimited&&<ProgressBar value={budSpent} max={budTotal} color={budCol}/>}
             <div style={{height:1,background:C.border,margin:"16px 0 14px"}}/>
             <SortableList items={budgets} onReorder={onBudgets} gap={10} renderItem={(bdg)=>{
-              const spent=txnsAll.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId)&&t.date.startsWith(selMonth)).reduce((a,t)=>a+t.amount,0);
-              const rem=Math.max(0,bdg.amount-spent),pct=bdg.amount>0?Math.min(100,Math.round((spent/bdg.amount)*100)):0,barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
+              const spent=spentOf(bdg),hasLimit=bdg.amount>0;
+              const rem=Math.max(0,bdg.amount-spent),pct=hasLimit?Math.min(100,Math.round((spent/bdg.amount)*100)):0,barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
               const fc=expCats.find(c=>bdg.cats.includes(c.id));
               return <div onClick={()=>onOpenBudget(bdg)} className="ic" style={{padding:"13px 14px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,cursor:"pointer",transition:"transform 0.1s ease"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                  <CatIcon cat={fc} color={fc?undefined:barColor} name={bdg.name} size={30}/>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:hasLimit?10:0}}>
+                  <CatIcon glyph={bdg.glyph} color={bdg.color||(fc?undefined:(hasLimit?barColor:C.blue))} cat={bdg.glyph?undefined:fc} name={bdg.name} size={30}/>
                   <span style={{color:C.text,fontSize:14,fontWeight:700,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bdg.name}</span>
-                  <Pill color={barColor}>{pct}%</Pill>
+                  {hasLimit?<Pill color={barColor}>{pct}%</Pill>:<span style={{color:C.text,fontSize:14,fontWeight:800}}>{hideTotal?"••••":fmt(spent)}</span>}
                 </div>
-                <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
-                  <span style={{color:C.muted,fontSize:11}}>Spent {hideTotal?"••••":fmt(spent)} of {hideTotal?"••••":fmt(bdg.amount)}</span>
-                  <span style={{color:rem===0?C.red:C.accent,fontSize:12,fontWeight:800}}>{hideTotal?"••••":fmt(rem)} left</span>
-                </div>
-                {isCurrentMonth&&rem>0&&!hideTotal&&<div style={{color:C.faint,fontSize:10,fontWeight:600,marginTop:4}}>≈ {fmt(rem/daysLeft)}/day for {daysLeft} day{daysLeft!==1?"s":""} left</div>}
+                {hasLimit?<>
+                  <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
+                    <span style={{color:C.muted,fontSize:11}}>Spent {hideTotal?"••••":fmt(spent)} of {hideTotal?"••••":fmt(bdg.amount)}</span>
+                    <span style={{color:rem===0?C.red:C.accent,fontSize:12,fontWeight:800}}>{hideTotal?"••••":fmt(rem)} left</span>
+                  </div>
+                  {isCurrentMonth&&rem>0&&!hideTotal&&<div style={{color:C.faint,fontSize:10,fontWeight:600,marginTop:4}}>≈ {fmt(rem/daysLeft)}/day for {daysLeft} day{daysLeft!==1?"s":""} left</div>}
+                </>:<div style={{color:C.faint,fontSize:11,marginTop:2}}>Spent this month · no limit set</div>}
               </div>;
             }}/>
           </Card>
@@ -1371,26 +1383,6 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{color:mainColor,fontSize:18,fontWeight:800}}>{hideTotal?"••••":fmt(saved)}</span><span style={{color:C.muted,fontSize:13}}>of {fmt(s.goal)}</span></div>
                 <ProgressBar value={saved} max={s.goal} color={mainColor} allowOver/>
-              </Card>;
-            }}/>
-          </div>
-        </div>
-      );
-      if(section.id==="spending"&&spendingGroups.length>0)return(
-        <div key="spending">
-          <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Spending</div>
-          <div style={{marginBottom:20}}>
-            <SortableList grid items={spendingGroups} onReorder={(ord)=>{const m=[...groups];ord.forEach((og,i)=>{const idx=m.findIndex(g=>g.id===og.id);if(idx>-1){m.splice(idx,1);m.splice(i,0,og);}});onGroups(m);}} renderItem={(g)=>{
-              const gtxns=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&g.cats.includes(t.catId));
-              const total=gtxns.reduce((a,t)=>a+t.amount,0);
-              const pct=totalExp?Math.round((total/totalExp)*100):0;
-              const months=filterMonth==="all"?[...new Set(gtxns.map(t=>t.date.slice(0,7)))].length||1:1;
-              const display=filterMonth==="all"?total/months:total;
-              return <Card onClick={()=>onOpenGroup(g)} className="ic" style={{padding:"14px 14px 12px",cursor:"pointer",transition:"transform 0.1s ease",height:"100%",boxSizing:"border-box"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><CatIcon glyph={g.glyph} color={g.color} name={g.name} size={26} style={{borderRadius:8}}/><span style={{color:C.muted,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.name}</span></div>
-                <div style={{color:g.color,fontSize:17,fontWeight:800,marginBottom:2}}>{hideTotal?"••••":fmt(display)}</div>
-                {filterMonth==="all"&&<div style={{color:C.faint,fontSize:10,marginBottom:4}}>Average / month</div>}
-                {filterMonth!=="all"&&<><ProgressBar value={total} max={totalExp} color={g.color}/><div style={{color:C.faint,fontSize:10,fontWeight:700,marginTop:4}}>{pct}% of total</div></>}
               </Card>;
             }}/>
           </div>
@@ -1755,14 +1747,16 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
   const curMonth=getLocalMonth();
   const[filterMonth,setFilterMonth]=useState(curMonth);
   const availMonths=[...new Set([curMonth,...txns.map(t=>t.date.slice(0,7))])].sort().reverse();
-  const[showAdd,setShowAdd]=useState(false);const[editId,setEditId]=useState(null);const[name,setName]=useState("");const[amount,setAmount]=useState("");const[selectedCats,setSelectedCats]=useState([]);const[confirmId,setConfirmId]=useState(null);const[startMonth,setStartMonth]=useState(curMonth);
-  const startEdit=(b)=>{setEditId(b.id);setName(b.name);setAmount(b.amount);setSelectedCats(b.cats||[]);setStartMonth(b.startMonth||curMonth);setShowAdd(true);};
+  const[showAdd,setShowAdd]=useState(false);const[editId,setEditId]=useState(null);const[name,setName]=useState("");const[amount,setAmount]=useState("");const[selectedCats,setSelectedCats]=useState([]);const[confirmId,setConfirmId]=useState(null);const[startMonth,setStartMonth]=useState(curMonth);const[glyph,setGlyph]=useState("layers");const[color,setColor]=useState(CAT_PALETTE[0]);
+  const resetForm=()=>{setName("");setAmount("");setSelectedCats([]);setStartMonth(curMonth);setGlyph("layers");setColor(CAT_PALETTE[0]);};
+  const openNew=()=>{setEditId(null);resetForm();setShowAdd(true);};
+  const startEdit=(b)=>{setEditId(b.id);setName(b.name);setAmount(b.amount?String(b.amount):"");setSelectedCats(b.cats||[]);setStartMonth(b.startMonth||curMonth);setGlyph(b.glyph||"layers");setColor(b.color||CAT_PALETTE[0]);setShowAdd(true);};
   const handleAdd=async()=>{
-    if(!name||!amount||selectedCats.length===0)return;
-    const pa=parseFloat(amount);const sm=startMonth||curMonth;
-    if(editId)await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:pa,cats:selectedCats,startMonth:sm}:b));
-    else await onSave([...budgets,{id:Date.now().toString(),name,amount:pa,cats:selectedCats,startMonth:sm}]);
-    setShowAdd(false);setEditId(null);setName("");setAmount("");setSelectedCats([]);setStartMonth(curMonth);
+    if(!name||selectedCats.length===0)return;
+    const pa=amount?parseFloat(amount):0;const sm=startMonth||curMonth;
+    if(editId)await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:pa,cats:selectedCats,startMonth:sm,glyph,color}:b));
+    else await onSave([...budgets,{id:Date.now().toString(),name,amount:pa,cats:selectedCats,startMonth:sm,glyph,color}]);
+    setShowAdd(false);setEditId(null);resetForm();
   };
   const now2=new Date(),daysLeft=Math.max(1,new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate()-now2.getDate()+1);
   const displayBudgets=filterMonth==="all"?budgets:budgets.filter(b=>!b.startMonth||b.startMonth<=filterMonth);
@@ -1770,6 +1764,7 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
   if(filterMonth==="all"&&budgets.length>0){
     let maxSaveAmt=-999999,maxOverAmt=-999999;
     budgets.forEach(bdg=>{
+      if(!bdg.amount)return;
       const allExp=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
       const activeMonths=availMonths.filter(m=>!bdg.startMonth||m>=bdg.startMonth);
       const monthsCount=activeMonths.length||1;
@@ -1783,7 +1778,7 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
   return <div style={{padding:"24px 16px 130px",minHeight:"100vh",background:C.bg,boxSizing:"border-box"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}><button onClick={onBack} style={{background:"transparent",border:"none",color:C.muted,fontSize:22,cursor:"pointer",padding:"10px 15px 10px 0",display:"flex",alignItems:"center"}}><span style={{display:"block",transform:"translateY(-1px)"}}>❮</span></button><div style={{color:C.text,fontSize:22,fontWeight:800}}>Budgets</div></div>
-      <Btn small onClick={()=>{setEditId(null);setName("");setAmount("");setSelectedCats([]);setStartMonth(curMonth);setShowAdd(true);}}>+ Add Budget</Btn>
+      <Btn small onClick={openNew}>+ Add Budget</Btn>
     </div>
     {budgets.length>0&&<div style={{marginBottom:16}}><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths}/></div>}
     {budgets.length===0&&<EmptyState glyph="layers" message="Set monthly spending limits per category group."/>}
@@ -1799,6 +1794,7 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
     {displayBudgets.length===0&&filterMonth!=="all"&&budgets.length>0&&<EmptyState glyph="clock" message="No active budgets for this month."/>}
     <div style={{marginBottom:20}}>
       <SortableList items={displayBudgets} onReorder={onSave} renderItem={(bdg)=>{
+        const hasLimit=bdg.amount>0;
         if(filterMonth==="all"){
           const allExp=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
           const activeMonths=availMonths.filter(m=>!bdg.startMonth||m>=bdg.startMonth);const monthsCount=activeMonths.length||1;
@@ -1807,37 +1803,49 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
           return <SwipeRow key={bdg.id} onEdit={()=>startEdit(bdg)} onDelete={()=>setConfirmId(bdg.id)}>
             <div style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:12}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:C.text,fontSize:16,fontWeight:700}}>{bdg.name}</span><Pill color={isSafe?C.accent:C.red} style={{fontSize:10}}>{isSafe?"Safe":"Over"}</Pill></div>
-                <div style={{color:C.text,fontWeight:800}}>{fmt(bdg.amount)} <span style={{color:C.muted,fontSize:10,fontWeight:500}}>limit</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon glyph={bdg.glyph} color={bdg.color} name={bdg.name} size={26} style={{borderRadius:8}}/><span style={{color:C.text,fontSize:16,fontWeight:700}}>{bdg.name}</span>{hasLimit?<Pill color={isSafe?C.accent:C.red} style={{fontSize:10}}>{isSafe?"Safe":"Over"}</Pill>:<Pill color={C.faint} style={{fontSize:10}}>No limit</Pill>}</div>
+                {hasLimit&&<div style={{color:C.text,fontWeight:800}}>{fmt(bdg.amount)} <span style={{color:C.muted,fontSize:10,fontWeight:500}}>limit</span></div>}
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{color:C.muted,fontSize:12}}>Average Spent</div><div style={{color:isSafe?C.accent:C.red,fontWeight:800}}>{fmt(avg)} / mo</div></div>
-              <ProgressBar value={avg} max={bdg.amount} color={isSafe?C.accent:C.red}/>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{color:C.muted,fontSize:12}}>Average Spent</div><div style={{color:hasLimit?(isSafe?C.accent:C.red):C.text,fontWeight:800}}>{fmt(avg)} / mo</div></div>
+              {hasLimit&&<ProgressBar value={avg} max={bdg.amount} color={isSafe?C.accent:C.red}/>}
             </div>
           </SwipeRow>;
         }
         const allExp=txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&bdg.cats.includes(t.catId));
         const spent=allExp.filter(t=>t.date.startsWith(filterMonth)).reduce((a,t)=>a+t.amount,0);
-        const rem=Math.max(0,bdg.amount-spent);const pct=bdg.amount>0?Math.min(100,Math.round((spent/bdg.amount)*100)):0;const barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
+        const rem=Math.max(0,bdg.amount-spent);const pct=hasLimit?Math.min(100,Math.round((spent/bdg.amount)*100)):0;const barColor=pct>=90?C.red:pct>=70?C.yellow:C.accent;
         return <SwipeRow key={bdg.id} onEdit={()=>startEdit(bdg)} onDelete={()=>setConfirmId(bdg.id)}>
           <div style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:C.text,fontSize:16,fontWeight:700}}>{bdg.name}</span><Pill color={barColor}>{pct}%</Pill></div>
-            <div style={{color:C.muted,fontSize:12,marginBottom:8}}>Spent <span style={{color:C.text,fontWeight:700}}>{fmt(spent)}</span> of {fmt(bdg.amount)}</div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:rem===0?C.red:C.accent,fontSize:18,fontWeight:800}}>{fmt(rem)} left</span><span style={{color:C.muted,fontSize:11}}>Daily: {fmt(rem/daysLeft)}</span></div>
-            <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon glyph={bdg.glyph} color={bdg.color} name={bdg.name} size={26} style={{borderRadius:8}}/><span style={{color:C.text,fontSize:16,fontWeight:700}}>{bdg.name}</span></div>{hasLimit?<Pill color={barColor}>{pct}%</Pill>:<Pill color={C.faint}>No limit</Pill>}</div>
+            {hasLimit?<>
+              <div style={{color:C.muted,fontSize:12,marginBottom:8}}>Spent <span style={{color:C.text,fontWeight:700}}>{fmt(spent)}</span> of {fmt(bdg.amount)}</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:rem===0?C.red:C.accent,fontSize:18,fontWeight:800}}>{fmt(rem)} left</span><span style={{color:C.muted,fontSize:11}}>Daily: {fmt(rem/daysLeft)}</span></div>
+              <ProgressBar value={spent} max={bdg.amount} color={barColor}/>
+            </>:<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:C.muted,fontSize:12}}>Spent this month</span><span style={{color:C.text,fontSize:18,fontWeight:800}}>{fmt(spent)}</span></div>}
           </div>
         </SwipeRow>;
       }}/>
     </div>
     {showAdd&&<Modal title={editId?"Edit Budget":"New Budget"} onClose={()=>{setShowAdd(false);setEditId(null);}} center={false}>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:16,marginTop:4}}><CatIcon glyph={glyph} color={color} name={name} size={72} style={{borderRadius:20}}/></div>
       <Input label="Budget Name" placeholder="e.g. Dining & Coffee" value={name} onChange={e=>setName(e.target.value)}/>
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:8,maxHeight:130,overflowY:"auto",marginBottom:14,padding:4,background:C.bg,borderRadius:10,border:`1px solid ${C.border}`}}>
+        {CAT_GLYPHS_GROUP.map(k=>{const on=glyph===k;return <button key={k} onClick={()=>setGlyph(k)} style={{height:38,borderRadius:9,background:on?C.accentDim:C.card,border:`1px solid ${on?C.accent:C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke={on?C.accent:C.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:CAT_GLYPHS[k]}}/></button>;})}
+      </div>
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Color</div>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
+        {CAT_PALETTE.map(col=><button key={col} onClick={()=>setColor(col)} style={{width:32,height:32,borderRadius:99,background:col,border:color===col?`3px solid ${C.text}`:`3px solid transparent`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{color===col&&<Ico name="check" size={15} color={_lum(col)>0.7?"#111":"#fff"} stroke={3}/>}</button>)}
+        <label style={{width:32,height:32,borderRadius:99,border:`2px dashed ${C.faint}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}><Ico name="palette" size={16} color={C.faint}/><input type="color" value={color} onChange={e=>setColor(e.target.value)} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/></label>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <Input label={`Limit (${currency})`} type="number" step="any" value={amount} onChange={e=>setAmount(e.target.value)}/>
+        <Input label="Monthly Limit (optional)" type="number" step="any" placeholder="No limit" value={amount} onChange={e=>setAmount(e.target.value)}/>
         <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Starts From</div><input type="month" value={startMonth} onChange={e=>setStartMonth(e.target.value)} style={{...is,colorScheme:C.isDark?"dark":"light"}}/></div>
       </div>
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div>
         <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflow:"auto",background:C.bg,padding:10,borderRadius:10,border:`1px solid ${C.border}`}}>
-          {expCats.map(c=>{const checked=selectedCats.includes(c.id);return <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"5px 0",userSelect:"none"}}><div onClick={()=>setSelectedCats(checked?selectedCats.filter(x=>x!==c.id):[...selectedCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<Ico name="check" size={13} color={C.accent} stroke={3}/>}</div><span style={{color:C.text,fontSize:14}}>{ICONS[c.icon]||"📌"} {c.name}</span></label>;})}
+          {expCats.map(c=>{const checked=selectedCats.includes(c.id);return <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"5px 0",userSelect:"none"}}><div onClick={()=>setSelectedCats(checked?selectedCats.filter(x=>x!==c.id):[...selectedCats,c.id])} style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.accent:C.faint}`,background:checked?C.accentDim:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{checked&&<Ico name="check" size={13} color={C.accent} stroke={3}/>}</div><CatIcon cat={c} size={22}/><span style={{color:C.text,fontSize:14}}>{c.name}</span></label>;})}
         </div>
       </div>
       <Btn full onClick={handleAdd}>Save Budget</Btn>
@@ -2729,14 +2737,13 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
 
     {section==="categories"&&<>
       <div style={{display:"flex",gap:8,marginBottom:18}}>
-        {[{id:"expense",label:"↑ Expense"},{id:"income",label:"↓ Income"},{id:"groups",label:"⇄ Groups"}].map(t=><button key={t.id} onClick={()=>setCatTab(t.id)} style={{flex:1,padding:"10px 0",borderRadius:11,border:`1.5px solid ${catTab===t.id?C.accent:C.border}`,background:catTab===t.id?C.accentDim:"transparent",color:catTab===t.id?C.accent:C.muted,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif"}}>{t.label}</button>)}
+        {[{id:"expense",icon:"down",label:"Expense"},{id:"income",icon:"up",label:"Income"}].map(t=><button key={t.id} onClick={()=>setCatTab(t.id)} style={{flex:1,padding:"10px 0",borderRadius:11,border:`1.5px solid ${catTab===t.id?C.accent:C.border}`,background:catTab===t.id?C.accentDim:"transparent",color:catTab===t.id?C.accent:C.muted,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans', sans-serif",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}><Ico name={t.icon} size={15} color={catTab===t.id?C.accent:C.muted} stroke={2.4}/>{t.label}</button>)}
       </div>
 
       {catTab==="expense"&&<><div style={{display:"flex",flexDirection:"column",gap:8}}>{expCats.map(c=><SwipeRow key={c.id} onEdit={()=>openAdd("expCat",c)} onDelete={()=>setConfirmDel({type:"expCat",item:c})}><div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px"}}><CatIcon cat={c} size={40}/><div style={{flex:1,minWidth:0}}><div style={{color:C.text,fontWeight:700,fontSize:15}}>{c.name}</div><div style={{color:C.muted,fontSize:11,marginTop:2,textTransform:"capitalize"}}>{c.group||"other"}</div></div></div></SwipeRow>)}</div><Btn outline full onClick={()=>openAdd("expCat")} style={{marginTop:12}}>+ Add Expense Category</Btn></>}
 
       {catTab==="income"&&<><div style={{display:"flex",flexDirection:"column",gap:8}}>{incCats.map(c=><SwipeRow key={c.id} onEdit={()=>openAdd("incCat",c)} onDelete={()=>setConfirmDel({type:"incCat",item:c})}><div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px"}}><CatIcon cat={c} size={40}/><div style={{flex:1,minWidth:0}}><div style={{color:C.text,fontWeight:700,fontSize:15}}>{c.name}</div></div></div></SwipeRow>)}</div><Btn outline full onClick={()=>openAdd("incCat")} style={{marginTop:12}}>+ Add Income Category</Btn></>}
 
-      {catTab==="groups"&&<><div style={{color:C.muted,fontSize:12,marginBottom:12,lineHeight:1.5}}>Groups bundle expense categories together for spending insights on your dashboard.</div><div style={{display:"flex",flexDirection:"column",gap:8}}>{groups.map(g=><SwipeRow key={g.id} onEdit={()=>openAdd("group",g)} onDelete={()=>setConfirmDel({type:"group",item:g})}><div style={{padding:"12px 14px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><CatIcon glyph={g.glyph} color={g.color} name={g.name} size={30} style={{borderRadius:9}}/><span style={{color:C.text,fontWeight:700,fontSize:15}}>{g.name}</span></div><div style={{display:"flex",flexWrap:"wrap",gap:5,paddingLeft:2}}>{g.cats.map(cid=>{const cat=expCats.find(c=>c.id===cid);return cat?<span key={cid} style={{background:g.color+"22",color:g.color,border:`1px solid ${g.color}44`,borderRadius:99,padding:"2px 8px",fontSize:11,fontWeight:700}}>{cat.name}</span>:null;})}</div></div></SwipeRow>)}</div><Btn outline full onClick={()=>openAdd("group")} style={{marginTop:12}}>+ Add Group</Btn></>}
     </>}
 
     {modal&&<Modal title={`${modal.item?"Edit":"Add"} ${modal.type==="bank"?"Account":modal.type==="expCat"?"Expense Cat.":modal.type==="incCat"?"Income Cat.":"Group"}`} onClose={()=>setModal(null)} center={false}>
