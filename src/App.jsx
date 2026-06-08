@@ -372,6 +372,7 @@ const MARKS={
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   close:'<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
   circle:'<circle cx="12" cy="12" r="9"/>',
+  alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
   trash:CAT_GLYPHS["trash-2"]||'<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   pencil:CAT_GLYPHS["pencil"]||'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   sun:CAT_GLYPHS["sun"]||'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
@@ -3024,7 +3025,7 @@ class ErrorBoundary extends React.Component{
   componentDidCatch(e,i){console.error("Saver Error:",e,i);}
   render(){
     if(this.state.hasError)return <div style={{padding:40,textAlign:"center",color:"#e8e8f0",background:"#0f0f13",minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",fontFamily:"'DM Sans', sans-serif"}}>
-      <div style={{fontSize:50,marginBottom:20}}>⚠️</div>
+      <div style={{marginBottom:20}}><Ico name="alert" size={50} color="#f87171" stroke={1.8}/></div>
       <h2 style={{margin:"0 0 10px 0"}}>Something went wrong.</h2>
       <p style={{color:"#8888a8",marginBottom:20}}>Your data is safe.</p>
       <button onClick={()=>window.location.reload()} style={{background:"#6ee7b7",border:"none",color:"#111",borderRadius:10,padding:"12px 24px",fontWeight:700,fontSize:15,cursor:"pointer"}}>Reload App</button>
