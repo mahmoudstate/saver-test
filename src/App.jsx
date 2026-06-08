@@ -1768,25 +1768,25 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
   const curMonth=getLocalMonth();
   const[filterMonth,setFilterMonth]=useState(curMonth);
   const availMonths=[...new Set([curMonth,...txns.map(t=>t.date.slice(0,7))])].sort().reverse();
-  const[showAdd,setShowAdd]=useState(false);const[editId,setEditId]=useState(null);const[name,setName]=useState("");const[amount,setAmount]=useState("");const[selectedCats,setSelectedCats]=useState([]);const[confirmId,setConfirmId]=useState(null);const[startMonth,setStartMonth]=useState(curMonth);const[glyph,setGlyph]=useState("layers");const[color,setColor]=useState(CAT_PALETTE[0]);
-  const resetForm=()=>{setName("");setAmount("");setSelectedCats([]);setStartMonth(curMonth);setGlyph("layers");setColor(CAT_PALETTE[0]);};
+  const[showAdd,setShowAdd]=useState(false);const[editId,setEditId]=useState(null);const[name,setName]=useState("");const[amount,setAmount]=useState("");const[selectedCats,setSelectedCats]=useState([]);const[confirmId,setConfirmId]=useState(null);const[startMonth,setStartMonth]=useState(curMonth);const[glyph,setGlyph]=useState("layers");const[color,setColor]=useState(CAT_PALETTE[0]);const[repeat,setRepeat]=useState(true);
+  const resetForm=()=>{setName("");setAmount("");setSelectedCats([]);setStartMonth(curMonth);setGlyph("layers");setColor(CAT_PALETTE[0]);setRepeat(true);};
   const openNew=()=>{setEditId(null);resetForm();setShowAdd(true);};
-  const startEdit=(b)=>{setEditId(b.id);setName(b.name);setAmount(b.amount?String(b.amount):"");setSelectedCats(b.cats||[]);setStartMonth(b.startMonth||curMonth);setGlyph(b.glyph||"layers");setColor(b.color||CAT_PALETTE[0]);setShowAdd(true);};
+  const startEdit=(b)=>{setEditId(b.id);setName(b.name);setAmount(b.amount?String(b.amount):"");setSelectedCats(b.cats||[]);setStartMonth(b.startMonth||curMonth);setGlyph(b.glyph||"layers");setColor(b.color||CAT_PALETTE[0]);setRepeat(b.repeat!==false);setShowAdd(true);};
   const handleAdd=async()=>{
     if(!name||selectedCats.length===0)return;
     const pa=amount?parseFloat(amount):0;const sm=startMonth||curMonth;
-    if(editId)await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:pa,cats:selectedCats,startMonth:sm,glyph,color}:b));
-    else await onSave([...budgets,{id:Date.now().toString(),name,amount:pa,cats:selectedCats,startMonth:sm,glyph,color}]);
+    if(editId)await onSave(budgets.map(b=>b.id===editId?{...b,name,amount:pa,cats:selectedCats,startMonth:sm,glyph,color,repeat}:b));
+    else await onSave([...budgets,{id:Date.now().toString(),name,amount:pa,cats:selectedCats,startMonth:sm,glyph,color,repeat}]);
     setShowAdd(false);setEditId(null);resetForm();
   };
   const now2=new Date(),daysLeft=Math.max(1,new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate()-now2.getDate()+1);
   const isAll=filterMonth==="all",refMonth=isAll?curMonth:filterMonth,isCurrent=refMonth===curMonth;
-  const displayBudgets=isAll?budgets:budgets.filter(b=>!b.startMonth||b.startMonth<=filterMonth);
+  const displayBudgets=isAll?budgets:budgets.filter(b=>b.repeat===false?b.startMonth===filterMonth:(!b.startMonth||b.startMonth<=filterMonth));
   const monthBack=(base,n)=>{const[y,m]=base.split("-").map(Number);const d=new Date(y,m-1-n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;};
   const trendMonths=[5,4,3,2,1,0].map(n=>monthBack(refMonth,n));
   const mLabel=(m)=>MONTHS[+m.split("-")[1]-1].slice(0,3);
   const spentBM=(b,m)=>txns.filter(t=>(t.type==="expense"||t.type==="goal_withdraw")&&b.cats.includes(t.catId)&&t.date.startsWith(m)).reduce((a,t)=>a+t.amount,0);
-  const monthsActive=(b)=>availMonths.filter(m=>!b.startMonth||m>=b.startMonth);
+  const monthsActive=(b)=>b.repeat===false?(b.startMonth?[b.startMonth]:[]):availMonths.filter(m=>!b.startMonth||m>=b.startMonth);
   const avgSpentB=(b)=>{const ms=monthsActive(b);return ms.length?ms.reduce((a,m)=>a+spentBM(b,m),0)/ms.length:0;};
   // budget stat for the selected view
   const statB=(b)=>{
@@ -1899,7 +1899,11 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         <Input label="Monthly Limit (optional)" type="number" step="any" placeholder="No limit" value={amount} onChange={e=>setAmount(e.target.value)}/>
-        <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Starts From</div><input type="month" value={startMonth} onChange={e=>setStartMonth(e.target.value)} style={{...is,colorScheme:C.isDark?"dark":"light"}}/></div>
+        <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{repeat?"Starts From":"Month"}</div><input type="month" value={startMonth} onChange={e=>setStartMonth(e.target.value)} style={{...is,colorScheme:C.isDark?"dark":"light"}}/></div>
+      </div>
+      <div onClick={()=>setRepeat(!repeat)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,cursor:"pointer",marginBottom:14}}>
+        <div style={{flex:1}}><div style={{color:C.text,fontSize:14,fontWeight:700}}>Repeat every month</div><div style={{color:C.muted,fontSize:11,marginTop:2}}>{repeat?"Active every month from the start month":"Applies to the selected month only"}</div></div>
+        <div style={{width:46,height:27,borderRadius:99,background:repeat?C.accent:C.border,position:"relative",transition:"background .2s",flexShrink:0}}><div style={{position:"absolute",top:3,left:repeat?22:3,width:21,height:21,borderRadius:99,background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/></div>
       </div>
       <div style={{marginBottom:14}}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Categories</div>
