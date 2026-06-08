@@ -267,6 +267,28 @@ const CAT_GLYPHS_GROUP=["folder","folders","folder-open","layers","layout-grid",
 // Rich set for Budgets & Goals (organizational + every expense/income glyph)
 const CAT_GLYPHS_ALL=[...new Set(["layers","wallet","target","piggy-bank","shapes","folder",...CAT_GLYPHS_EXP,...CAT_GLYPHS_INC])];
 const BANK_GLYPHS=["landmark","wallet","wallet-cards","banknote","coins","piggy-bank","vault","dollar-sign","circle-dollar-sign","badge-dollar-sign","building","building-2","globe","smartphone","briefcase","bitcoin"];
+// Offline bank "logos": brand color + monogram (no network, no licensed assets). Add more in updates.
+const BANK_PRESETS=[
+  {id:"cash",name:"Cash",color:"#34d399",glyph:"banknote"},
+  {id:"instapay",name:"InstaPay",color:"#11998e",brand:"IP"},
+  {id:"vodafonecash",name:"Vodafone Cash",color:"#e60000",glyph:"smartphone"},
+  {id:"cib",name:"CIB",color:"#7a1f2b",brand:"CIB"},
+  {id:"nbe",name:"NBE",color:"#0a7d3e",brand:"NBE"},
+  {id:"banquemisr",name:"Banque Misr",color:"#e1231b",brand:"BM"},
+  {id:"banqueducaire",name:"Banque du Caire",color:"#00703c",brand:"BdC"},
+  {id:"qnb",name:"QNB Alahli",color:"#8e1b6b",brand:"QNB"},
+  {id:"aaib",name:"AAIB",color:"#0a3d70",brand:"AAIB"},
+  {id:"barclays",name:"Barclays",color:"#00aeef",brand:"B"},
+  {id:"hsbc",name:"HSBC",color:"#db0011",brand:"HSBC"},
+  {id:"lloyds",name:"Lloyds",color:"#024731",brand:"L"},
+  {id:"natwest",name:"NatWest",color:"#5a287d",brand:"NW"},
+  {id:"monzo",name:"Monzo",color:"#ff3464",brand:"M"},
+  {id:"revolut",name:"Revolut",color:"#0666eb",brand:"R"},
+  {id:"alrajhi",name:"Al Rajhi",color:"#1b5e20",brand:"AR"},
+  {id:"snb",name:"SNB",color:"#0a8a7a",brand:"SNB"},
+  {id:"riyad",name:"Riyad Bank",color:"#0a3d8c",brand:"RB"},
+  {id:"stcpay",name:"stc pay",color:"#4f008c",brand:"stc"},
+];
 const CAT_PALETTE=["#34d399","#f87171","#60a5fa","#fbbf24","#a78bfa","#fb923c","#22d3ee","#f472b6","#818cf8","#4ade80","#fb7185","#facc15"];
 const hashColor=(s)=>CAT_PALETTE[[...String(s||"x")].reduce((a,c)=>a+c.charCodeAt(0),0)%CAT_PALETTE.length];
 // Bundled brand glyphs (Simple Icons) — offline, private, crisp. {domain:{h:hex,p:path}}
@@ -313,6 +335,16 @@ function CatIcon({ cat, glyph, emoji, icon, color, name, size = 36, style = {} }
     inner = <span style={{ color:fg, fontSize:size*0.42, fontWeight:800 }}>{(nm||"?").slice(0,1).toUpperCase()}</span>;
   }
   return <div style={{ width:size, height:size, borderRadius:radius, background:tile, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, ...style }}>{inner}</div>;
+}
+
+// Bank badge: offline brand monogram on brand color, else falls back to a drawn glyph icon
+function BankIcon({ bank, size=28, style={} }){
+  const tile=bank?.color||"#64748b";
+  if(bank?.brand){
+    const fg=_lum(tile)>0.7?"#111":"#fff";
+    return <div style={{ width:size, height:size, borderRadius:size*0.28, background:tile, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, ...style }}><span style={{ color:fg, fontWeight:800, fontSize:size*(bank.brand.length>=3?0.3:0.42), letterSpacing:-0.5 }}>{bank.brand}</span></div>;
+  }
+  return <CatIcon glyph={bank?.glyph||"landmark"} color={bank?.color} name={bank?.name} size={size} style={style}/>;
 }
 
 // Hand-drawn outline marks (app identity, never emoji) — inner SVG, rendered with stroke
@@ -1266,7 +1298,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
               const bal=bankBalance(b.id),safe=safeToSpend(b.id),frozen=frozenForBank(b.id),hasFrozen=frozen>0;
               return <Card onClick={()=>onOpenBank(b)} className="ic" style={{padding:"14px 14px 12px",cursor:"pointer",transition:"transform 0.1s ease",height:"100%",boxSizing:"border-box"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasFrozen?4:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}><CatIcon glyph={b.glyph||"landmark"} color={b.color} name={b.name} size={22}/><span style={{color:C.muted,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name}</span></div>
+                  <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}><BankIcon bank={b} size={22}/><span style={{color:C.muted,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name}</span></div>
                   {b.lowBalanceThreshold&&safe<=b.lowBalanceThreshold&&safe>=0&&<Ico name="down" size={13} color={C.yellow} stroke={2.6}/>}
                   {safe<0&&<span style={{width:9,height:9,borderRadius:99,background:C.red,display:"inline-block"}}/>}
                 </div>
@@ -1632,7 +1664,7 @@ function AddTransaction({banks,expCats,incCats,savings,currency,onAdd,onDone,saf
       <div>
         <input type="date" value={txnDate} onChange={e=>setTxnDate(e.target.value)} style={fieldStyle}/>
         {(()=>{const lead=(node)=><span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",display:"flex"}}>{node}</span>;
-          const bankIco=(id)=>{const b=banks.find(x=>x.id===id);return <CatIcon glyph={b?.glyph||"landmark"} color={b?.color} name={b?.name} size={28}/>;};
+          const bankIco=(id)=>{const b=banks.find(x=>x.id===id);return <BankIcon bank={b} size={28}/>;};
           const sel={...fieldStyle,marginBottom:0,paddingLeft:48};
           if(type==="transfer")return <>
             <div style={{display:"flex",alignItems:"center",gap:7,margin:"0 2px 6px"}}><Ico name="up" size={13} color={C.red} stroke={2.6}/><span style={{color:C.red,fontSize:11,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>From · money out</span></div>
@@ -2717,11 +2749,11 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
   useEffect(()=>{window.scrollTo(0,0);},[]);
   const[section,setSection]=useState("profile");const[modal,setModal]=useState(null);const[catTab,setCatTab]=useState("expense");
   const[iN,setIN]=useState("");const[iC,setIC]=useState(C.accent);const[iG,setIG]=useState("daily");const[iIcon,setIIcon]=useState("others");const[gCats,setGCats]=useState([]);const[iT,setIT]=useState("");
-  const[iGlyph,setIGlyph]=useState("");const[iEmoji,setIEmoji]=useState("");
+  const[iGlyph,setIGlyph]=useState("");const[iEmoji,setIEmoji]=useState("");const[iBrand,setIBrand]=useState("");
   const[nameInput,setNameInput]=useState(username||"");const[confirmDel,setConfirmDel]=useState(null);const[showRestoreConfirm,setShowRestoreConfirm]=useState(false);const[pendingRestore,setPendingRestore]=useState(null);
   const fileRef=useRef(null);
   const openAdd=(type,item=null)=>{
-    setModal({type,item});setIN(item?.name||"");setIG(item?.group||"");setIIcon(item?.icon||"others");setGCats(item?.cats||[]);setIT(item?.lowBalanceThreshold?String(item.lowBalanceThreshold):"");
+    setModal({type,item});setIN(item?.name||"");setIG(item?.group||"");setIIcon(item?.icon||"others");setGCats(item?.cats||[]);setIT(item?.lowBalanceThreshold?String(item.lowBalanceThreshold):"");setIBrand(item?.brand||"");
     const isCat=type==="expCat"||type==="incCat";
     setIC(item?.color||(type==="bank"?C.accent:isCat||type==="group"?hashColor(item?.id||Math.random()):C.accent));
     // Migrate legacy emoji-key icon to a raw emoji so it stays visible/editable
@@ -2733,7 +2765,7 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
     if(!iN.trim())return;const id=modal.item?.id||Date.now().toString();
     const thresh=parseFloat(iT),tv=!isNaN(thresh)&&thresh>0?thresh:undefined;
     const catFields={name:iN.trim(),glyph:iGlyph||undefined,emoji:iEmoji||undefined,color:iC,icon:undefined};
-    if(modal.type==="bank")await onBanks(modal.item?banks.map(b=>b.id===id?{id,name:iN,color:iC,glyph:iGlyph||"landmark",lowBalanceThreshold:tv}:b):[...banks,{id,name:iN,color:iC,glyph:iGlyph||"landmark",lowBalanceThreshold:tv}]);
+    if(modal.type==="bank")await onBanks(modal.item?banks.map(b=>b.id===id?{id,name:iN,color:iC,glyph:iGlyph||"landmark",brand:iBrand||undefined,lowBalanceThreshold:tv}:b):[...banks,{id,name:iN,color:iC,glyph:iGlyph||"landmark",brand:iBrand||undefined,lowBalanceThreshold:tv}]);
     else if(modal.type==="expCat")await onExpCats(modal.item?expCats.map(c=>c.id===id?{...c,...catFields,group:iG}:c):[...expCats,{id,...catFields,group:iG}]);
     else if(modal.type==="incCat")await onIncCats(modal.item?incCats.map(c=>c.id===id?{...c,...catFields}:c):[...incCats,{id,...catFields}]);
     else if(modal.type==="group")await onGroups(modal.item?groups.map(g=>g.id===id?{id,name:iN,color:iC,glyph:iGlyph||undefined,cats:gCats}:g):[...groups,{id,name:iN,color:iC,glyph:iGlyph||undefined,cats:gCats}]);
@@ -2805,7 +2837,7 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
     {section==="banks"&&<><div style={{display:"flex",flexDirection:"column"}}>
       {banks.map(b=><SwipeRow key={b.id} onEdit={()=>openAdd("bank",b)} onDelete={()=>{const err=getBankDeleteError(b);if(err)setAppAlert({title:"Cannot Delete",message:err,color:C.red});else setConfirmDel({type:"bank",item:b});}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}><CatIcon glyph={b.glyph||"landmark"} color={b.color} name={b.name} size={26}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}><BankIcon bank={b} size={26}/><span style={{color:C.text,fontWeight:600,fontSize:14}}>{b.name}</span></div>
           <div style={{textAlign:"right"}}><div style={{color:bankBalance(b.id)<0?C.red:C.muted,fontSize:13,fontWeight:700}}>{fmt(safeToSpend(b.id))}</div>{frozenForBank(b.id)>0&&<div style={{color:C.yellow,fontSize:10,marginTop:2,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4}}><Ico name="lock" size={10} color={C.yellow}/>{fmt(frozenForBank(b.id))} frozen</div>}</div>
         </div>
       </SwipeRow>)}
@@ -2825,10 +2857,14 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
     {modal&&<Modal title={`${modal.item?"Edit":"Add"} ${modal.type==="bank"?"Account":modal.type==="expCat"?"Expense Cat.":modal.type==="incCat"?"Income Cat.":"Group"}`} onClose={()=>setModal(null)} center={false}>
       <Input label="Name" value={iN} onChange={e=>setIN(e.target.value)}/>
       {modal.type==="bank"&&<>
-      <div style={{display:"flex",justifyContent:"center",marginBottom:14,marginTop:2}}><CatIcon glyph={iGlyph} color={iC} name={iN} size={64} style={{borderRadius:18}}/></div>
-      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:14,marginTop:2}}><BankIcon bank={{glyph:iGlyph,color:iC,brand:iBrand,name:iN}} size={64} style={{borderRadius:18}}/></div>
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Quick pick</div>
+      <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,marginBottom:14,WebkitOverflowScrolling:"touch"}}>
+        {BANK_PRESETS.map(p=><button key={p.id} onClick={()=>{setIN(p.name);setIC(p.color);setIBrand(p.brand||"");setIGlyph(p.glyph||"landmark");}} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:5,width:58,background:"transparent",border:"none",cursor:"pointer",fontFamily:"'DM Sans', sans-serif",padding:0}}><BankIcon bank={p} size={42}/><span style={{color:C.muted,fontSize:9.5,fontWeight:600,textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{p.name}</span></button>)}
+      </div>
+      <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Or pick an icon</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:7,marginBottom:14,padding:4,background:C.bg,borderRadius:10,border:`1px solid ${C.border}`}}>
-        {BANK_GLYPHS.map(k=>{const on=iGlyph===k;return <button key={k} onClick={()=>setIGlyph(k)} style={{height:34,borderRadius:8,background:on?C.accentDim:C.card,border:`1px solid ${on?C.accent:C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke={on?C.accent:C.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:CAT_GLYPHS[k]}}/></button>;})}
+        {BANK_GLYPHS.map(k=>{const on=iGlyph===k&&!iBrand;return <button key={k} onClick={()=>{setIGlyph(k);setIBrand("");}} style={{height:34,borderRadius:8,background:on?C.accentDim:C.card,border:`1px solid ${on?C.accent:C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke={on?C.accent:C.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:CAT_GLYPHS[k]}}/></button>;})}
       </div>
       <div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Color</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[C.accent,C.red,C.blue,C.yellow,C.purple,"#fb923c","#34d399","#f472b6"].map(col=><button key={col} onClick={()=>setIC(col)} style={{width:28,height:28,borderRadius:99,background:col,border:iC===col?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>)}</div></div><div style={{marginBottom:14}}><div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Low Balance Alert</div><input type="number" min="0" inputMode="numeric" placeholder="e.g. 200" value={iT} onChange={e=>setIT(e.target.value)} style={is}/><div style={{color:C.faint,fontSize:11,marginTop:4}}>Warn when balance drops below this (0 = off)</div></div></>}
       {(modal.type==="expCat"||modal.type==="incCat")&&<>
