@@ -67,13 +67,15 @@ const currentMonth = () => getLocalTime().month;
 
 const getGoalMessage = (pct) => {
   if (pct<=0) return null;
-  if (pct<=25) return ["Great start! Every bit counts 🚀","Nice! You're building momentum 💪"][Math.floor(Math.random()*2)];
-  if (pct<=49) return ["Keep going, you're on the right track! 📈","Your goal is getting closer! 🤩"][Math.floor(Math.random()*2)];
-  if (pct===50) return "Halfway there! The hard part is behind you 🎉";
-  if (pct<=89) return ["Past the midpoint — almost there! 🏃‍♂️💨","So close now! Just a few steps left 🔥"][Math.floor(Math.random()*2)];
-  if (pct<=99) return "Almost done! One final push ⏳✨";
-  return "Goal reached! Time to enjoy your hard work 🥳🎯";
+  if (pct<=25) return ["Great start! Every bit counts","Nice! You're building momentum"][Math.floor(Math.random()*2)];
+  if (pct<=49) return ["Keep going, you're on the right track!","Your goal is getting closer!"][Math.floor(Math.random()*2)];
+  if (pct===50) return "Halfway there! The hard part is behind you";
+  if (pct<=89) return ["Past the midpoint — almost there!","So close now! Just a few steps left"][Math.floor(Math.random()*2)];
+  if (pct<=99) return "Almost done! One final push";
+  return "Goal reached! Time to enjoy your hard work";
 };
+// Drawn icon for the goal toast based on progress
+const goalMsgIcon = (pct) => pct>=100?"trophy":pct>=50?"trendUp":"sparkles";
 
 const ICONS = {
   dashboard:"◈",add:"＋",settings:"⚙",saving:"◎",bills_nav:"☷",budget:"📊",
@@ -221,12 +223,12 @@ const SUBSCRIPTION_SERVICES = [
 
 // Bill types — used as the background "category" for each bill, derived from its kind.
 const BILL_TYPES = [
-  {id:"streaming",name:"Streaming & TV",icon:"type_streaming",color:"#f87171"},
-  {id:"software",name:"Software & AI",icon:"type_software",color:"#60a5fa"},
-  {id:"telecom",name:"Telecom & Internet",icon:"type_telecom",color:"#34d399"},
-  {id:"shopping",name:"Shopping & Delivery",icon:"type_shopping",color:"#fb923c"},
-  {id:"utilities",name:"Utilities",icon:"type_utilities",color:"#fbbf24"},
-  {id:"other",name:"Other",icon:"type_other",color:"#a78bfa"},
+  {id:"streaming",name:"Streaming & TV",icon:"type_streaming",glyph:"clapperboard",color:"#f87171"},
+  {id:"software",name:"Software & AI",icon:"type_software",glyph:"laptop",color:"#60a5fa"},
+  {id:"telecom",name:"Telecom & Internet",icon:"type_telecom",glyph:"wifi",color:"#34d399"},
+  {id:"shopping",name:"Shopping & Delivery",icon:"type_shopping",glyph:"shopping-bag",color:"#fb923c"},
+  {id:"utilities",name:"Utilities",icon:"type_utilities",glyph:"zap",color:"#fbbf24"},
+  {id:"other",name:"Other",icon:"type_other",glyph:"receipt",color:"#a78bfa"},
 ];
 const SERVICE_CAT_TO_TYPE = {"Streaming":"streaming","Tech & AI":"software","Telecom":"telecom","Shopping":"shopping","Utilities":"utilities","Health & Fitness":"other"};
 const getBillType = (id) => BILL_TYPES.find(t=>t.id===id) || BILL_TYPES.find(t=>t.id==="other");
@@ -373,6 +375,7 @@ const MARKS={
   close:'<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
   circle:'<circle cx="12" cy="12" r="9"/>',
   alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+  trophy:CAT_GLYPHS["trophy"]||'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
   trash:CAT_GLYPHS["trash-2"]||'<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   pencil:CAT_GLYPHS["pencil"]||'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   sun:CAT_GLYPHS["sun"]||'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
@@ -507,15 +510,17 @@ function AlertModal({title,message,onClose,btnColor}){
   </Modal>;
 }
 
-function GoalToast({message,onClose}){
+function GoalToast({toast,onClose}){
   useEffect(()=>{const t=setTimeout(onClose,4000);return()=>clearTimeout(t);},[onClose]);
+  const message=typeof toast==="string"?toast:toast?.message||"";
+  const icon=(typeof toast==="object"&&toast?.icon)||"sparkles";
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px",fontFamily:"'DM Sans', sans-serif"}}>
       <style>{`@keyframes goalPopIn{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}`}</style>
       <div style={{background:C.surface,border:`2px solid ${C.accent}`,borderRadius:24,padding:"36px 28px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.7)",animation:"goalPopIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275)"}}>
-        <div style={{fontSize:52,marginBottom:16,lineHeight:1}}>{message.match(/[\u{1F300}-\u{1FFFF}]|[\u2600-\u27FF]/gu)?.[0]||"🎯"}</div>
-        <div style={{color:C.accent,fontSize:18,fontWeight:800,lineHeight:1.5,marginBottom:24}}>{message.replace(/[\u{1F300}-\u{1FFFF}]|[\u2600-\u27FF]/gu,"").trim()}</div>
-        <button onClick={onClose} style={{background:C.accent,border:"none",color:"#111",borderRadius:12,padding:"12px 32px",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"'DM Sans', sans-serif",width:"100%"}}>Keep Going! 💪</button>
+        <div style={{width:64,height:64,borderRadius:20,background:C.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}><Ico name={icon} size={34} color={C.accent} stroke={2}/></div>
+        <div style={{color:C.accent,fontSize:18,fontWeight:800,lineHeight:1.5,marginBottom:24}}>{message}</div>
+        <button onClick={onClose} style={{background:C.accent,border:"none",color:"#111",borderRadius:12,padding:"12px 32px",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"'DM Sans', sans-serif",width:"100%"}}>Keep Going!</button>
       </div>
     </div>
   );
@@ -607,23 +612,21 @@ function BalanceCarousel({ totalBalance, totalSafe, hideTotal, setHideTotal, ini
       onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       <div ref={trackRef} style={{display:"flex",width:"200%",transform:`translateX(calc(${index===0?'0%':'-50%'} + ${drag}px))`,transition:'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'}}>
         <div style={{width:"50%",padding:"20px 20px 34px 20px",boxSizing:"border-box",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",right:-10,top:"15%",opacity:0.06,pointerEvents:"none"}}><Ico name="bank" size={80} color={C.text}/></div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",transform:`translateX(${index===0?pX:0}px)`,transition:drag===0?'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)':'none'}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",transform:`translateX(${index===0?pX:0}px)`,transition:drag===0?'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)':'none'}}>
             <div style={{position:"relative",zIndex:2}}>
               <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Total Balance</div>
               <div style={{color:C.text,fontSize:32,fontWeight:800,letterSpacing:-1}}>{hideTotal?"••••••":fmt(totalBalance)}</div>
             </div>
-            <button onClick={(e)=>{e.stopPropagation();setHideTotal(v=>!v);}} style={{background:C.border,border:"none",color:C.muted,width:38,height:38,borderRadius:99,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",zIndex:2}}>{hideTotal?"🙈":"🐵"}</button>
+            <button onClick={(e)=>{e.stopPropagation();setHideTotal(v=>!v);}} style={{background:"transparent",border:"none",cursor:"pointer",fontSize:34,lineHeight:1,padding:0,display:"flex",alignItems:"center",zIndex:2,WebkitTapHighlightColor:"transparent"}}>{hideTotal?"🙈":"🐵"}</button>
           </div>
         </div>
         <div style={{width:"50%",padding:"20px 20px 34px 20px",boxSizing:"border-box",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",right:-10,top:"15%",opacity:0.06,pointerEvents:"none"}}><Ico name="coins" size={80} color={C.text}/></div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",transform:`translateX(${index===1?pX:0}px)`,transition:drag===0?'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)':'none'}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",transform:`translateX(${index===1?pX:0}px)`,transition:drag===0?'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)':'none'}}>
             <div style={{position:"relative",zIndex:2}}>
               <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Available to Spend</div>
               <div style={{color:C.accent,fontSize:32,fontWeight:800,letterSpacing:-1}}>{hideTotal?"••••••":fmt(totalSafe)}</div>
             </div>
-            <button onClick={(e)=>{e.stopPropagation();setHideTotal(v=>!v);}} style={{background:C.border,border:"none",color:C.muted,width:38,height:38,borderRadius:99,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",zIndex:2}}>{hideTotal?"🙈":"🐵"}</button>
+            <button onClick={(e)=>{e.stopPropagation();setHideTotal(v=>!v);}} style={{background:"transparent",border:"none",cursor:"pointer",fontSize:34,lineHeight:1,padding:0,display:"flex",alignItems:"center",zIndex:2,WebkitTapHighlightColor:"transparent"}}>{hideTotal?"🙈":"🐵"}</button>
           </div>
         </div>
       </div>
@@ -933,7 +936,7 @@ function SaverApp(){
   return <ThemeContext.Provider value={{theme,setTheme:saveThemeHandler}}>
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Sans', sans-serif",maxWidth:520,margin:"0 auto",paddingBottom:isSubPageActive?0:130,position:"relative",userSelect:"none",WebkitUserSelect:"none"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
-      {goalToast&&<GoalToast message={goalToast} onClose={()=>setGoalToast(null)}/>}
+      {goalToast&&<GoalToast toast={goalToast} onClose={()=>setGoalToast(null)}/>}
       {showBackupAlert&&tab==="dashboard"&&!isSubPageActive&&<div style={{background:C.yellowDim,color:C.yellow,padding:"10px 16px",fontSize:12,fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}><span style={{display:"inline-flex",alignItems:"center",gap:6,minWidth:0}}><Ico name="bell" size={14} color={C.yellow}/><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{lastBackup?"Over 3 days since last backup!":"Back up your data to keep it safe!"}</span></span><div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><button onClick={()=>navigateTo("settings")} style={{background:"transparent",border:`1px solid ${C.yellow}`,color:C.yellow,borderRadius:8,padding:"4px 8px",fontSize:10,cursor:"pointer"}}>Backup Now</button><button onClick={dismissBackup} aria-label="Dismiss" style={{background:"transparent",border:"none",color:C.yellow,cursor:"pointer",padding:4,display:"flex",alignItems:"center"}}><Ico name="close" size={15} color={C.yellow}/></button></div></div>}
 
       {!ledgerBank&&!ledgerGroup&&!ledgerSaving&&!ledgerBudget?(
@@ -1270,7 +1273,7 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
   const biggestInc=incTxns.length?incTxns.reduce((max,t)=>t.amount>max.amount?t:max,incTxns[0]):null;
 
   return <div style={{padding:"24px 16px 0"}}>
-    {username&&<div style={{marginBottom:18}}><div style={{color:C.muted,fontSize:13,fontWeight:500}}>{(()=>{const h=new Date().getHours();return <span style={{display:"inline-flex",alignItems:"center",gap:6}}><Ico name={h<18?"sun":"moon"} size={14} color={C.muted}/>{h<12?"Good morning":h<18?"Good afternoon":"Good evening"},</span>; })()}</div><div style={{color:C.text,fontSize:24,fontWeight:800,letterSpacing:-0.5}}>{username}</div></div>}
+    {username&&<div style={{marginBottom:18}}><div style={{color:C.muted,fontSize:13,fontWeight:500}}>{(()=>{const h=new Date().getHours();const gc=h<12?"#fbbf24":h<18?"#fb923c":"#818cf8";return <span style={{display:"inline-flex",alignItems:"center",gap:6}}><Ico name={h<18?"sun":"moon"} size={15} color={gc} stroke={2.2}/><span style={{color:gc,fontWeight:700}}>{h<12?"Good morning":h<18?"Good afternoon":"Good evening"}</span>,</span>; })()}</div><div style={{color:C.text,fontSize:24,fontWeight:800,letterSpacing:-0.5}}>{username}</div></div>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{color:C.text,fontSize:20,fontWeight:800}}>Overview</div><span data-coach="month" style={{display:"inline-flex"}}><MonthSelect value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} availMonths={availMonths} allowAll={false}/></span></div>
 
     {txnsAll.length===0&&<div style={{background:C.accentDim,border:`1px solid ${C.accent}44`,borderRadius:16,padding:"20px",marginBottom:20,textAlign:"center"}}><div style={{marginBottom:10,display:"flex",justifyContent:"center"}}><Ico name="hand" size={34} color={C.accent}/></div><div style={{color:C.accent,fontWeight:800,fontSize:16,marginBottom:6}}>Welcome to Saver!</div><div style={{color:C.muted,fontSize:13,lineHeight:1.6}}>Tap <strong style={{color:C.accent}}>＋</strong> to add your first transaction.</div></div>}
@@ -1607,6 +1610,28 @@ function SavingDetailView({goal,saved,txns,onDelete,addTxn,banks,savings,onSave,
   </div>;
 }
 
+// Styled dropdown that shows a drawn icon next to each option (native select can't)
+function PickerField({options,value,onChange,placeholder,title,fieldStyle}){
+  const[open,setOpen]=useState(false);
+  const sel=options.find(o=>o.value===value);
+  return <>
+    <button type="button" onClick={()=>setOpen(true)} style={{...fieldStyle,marginBottom:0,display:"flex",alignItems:"center",gap:10,textAlign:"left",cursor:"pointer"}}>
+      {sel?.icon}
+      <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:sel?C.text:C.muted}}>{sel?sel.label:(placeholder||"Select")}</span>
+      <Ico name="chevR" size={16} color={C.muted} style={{transform:"rotate(90deg)"}}/>
+    </button>
+    {open&&<Modal title={title||placeholder||"Select"} onClose={()=>setOpen(false)} center={false}>
+      <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:"58vh",overflowY:"auto"}}>
+        {options.map(o=><button key={o.value} onClick={()=>{onChange(o.value);setOpen(false);HAPTICS.light?.();}} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1px solid ${o.value===value?C.accent:C.border}`,background:o.value===value?C.accentDim:C.card,cursor:"pointer",fontFamily:"'DM Sans', sans-serif",textAlign:"left"}}>
+          {o.icon}
+          <span style={{flex:1,minWidth:0,color:C.text,fontSize:15,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.label}</span>
+          {o.value===value&&<Ico name="check" size={16} color={C.accent} stroke={3}/>}
+        </button>)}
+      </div>
+    </Modal>}
+  </>;
+}
+
 function AddTransaction({banks,expCats,incCats,savings,currency,onAdd,onDone,safeToSpend,goalSaved,setAppAlert,onGoalToast,txns}){
   const[type,setType]=useState("expense");
   const[amount,setAmount]=useState("");
@@ -1635,7 +1660,7 @@ function AddTransaction({banks,expCats,incCats,savings,currency,onAdd,onDone,saf
       ok=await onAdd({type:"transfer",amount:amt,date:txnDate,bankId:sourceId,fromBankId:sourceId,toBankId,bankName:fromBank?.name,toBankName:toBank?.name,note});
     }else if(type==="saving"){
       ok=await onAdd({type:"saving",amount:amt,date:txnDate,bankId:sourceId,bankName:bank?.name,goalId:savingId,catName:savings.find(s=>s.id===savingId)?.name,catIcon:"saving",note});
-      if(ok!==false){setAmount("");if(onGoalToast){const goal=savings.find(s=>s.id===savingId);const prevSaved=goalSaved(savingId);const newSaved=prevSaved+amt;const pct=goal?.goal>0?Math.round((newSaved/goal.goal)*100):0;const msg=getGoalMessage(pct);if(msg)onGoalToast(msg);}onDone();}
+      if(ok!==false){setAmount("");if(onGoalToast){const goal=savings.find(s=>s.id===savingId);const prevSaved=goalSaved(savingId);const newSaved=prevSaved+amt;const pct=goal?.goal>0?Math.round((newSaved/goal.goal)*100):0;const msg=getGoalMessage(pct);if(msg)onGoalToast({message:msg,icon:goalMsgIcon(pct)});}onDone();}
       return;
     }else if(type==="expense"&&sourceId.startsWith("goal_")){
       const goalId=sourceId.replace("goal_","");const goal=savings.find(s=>s.id===goalId);const saved=goalSaved(goalId);
@@ -1668,23 +1693,22 @@ function AddTransaction({banks,expCats,incCats,savings,currency,onAdd,onDone,saf
       </div>
       <div>
         <input type="date" value={txnDate} onChange={e=>setTxnDate(e.target.value)} style={fieldStyle}/>
-        {(()=>{const lead=(node)=><span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",display:"flex"}}>{node}</span>;
-          const bankIco=(id)=>{const b=banks.find(x=>x.id===id);return <BankIcon bank={b} size={28}/>;};
-          const sel={...fieldStyle,marginBottom:0,paddingLeft:48};
+        {(()=>{const wrap={marginBottom:14};
+          const bankOpts=banks.map(b=>({value:b.id,label:b.name,icon:<BankIcon bank={b} size={28}/>}));
           if(type==="transfer")return <>
             <div style={{display:"flex",alignItems:"center",gap:7,margin:"0 2px 6px"}}><Ico name="up" size={13} color={C.red} stroke={2.6}/><span style={{color:C.red,fontSize:11,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>From · money out</span></div>
-            <div style={{position:"relative",marginBottom:14}}>{lead(bankIco(sourceId))}<select value={sourceId} onChange={e=>setSourceId(e.target.value)} style={sel}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+            <div style={wrap}><PickerField options={bankOpts} value={sourceId} onChange={setSourceId} title="From account" fieldStyle={fieldStyle}/></div>
             <div style={{display:"flex",alignItems:"center",gap:7,margin:"0 2px 6px"}}><Ico name="down" size={13} color={C.accent} stroke={2.6}/><span style={{color:C.accent,fontSize:11,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>To · money in</span></div>
-            <div style={{position:"relative",marginBottom:14}}>{lead(bankIco(toBankId))}<select value={toBankId} onChange={e=>setToBankId(e.target.value)} style={sel}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+            <div style={wrap}><PickerField options={bankOpts} value={toBankId} onChange={setToBankId} title="To account" fieldStyle={fieldStyle}/></div>
           </>;
-          if(type==="saving"){const g=activeGoals.find(s=>s.id===savingId);return <>
-            <div style={{position:"relative",marginBottom:14}}>{lead(bankIco(sourceId))}<select value={sourceId} onChange={e=>setSourceId(e.target.value)} style={sel}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-            {activeGoals.length>0?(<div style={{position:"relative",marginBottom:14}}>{lead(<CatIcon glyph={g?.glyph||"target"} color={g?.color||C.yellow} name={g?.name} size={28}/>)}<select value={savingId} onChange={e=>setSavingId(e.target.value)} style={sel}>{activeGoals.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>):(<div style={{...fieldStyle,display:"flex",alignItems:"center",color:C.muted}}>No active goals</div>)}
-          </>;}
-          const isGoalSrc=String(sourceId).startsWith("goal_");const gs=isGoalSrc&&spendingGoals.find(x=>("goal_"+x.id)===sourceId);const selCat=cats.find(c=>c.id===catId);
+          if(type==="saving")return <>
+            <div style={wrap}><PickerField options={bankOpts} value={sourceId} onChange={setSourceId} title="From account" fieldStyle={fieldStyle}/></div>
+            {activeGoals.length>0?(<div style={wrap}><PickerField options={activeGoals.map(s=>({value:s.id,label:s.name,icon:<CatIcon glyph={s.glyph||"target"} color={s.color||C.yellow} name={s.name} size={28}/>}))} value={savingId} onChange={setSavingId} title="Choose goal" fieldStyle={fieldStyle}/></div>):(<div style={{...fieldStyle,display:"flex",alignItems:"center",color:C.muted}}>No active goals</div>)}
+          </>;
+          const srcOpts=[...bankOpts,...(type==="expense"?spendingGoals.map(g=>({value:"goal_"+g.id,label:g.name,icon:<CatIcon glyph={g.glyph||"target"} color={g.color||C.yellow} name={g.name} size={28}/>})):[])];
           return <>
-            <div style={{position:"relative",marginBottom:14}}>{lead(isGoalSrc?<CatIcon glyph={gs?.glyph||"target"} color={gs?.color||C.yellow} name={gs?.name} size={28}/>:bankIco(sourceId))}<select value={sourceId} onChange={e=>setSourceId(e.target.value)} style={sel}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}{type==="expense"&&spendingGoals.map(g=><option key={"goal_"+g.id} value={"goal_"+g.id}>{g.name}</option>)}</select></div>
-            <div style={{position:"relative",marginBottom:14}}><span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><CatIcon cat={selCat} size={34}/></span><select value={catId} onChange={e=>setCatId(e.target.value)} style={{...fieldStyle,marginBottom:0,paddingLeft:54}}>{cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+            <div style={wrap}><PickerField options={srcOpts} value={sourceId} onChange={setSourceId} title="Account" fieldStyle={fieldStyle}/></div>
+            <div style={wrap}><PickerField options={cats.map(c=>({value:c.id,label:c.name,icon:<CatIcon cat={c} size={28}/>}))} value={catId} onChange={setCatId} title="Category" fieldStyle={fieldStyle}/></div>
           </>;
         })()}
         <input placeholder="Add a note..." value={note} onChange={e=>setNote(e.target.value)} style={fieldStyle}/>
@@ -2156,7 +2180,7 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
     try{
       const bank=banks.find(b=>b.id===bill.bankId),type=typeOf(bill);
       const dateStr=today();const ms=`${MONTHS[+mStr.split("-")[1]-1]} ${mStr.split("-")[0]}`;
-      const id=await onAddTxn({type:"expense",amount:bill.amount,date:dateStr,bankId:bill.bankId,bankName:bank?.name,catId:`bill_${type.id}`,catName:type.name,catIcon:type.icon,catColor:type.color,note:`Bill: ${bill.name} ${ms}`});
+      const id=await onAddTxn({type:"expense",amount:bill.amount,date:dateStr,bankId:bill.bankId,bankName:bank?.name,catId:`bill_${type.id}`,catName:type.name,catIcon:type.icon,catGlyph:type.glyph,catColor:type.color,note:`Bill: ${bill.name} ${ms}`});
       if(id!==false){HAPTICS.success();await onSave(bills.map(b=>b.id===bill.id?{...b,payments:[...(b.payments||[]),{month:mStr,date:dateStr,txnId:id}]}:b));}
     }finally{setTimeout(()=>{payingRef.current[bill.id]=false;},1000);}
   };
@@ -2263,7 +2287,7 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
         </div>
 
         <Card style={{padding:"4px 16px",marginBottom:16}}>
-          <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Type</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{ICONS[type.icon]} {type.name}</span></div>
+          <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Type</span><span style={{color:C.text,fontSize:14,fontWeight:700,display:"inline-flex",alignItems:"center",gap:7}}><CatIcon glyph={type.glyph} color={type.color} name={type.name} size={20}/>{type.name}</span></div>
           <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Pay from</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{bank?.name||"—"}</span></div>
           <div style={{...rowStyle}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Due day</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>Day {bill.dueDay||1} of month</span></div>
           <div style={{...rowStyle,borderBottom:bill.note?`1px solid ${C.border}`:"none"}}><span style={{color:C.muted,fontSize:13,fontWeight:600}}>Reminder</span><span style={{color:C.text,fontSize:14,fontWeight:700}}>{(bill.reminderDays??2)===0?"Off":`${bill.reminderDays??2} day(s) before`}</span></div>
@@ -2346,7 +2370,7 @@ function SubscriptionsTab({bills,onSave,banks,expCats,onAddTxn,delTxn,currency,s
                         <ServiceLogo domain={bill.domain} name={bill.name} color={bill.color||C.accent} size={38} style={{borderRadius:11}}/>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{color:C.text,fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bill.name}</div>
-                          <div style={{color:C.muted,fontSize:11,marginTop:2}}>{ICONS[type.icon]} {type.name}</div>
+                          <div style={{color:C.muted,fontSize:11,marginTop:2,display:"flex",alignItems:"center",gap:5}}><CatIcon glyph={type.glyph} color={type.color} name={type.name} size={15}/>{type.name}</div>
                         </div>
                         <div style={{textAlign:"right",flexShrink:0}}>
                           <div style={{color:C.text,fontSize:15,fontWeight:800}}>{fmt(bill.amount)}</div>
@@ -2888,7 +2912,6 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
           <label style={{width:32,height:32,borderRadius:99,border:`2px dashed ${C.faint}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}><Ico name="palette" size={16} color={C.faint}/><input type="color" value={iC} onChange={e=>setIC(e.target.value)} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/></label>
         </div>
       </>}
-      {modal.type==="expCat"&&<Select label="Group Tag (optional)" value={iG} onChange={e=>setIG(e.target.value)}><option value="">— None —</option>{["daily","fixed","lifestyle","growth","other"].map(g=><option key={g} value={g}>{g}</option>)}</Select>}
       {modal.type==="group"&&<>
         <div style={{display:"flex",justifyContent:"center",marginBottom:18,marginTop:4}}><CatIcon glyph={iGlyph} color={iC} name={iN} size={72} style={{borderRadius:20}}/></div>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>Icon</div>
