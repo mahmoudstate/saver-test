@@ -1296,17 +1296,18 @@ function Dashboard({txns,txnsAll,bills,installments=[],budgets,banks,groups,expC
           <div style={{marginBottom:20}}>
             <SortableList grid items={banks} onReorder={onBanks} renderItem={(b)=>{
               const bal=bankBalance(b.id),safe=safeToSpend(b.id),frozen=frozenForBank(b.id),hasFrozen=frozen>0;
-              return <Card onClick={()=>onOpenBank(b)} className="ic" style={{padding:"14px 14px 12px",cursor:"pointer",transition:"transform 0.1s ease",height:"100%",boxSizing:"border-box"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasFrozen?4:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}><BankIcon bank={b} size={22}/><span style={{color:C.muted,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name}</span></div>
+              const amtCol=safe<0?C.red:(b.lowBalanceThreshold&&safe<=b.lowBalanceThreshold?C.yellow:C.text);
+              return <Card onClick={()=>onOpenBank(b)} className="ic" style={{padding:"14px 14px 16px",cursor:"pointer",transition:"transform 0.1s ease",height:"100%",boxSizing:"border-box",position:"relative",overflow:"hidden"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <BankIcon bank={b} size={34}/>
+                  <span style={{flex:1,minWidth:0,color:C.text,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name}</span>
                   {b.lowBalanceThreshold&&safe<=b.lowBalanceThreshold&&safe>=0&&<Ico name="down" size={13} color={C.yellow} stroke={2.6}/>}
-                  {safe<0&&<span style={{width:9,height:9,borderRadius:99,background:C.red,display:"inline-block"}}/>}
+                  {safe<0&&<span style={{width:9,height:9,borderRadius:99,background:C.red,display:"inline-block",flexShrink:0}}/>}
                 </div>
-                <div style={{color:safe<0?C.red:b.lowBalanceThreshold&&safe<=b.lowBalanceThreshold?C.yellow:C.text,fontSize:17,fontWeight:800}}>{hideTotal?"••••":fmt(safe)}</div>
-                {hasFrozen&&!hideTotal&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:5}}>
-                  <span style={{color:C.muted,fontSize:11}}>{fmt(frozen)}</span>
-                  <div style={{display:"flex",alignItems:"center",gap:3}}><Ico name="lock" size={11} color={C.muted}/><span style={{color:C.muted,fontSize:10,fontWeight:600}}>Saving</span></div>
-                </div>}
+                <div style={{color:C.muted,fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Available</div>
+                <div style={{color:amtCol,fontSize:18,fontWeight:800,letterSpacing:-0.3}}>{hideTotal?"••••":fmt(safe)}</div>
+                {hasFrozen&&!hideTotal&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:6}}><Ico name="lock" size={11} color={C.muted}/><span style={{color:C.muted,fontSize:10,fontWeight:600}}>{fmt(frozen)} saving</span></div>}
+                <div style={{position:"absolute",left:0,right:0,bottom:0,height:3,background:b.color||C.accent}}/>
               </Card>;
             }}/>
           </div>
