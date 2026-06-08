@@ -42,6 +42,7 @@ const CURRENCIES = [
   {code:"USD",name:"US Dollar",flag:"🇺🇸"},{code:"EUR",name:"Euro",flag:"🇪🇺"},
   {code:"SAR",name:"Saudi Riyal",flag:"🇸🇦"},{code:"AED",name:"UAE Dirham",flag:"🇦🇪"},
 ];
+const APP_VERSION="2.3";
 let _currency = "EGP";
 const setCurrencyGlobal = (c) => { _currency = c; };
 const fmt = (n, ov) => {
@@ -268,6 +269,8 @@ const CAT_GLYPHS_INC=["wallet","wallet-cards","banknote","coins","piggy-bank","t
 const CAT_GLYPHS_GROUP=["folder","folders","folder-open","layers","layout-grid","layout-dashboard","grid-2x2","boxes","box","package","archive","tags","tag","bookmark","list","square-stack","blocks","component","shapes","target","chart-pie","gem","wallet","repeat","calendar","lock","shield","sparkles","trending-up","house","sprout","flag","container"];
 // Rich set for Budgets & Goals (organizational + every expense/income glyph)
 const CAT_GLYPHS_ALL=[...new Set(["layers","wallet","target","piggy-bank","shapes","folder",...CAT_GLYPHS_EXP,...CAT_GLYPHS_INC])];
+// Legacy emoji-icon key -> drawn glyph (migrates old saved categories/banks to drawn icons)
+const ICON_TO_GLYPH={food:"utensils",coffee:"coffee",transport:"car",bills:"zap",personal:"user",health:"heart-pulse",entertainment:"clapperboard",shopping:"shopping-bag",rent:"house",education:"graduation-cap",tech:"laptop",others:"shapes",parking:"square-parking",fuel:"fuel",car_repair:"wrench",takeaway:"pizza",barber:"scissors",pets:"paw-print",travel:"plane",gaming:"gamepad-2",pharmacy:"pill",laundry:"washing-machine",tuition:"book-open",gym:"dumbbell",salary:"briefcase",freelance:"lightbulb",gift:"gift",investment:"trending-up",other_income:"wallet",goal:"target",saving:"target",bank:"landmark",cash:"banknote",installment:"wallet-cards",type_streaming:"clapperboard",type_software:"laptop",type_telecom:"wifi",type_shopping:"shopping-bag",type_utilities:"zap",type_other:"receipt"};
 const BANK_GLYPHS=["landmark","wallet","wallet-cards","banknote","coins","piggy-bank","vault","dollar-sign","circle-dollar-sign","badge-dollar-sign","building","building-2","globe","smartphone","briefcase","bitcoin"];
 // Offline bank "logos": brand color + monogram (no network, no licensed assets). Add more in updates.
 const BANK_PRESETS=[
@@ -326,11 +329,15 @@ function CatIcon({ cat, glyph, emoji, icon, color, name, size = 36, style = {} }
   const tile = color ?? cat?.color ?? hashColor(cat?.id || nm);
   const fg = _lum(tile) > 0.7 ? "#111" : "#fff";
   const radius = size * 0.28;
+  // Legacy icon key -> drawn glyph fallback (so old saved categories/transactions render drawn, not emoji)
+  const lg = (!g && !e && ik && ICON_TO_GLYPH[ik] && CAT_GLYPHS[ICON_TO_GLYPH[ik]]) ? ICON_TO_GLYPH[ik] : null;
   let inner;
   if (g && CAT_GLYPHS[g]) {
     inner = <svg viewBox="0 0 24 24" width={size*0.56} height={size*0.56} fill="none" stroke={fg} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:CAT_GLYPHS[g]}}/>;
   } else if (e) {
     inner = <span style={{ fontSize:size*0.5, lineHeight:1 }}>{e}</span>;
+  } else if (lg) {
+    inner = <svg viewBox="0 0 24 24" width={size*0.56} height={size*0.56} fill="none" stroke={fg} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:CAT_GLYPHS[lg]}}/>;
   } else if (ik && ICONS[ik]) {
     inner = <span style={{ fontSize:size*0.5, lineHeight:1 }}>{ICONS[ik]}</span>;
   } else {
@@ -741,6 +748,8 @@ function SaverApp(){
   const[ledgerSaving,setLedgerSaving]=useState(null);
   const[ledgerBudget,setLedgerBudget]=useState(null);
   const[goalToast,setGoalToast]=useState(null);
+  const[showWhatsNew,setShowWhatsNew]=useState(false);
+  const[appTour,setAppTour]=useState(false);
   const[monthlyTab,setMonthlyTab]=useState("subscriptions");
   const[coachTour,setCoachTour]=useState(false);
   const[pendingCurrency,setPendingCurrency]=useState(null);
@@ -757,7 +766,9 @@ function SaverApp(){
         load(KEYS.theme,"dark"),load(KEYS.installments,[]),
       ]);
       const _dmap=Object.fromEntries([...DEFAULT_EXP_CATS,...DEFAULT_INC_CATS].map(c=>[c.id,{glyph:c.glyph,color:c.color}]));
-      const _migCats=(arr)=>arr.map(c=>(!c.glyph&&!c.emoji&&_dmap[c.id])?{...c,glyph:_dmap[c.id].glyph,color:c.color||_dmap[c.id].color}:c);
+      const _migCats=(arr)=>arr.map(c=>{if(c.glyph||c.emoji)return c;const g=ICON_TO_GLYPH[c.icon]||(_dmap[c.id]&&_dmap[c.id].glyph);if(!g)return c;return {...c,glyph:g,color:c.color||(_dmap[c.id]&&_dmap[c.id].color)};});
+      const _bpExact=(nm)=>{const n=(nm||"").trim().toLowerCase();return BANK_PRESETS.find(p=>p.name.toLowerCase()===n);};
+      const _migBanks=(arr)=>arr.map(bk=>{if(bk.glyph||bk.brand)return bk;const p=_bpExact(bk.name);return p?{...bk,brand:p.brand,glyph:p.glyph||"landmark",color:bk.color||p.color}:bk;});
       // Merge legacy spending Groups into Budgets (as limit-less budgets), then retire Groups
       let _budgets=bdg,_groups=g;
       if(g&&g.length>0){
@@ -766,9 +777,10 @@ function SaverApp(){
         _budgets=[...bdg,...fromGroups];_groups=[];
         save(KEYS.budgets,_budgets);save(KEYS.groups,[]);
       }
-      setTxns(t);setBanks(b);setExpCats(_migCats(ec));setIncCats(_migCats(ic));setGroups(_groups);setSavings(s);
+      setTxns(t);setBanks(_migBanks(b));setExpCats(_migCats(ec));setIncCats(_migCats(ic));setGroups(_groups);setSavings(s);
       setCurrencyState(cur);setCurrencyGlobal(cur);setUsernameState(uname);setBills(bl);setBudgets(_budgets);setLastBackup(lb);
       setQuickActions(qa);setHasSeenWelcome(seen);setThemeState(th);setCGlobal(th);IS=getIS();
+      {const _sv=await load("et_app_version",null);if(seen&&_sv!==APP_VERSION)setShowWhatsNew(true);else if(!seen)save("et_app_version",APP_VERSION);}
       setInstallments(inst);
       const localCurMonth=currentMonth();
       setFilterMonth(localCurMonth);
@@ -915,7 +927,7 @@ function SaverApp(){
     }catch{HAPTICS.warning();setAppAlert({title:"Restore Failed",message:"Invalid or corrupted backup file.",color:C.red});}
   };
 
-  const completeWelcome=()=>{save(KEYS.seenWelcome,true);setHasSeenWelcome(true);};
+  const completeWelcome=()=>{save(KEYS.seenWelcome,true);save("et_app_version",APP_VERSION);setHasSeenWelcome(true);};
 
   if(showSplash)return <SplashScreen/>;
   if(!hasSeenWelcome){
@@ -962,6 +974,8 @@ function SaverApp(){
         </>
       )}
       {coachTour&&tab==="dashboard"&&!isSubPageActive&&<CoachTour onClose={()=>setCoachTour(false)}/>}
+      {appTour&&<StoryTour onClose={()=>setAppTour(false)}/>}
+      {showWhatsNew&&!appTour&&<WhatsNewModal onClose={()=>{setShowWhatsNew(false);save("et_app_version",APP_VERSION);}} onTour={()=>{setShowWhatsNew(false);save("et_app_version",APP_VERSION);setAppTour(true);}}/>}
       {appAlert&&<AlertModal title={appAlert.title} message={appAlert.message} btnColor={appAlert.color} onClose={()=>setAppAlert(null)}/>}
       {pendingCurrency&&<ConfirmModal title="Change Currency?" message={`Switching from ${currency} to ${pendingCurrency} only changes how amounts are displayed. Your actual numbers will NOT be converted.\n\nContinue?`} confirmColor={C.blue} onClose={()=>setPendingCurrency(null)} onConfirm={confirmCurrencyChange}/>}
     </div>
@@ -2924,6 +2938,26 @@ function Settings({banks,expCats,incCats,groups,onBanks,onExpCats,onIncCats,onGr
     {confirmDel&&<ConfirmModal title="Delete?" message="This action cannot be undone." onClose={()=>setConfirmDel(null)} onConfirm={doDelete}/>}
     {showRestoreConfirm&&<ConfirmModal title="Restore Backup?" message="This will overwrite ALL your current data with the backup file.\n\nThis cannot be undone. Are you sure?" confirmColor={C.purple} onClose={()=>{setShowRestoreConfirm(false);setPendingRestore(null);}} onConfirm={async()=>{setShowRestoreConfirm(false);await onRestore(pendingRestore);setPendingRestore(null);}}/>}
   </div>;
+}
+
+function WhatsNewModal({onClose,onTour}){
+  const items=[
+    {icon:"wallet",color:C.accent,t:"Smarter home screen",d:"Net saved this month, plus consolidated Bills, Installments & Budget cards."},
+    {icon:"layers",color:C.purple,t:"Budget Report",d:"Visual reports — usage ring, 6-month trend, and per-budget insights. Limits are now optional."},
+    {icon:"bank",color:C.blue,t:"Logos & drawn icons",d:"Hand-drawn icons across the app, offline bank logos, and currency flags."},
+    {icon:"book",color:C.yellow,t:"Help & 60-second tour",d:"A quick visual guide covering every feature."},
+  ];
+  return <Modal title="What's New" onClose={onClose} center={false}>
+    <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.accentDim,color:C.accent,borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:800,marginBottom:14}}><Ico name="sparkles" size={13} color={C.accent}/>Version 2.3</div>
+    <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:18}}>
+      {items.map((it,i)=><div key={i} style={{display:"flex",alignItems:"flex-start",gap:12}}>
+        <div style={{width:38,height:38,borderRadius:11,background:it.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ico name={it.icon} size={19} color={it.color}/></div>
+        <div><div style={{color:C.text,fontWeight:700,fontSize:14}}>{it.t}</div><div style={{color:C.muted,fontSize:12.5,lineHeight:1.5,marginTop:2}}>{it.d}</div></div>
+      </div>)}
+    </div>
+    <Btn full onClick={onTour}><span style={{display:"inline-flex",alignItems:"center",gap:8}}><Ico name="play" size={16} color="#111"/>Take the 60-second tour</span></Btn>
+    <button onClick={onClose} style={{width:"100%",background:"transparent",border:"none",color:C.muted,fontSize:14,fontWeight:700,cursor:"pointer",padding:"12px 0 2px",fontFamily:"'DM Sans', sans-serif"}}>Got it</button>
+  </Modal>;
 }
 
 function StoryTour({onClose}){
