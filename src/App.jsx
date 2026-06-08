@@ -902,7 +902,7 @@ function SaverApp(){
           {tab==="add"&&<AddTransaction banks={banks} expCats={expCats} incCats={incCats} savings={activeSavings} currency={currency} onAdd={addTxn} onDone={()=>navigateTo("dashboard")} {...sharedProps} setAppAlert={setAppAlert} onGoalToast={setGoalToast} txns={txns}/>}
           {tab==="savings"&&<SavingsPage savings={savings} onSave={saveSavings} txns={txns} banks={banks} onBack={()=>navigateTo("settings")} addTxn={addTxn} delTxn={delTxn} onGoalToast={setGoalToast} {...sharedProps} setAppAlert={setAppAlert} onOpenSaving={(s)=>{setScrollState({y:window.scrollY,restore:true});setLedgerSaving(s);}}/>}
           {tab==="history"&&<History txns={txns} onDelete={delTxn} onUpdate={updateTxn} banks={banks} expCats={expCats} incCats={incCats} currency={currency} availMonths={availMonths} savings={savings} setAppAlert={setAppAlert}/>}
-          {tab==="budgets"&&<BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>navigateTo("settings")} currency={currency} txns={txns}/>}
+          {tab==="budgets"&&<BudgetsPage budgets={budgets} expCats={expCats} onSave={saveBudgets} onBack={()=>navigateTo("settings")} currency={currency} txns={txns} onOpenBudget={(b,m)=>{if(m&&m!=="all")setFilterMonth(m);else setFilterMonth(currentMonth());setScrollState({y:window.scrollY,restore:true});setLedgerBudget(b);}}/>}
           {tab==="quickactions"&&<QuickActionsSetup quickActions={quickActions} expCats={expCats} banks={banks} onSave={saveQuickActions} onBack={()=>navigateTo("settings")}/>}
           {tab==="manual"&&<UserManual onBack={()=>navigateTo("settings")} navigateTo={navigateTo} onCoach={startCoach}/>}
           {tab==="monthly"&&<MonthlyBillsPage bills={bills} installments={installments} initialTab={monthlyTab} onSaveBills={saveBills} onSaveInstallments={saveInstallments} banks={banks} expCats={expCats} onAddTxn={addTxn} delTxn={delTxn} currency={currency} setAppAlert={setAppAlert}/>}
@@ -1762,7 +1762,7 @@ function Sparkbars({data,color,height=40}){
   </div>;
 }
 
-function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
+function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[],onOpenBudget}){
   useEffect(()=>{window.scrollTo(0,0);},[]);
   const getLocalMonth=()=>{const d=new Date();const offset=d.getTimezoneOffset()*60000;return new Date(d.getTime()-offset).toISOString().slice(0,7);};
   const curMonth=getLocalMonth();
@@ -1858,7 +1858,7 @@ function BudgetsPage({budgets,expCats,onSave,onBack,currency,txns=[]}){
         <SortableList items={displayBudgets} onReorder={onSave} renderItem={(bdg)=>{
           const st=statB(bdg);
           return <SwipeRow key={bdg.id} onEdit={()=>startEdit(bdg)} onDelete={()=>setConfirmId(bdg.id)}>
-            <div style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:14}}>
+            <div onClick={()=>onOpenBudget&&onOpenBudget(bdg,filterMonth)} className="ic" style={{padding:"16px",background:C.card,border:`1px solid ${C.border}`,borderRadius:14,cursor:"pointer",transition:"transform 0.1s ease"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                 <CatIcon glyph={bdg.glyph} color={bdg.color} name={bdg.name} size={34}/>
                 <div style={{flex:1,minWidth:0}}><div style={{color:C.text,fontSize:15,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{bdg.name}</div><div style={{color:C.muted,fontSize:10.5,fontWeight:600}}>{isAll?"average / month":isCurrent?"this month":mLabel(refMonth)}</div></div>
