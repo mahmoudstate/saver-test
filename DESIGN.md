@@ -1,7 +1,7 @@
 # Saver — Design System (`DESIGN.md`)
 
 The single source of truth for Saver's visual identity, rules and components.
-Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–2 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
+Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–3 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
 
 > Arabic note (ملاحظة): الوثيقة دي هي الدستور. كل شاشة/مكوّن لازم يتبع القواعد دي. القرارات اللي محتاجة
 > اختيارك مكتوبة في آخر كل قسم تحت **"Decision needed"**.
@@ -277,6 +277,98 @@ list reorder = move · progress bar / ring / sparkbars = animate to value.
 
 **Accessibility:** honor `prefers-reduced-motion` → drop transforms, keep opacity only.
 
+# 9. Components
+
+The component library is the heart of "one language everywhere". **Global rules — every component:**
+1. consumes **tokens only** (no literal hex / magic numbers in screens);
+2. has defined **states**: default · pressed · disabled (+ focus on web/keyboard);
+3. has a **min 44×44** touch target;
+4. carries an **accessible label** (aria/role) and meaningful text;
+5. looks correct in **both themes** automatically.
+
+Spec template per component: **Purpose · Anatomy · Variants · States · Tokens · Rules.**
+
+### 9.1 Button
+- **Purpose:** commit an action.
+- **Anatomy:** [optional leading icon 16–18] + label (body-strong) centered.
+- **Variants:** `primary` (accent / hero-gradient fill, on-accent text) · `secondary` (surface-2 + border) · `ghost` (text only, muted) · `danger` (danger fill or danger-dim tint).
+- **Sizes:** `lg` 52h full-width · `md` 44h · `sm` 36h inline.
+- **States:** pressed = `scale(.97)` + 8% darken · disabled = faint @50%, no press · loading = spinner, hide label.
+- **Tokens:** `radius-md` (lg/md), `radius-pill` (FAB), `motion-micro`, `primary`, `on-accent`.
+- **Rules:** one `primary` per screen/region; labels are **verbs** ("Save Budget"); never two primaries side by side.
+
+### 9.2 FAB (＋)
+Circular `primary` button (`radius-pill`, 64), raised at bottom-center of the nav. Tap = Add; long-press = Quick Actions. Press = scale. Always thumb-reachable.
+
+### 9.3 Card
+- **Purpose:** group one idea.
+- **Anatomy:** `surface` container, `radius-lg`, padding `space-4`/`space-5`.
+- **Elevation:** light = `e1` shadow, **no border**; dark = 1px `border`, **no shadow**.
+- **Variants:** static · tappable (adds press scale + pointer) · accent-strip (3px brand color on bottom/left edge, e.g. account cards).
+- **Rules:** max 2 type sizes inside; lead with the key number.
+
+### 9.4 Pill / Badge
+Status chip: bg = `color`-dim, text = `color`, `radius-pill`, 11–12 / 700, padding `2 / 10`. Functional colors only. ≤ 2 words ("Paid", "Over", "No limit").
+
+### 9.5 Chip (selectable)
+Filter/选 chip: border default; active = `primaryDim` bg + `primary` text + `primary` border. `radius-pill`, 13/700. Used for recent-filter, type filters.
+
+### 9.6 Input (text / number)
+- **Anatomy:** [optional leading icon] + field; label = `overline` above; error/help = `caption` below.
+- **Style:** `surface-2`/`bg` fill, 1px `border`, `radius-md`, padding `12/14`, size 15.
+- **States:** focus = `primary` border · error = `danger` border + danger caption · disabled = faint.
+- **Rules:** number fields set `inputMode` (decimal for money, numeric for counts) → numeric keypad everywhere.
+
+### 9.7 PickerField (icon dropdown)
+Our **custom select** (replaces native `<select>` wherever icons matter — bank / category / goal). Field = Input look + selected option's **icon** + chevron. Tap opens a **Modal list**: each row = icon + label + check on the active one. Keeps the drawn-icon language inside dropdowns.
+
+### 9.8 Toggle / Switch
+Pill track 46×27; off = `border`/`faint`, on = `primary`; white knob slides (`motion-micro`). Label + sub-label on the left; whole row tappable.
+
+### 9.9 SegmentedTabs
+`surface-2` pill container with a sliding active segment (`primaryDim` bg + `primary` text). 2–3 equal segments. Use for Subscriptions/Installments, Overview/Trends/Details. (Not for >3 items → use scrollable tabs.)
+
+### 9.10 ListRow
+- **Anatomy:** leading icon tile (CatIcon/BankIcon 22–34) + title (`body-strong`) + optional subtitle (`caption` muted) + trailing (amount / chevron / toggle). Min height 56.
+- **Interactions:** tap = open · swipe-left = Edit / Delete (`SwipeRow`) · long-press = drag-reorder (in sortable lists).
+- **Grouped variant:** white rounded group with hairline dividers (Settings style).
+
+### 9.11 SectionHeader (overline)
+`overline` token (11/700/UPPERCASE/+1, `muted`), margin-bottom 10. Optional trailing action (MonthSelect, "Customize").
+
+### 9.12 Modal / Sheet
+Bottom-anchored sheet (center optional). `surface`, top corners `radius-xl`, `e3`, max-width 520. Title (`title-3`) + close (X) top-right. Scrim `rgba(0,0,0,.6)`. Enter = scale+fade (`motion-enter`). **FullPage** variant = full-screen step flow (Add, detail pages) — slide-X + fade.
+
+### 9.13 EmptyState
+Centered: drawn glyph (40, `faint`) + message (`body` muted) + optional CTA button. Padding `space-10`. Copy is friendly and tells the next step ("Create a budget to start tracking").
+
+### 9.14 Toast / Banner
+- **Toast (celebration):** centered card — icon tile + message + "Keep Going!"; auto-dismiss ~4s (goal milestones).
+- **Banner (reminder):** top inline strip, tinted (`warning`-dim), icon + text + actions + dismiss **X** (e.g., backup reminder; snooze respected).
+
+### 9.15 ProgressBar
+Track = `border`; fill = role color; `radius-pill`; height 7–8; animate width (`motion-base`). `allowOver` clamps the fill visually at 100%.
+
+### 9.16 Ring (donut)
+SVG circle, stroke 12, track = `border`, value = `primary`/functional, center = main value + sub label. Animate dash-offset (`motion-emphasis`). Used in Budget Report hero.
+
+### 9.17 Sparkbars
+Mini bar series, max-normalized; **last bar emphasized** (full color), others at 40% alpha; height 30–48. Used for 6-month trends (overall + per-budget). Month initials under, faint.
+
+### 9.18 SegmentedProgress (status strip)
+Row of equal segments (gap 3, height 8): each colored by item status — paid = `success`, unpaid/due = `faint`, overdue = `danger`. Used on Bills & Installments cards.
+
+### 9.19 BottomNav
+Floating rounded bar (`surface` + `e2`/border), 4 items (drawn icon + label; active = `primary`) with the raised center **FAB**. Respects bottom safe-area. Home tap restores previous scroll (then top).
+
+### 9.20 Gradient Hero
+Top header panel: **hero gradient** (accent, or context-tinted), rounded bottom (`radius-xl`), holding screen title + key stat(s) + (optional) SegmentedTabs. Nested stats sit on a **translucent overlay** panel. All text uses `on-accent` / verified high contrast.
+
+### 9.21 Icon tiles (Avatar)
+`CatIcon` (glyph on colored tile) · `BankIcon` (brand monogram / glyph) · `ServiceLogo` (bundled brand). Sizes 22–44 per context. See §7.
+
+### 9.22 Stat / KPI
+Label (`overline`/`caption` muted) + value (`title-2`/`display`, tabular) + optional **delta** (`success`/`danger` + up/down arrow + "vs last month"). Used in Overview & Budget Report.
+
 ## Next
-**Part 3** — Components library (Button, Card, Pill, Input, Picker, Toggle, SegmentedTabs, ListRow,
-SectionHeader, Modal/Sheet, EmptyState, Toast, ProgressBar, Ring, Sparkbars, BottomNav, Gradient-Hero).
+**Part 4** — Patterns (full-screen flows, empty states, money/date, status, onboarding) + Content & Voice (microcopy guide).

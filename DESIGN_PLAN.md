@@ -47,7 +47,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
       Color system (Light/Dark neutrals + functional + gradients + user accent) · Typography.
 - [~] **Part 2 — Structure** (DRAFTED in DESIGN.md §5–8): Spacing & Layout (4/8 grid, safe areas) · Shape & Elevation
       (radius, shadows/borders) · Iconography spec · Motion (durations/easings).
-- [ ] **Part 3 — Components**: full library — Button, Card, Pill/Badge, Input, Picker/Select,
+- [~] **Part 3 — Components** (DRAFTED in DESIGN.md §9): full library — Button, Card, Pill/Badge, Input, Picker/Select,
       Toggle, SegmentedTabs, ListRow, SectionHeader, Modal/Sheet, EmptyState, Toast,
       ProgressBar, Ring, Sparkbars, BottomNav, Gradient-Hero (anatomy/variants/states/tokens).
 - [ ] **Part 4 — Patterns + Content/Voice**: full-screen flows, empty states, confirmations,
@@ -59,6 +59,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
       (Dashboard → Add → Bills → Budgets → Savings → History → Settings → Welcome/Help).
 
 ## 4) Status log
+- **2026-06-09** — Part 3 (§9 Components library, 22 components) written.
 - **2026-06-09** — Plan created; layout fully open, only calc+concept+data preserved.
 - **2026-06-09** — Decisions: logo **A (Growth S)**, accent **Mint**, primary **DM Sans**; Arabic = 3 options to pick. Part 2 (§5–8 Spacing/Shape/Icon/Motion) written.
 - **2026-06-09** — DESIGN.md created with **Part 1** (Philosophy, Brand/logo directions, Color
