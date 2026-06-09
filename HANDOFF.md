@@ -21,7 +21,7 @@ rebuild** of the UI. The **written foundation is complete** (Parts 1–7).
 ## Locked design decisions
 - Logo: **Direction A — "Growth S"** lettermark.
 - Accent: **Mint** default, **user-selectable** (6 presets in `tokens.js`).
-- Fonts: **DM Sans** (Latin). Arabic = pick 1 of 3 (Tajawal / IBM Plex Sans Arabic / Cairo) — **pending**.
+- Fonts: **DM Sans** (Latin) · **IBM Plex Sans Arabic** (Arabic).
 - Density: comfortable/spacious. Premium light mode (tuned, not inverted). One unified language.
 
 ## The artifacts (source of truth)
@@ -41,7 +41,7 @@ rebuild** of the UI. The **written foundation is complete** (Parts 1–7).
 - **Part 8:** apply the design system to the app **screen by screen** in `saver-test/src/App.jsx`
   (Dashboard → Add → Bills → Budgets → Savings → History → Settings → Welcome/Help), using only
   tokens + components, **without touching calculations**. Build after each screen.
-- Also: finalize the Arabic font choice.
+- (Arabic font finalized: IBM Plex Sans Arabic.)
 
 ## How to resume
 Open `DESIGN_PLAN.md` → continue from the first unchecked Part. Don't re-derive locked decisions.

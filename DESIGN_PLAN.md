@@ -43,7 +43,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
   GitHub Pages project / identity page.
 
 ## 3) Parts (split for multi-session continuity)
-- [x] **Part 1 — Foundations** (logo A · accent Mint · DM Sans; Arabic font pick pending) (DRAFTED in DESIGN.md — awaiting logo + accent + font decisions): Philosophy · Brand (logo/name/app-icon directions + options) ·
+- [x] **Part 1 — Foundations** (logo A · accent Mint · DM Sans · Arabic IBM Plex Sans Arabic) (DRAFTED in DESIGN.md — awaiting logo + accent + font decisions): Philosophy · Brand (logo/name/app-icon directions + options) ·
       Color system (Light/Dark neutrals + functional + gradients + user accent) · Typography.
 - [~] **Part 2 — Structure** (DRAFTED in DESIGN.md §5–8): Spacing & Layout (4/8 grid, safe areas) · Shape & Elevation
       (radius, shadows/borders) · Iconography spec · Motion (durations/easings).
@@ -59,6 +59,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
       (Dashboard → Add → Bills → Budgets → Savings → History → Settings → Welcome/Help).
 
 ## 4) Status log
+- **2026-06-09** — Arabic font chosen: **IBM Plex Sans Arabic**; tokens.js font block added. All foundation decisions locked.
 - **2026-06-09** — Part 7 built: `tokens.js` (canonical) + `saver-styleguide.html` (standalone, self-contained living styleguide & identity page: theme toggle, 6 accent presets, palette/type/spacing/radius/icons/components, device mockup, scroll-reveal + ring/sparkbar/count-up animations, reduced-motion safe). Ready to host as its own GitHub Pages project.
 - **2026-06-09** — Part 6 (§16 Brand kit, §17 master Tokens JSON [source of truth], §18 Roadmap/Story) written. Written constitution complete; next = styleguide.html + tokens.js.
 - **2026-06-09** — Part 5 (§12 i18n/RTL, §13 A11y, §14 Native, §15 Theming) written.

@@ -20,6 +20,7 @@ export const TOKENS = {
   },
   space:  { 1:4, 2:8, 3:12, 4:16, 5:20, 6:24, 8:32, 10:40, 12:48 },
   radius: { sm:10, md:14, lg:16, xl:20, pill:999 },
+  font:   { latin:"DM Sans", arabic:"IBM Plex Sans Arabic", numerals:"tabular" },
   type: {
     display:{size:34,line:40,weight:800,track:-1}, title1:{size:28,line:34,weight:800,track:-0.5},
     title2:{size:22,line:28,weight:800,track:-0.5}, title3:{size:18,line:24,weight:700,track:-0.3},

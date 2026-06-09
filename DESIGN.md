@@ -187,15 +187,8 @@ One modular scale. Hierarchy = **size + weight + color** (never size alone).
 - Long text wraps; single-line labels truncate with ellipsis. Plan for **+30% length** (DE/FR) and
   **RTL** mirroring (Arabic) — handled via logical CSS in Part 5.
 
-> ✅ **LOCKED (4.1): primary = DM Sans** with tabular numerals.
->
-> **Arabic font — pick one of these 3 later (هتختار بينهم):**
->
-> | Option | Character | Pairs with DM Sans |
-> |---|---|---|
-> | **A. Tajawal** | geometric, clean, modern | excellent (similar geometry) |
-> | **B. IBM Plex Sans Arabic** | humanist, professional, very legible | very good |
-> | **C. Cairo** | geometric, friendly, widely used | good |
+> ✅ **LOCKED (4.1): primary = DM Sans** (tabular numerals) · **Arabic = IBM Plex Sans Arabic**
+> (humanist, professional, high legibility — pairs well with DM Sans).
 
 ---
 
@@ -567,7 +560,7 @@ One identity feeds the **app, the styleguide and the website**.
   },
   "font": {
     "latin": "DM Sans",
-    "arabic": "TBD (Tajawal | IBM Plex Sans Arabic | Cairo)",
+    "arabic": "IBM Plex Sans Arabic",
     "numerals": "tabular"
   },
   "type": {
