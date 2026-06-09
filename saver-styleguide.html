@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Saver — Design System</title>
+<meta name="description" content="Saver — a calm, private, offline money tracker. Design system & identity."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+:root[data-theme="dark"]{--bg:#0F0F13;--surface:#16161E;--surface2:#1E1E28;--border:#2A2A38;--text:#E8E8F0;--muted:#8A8AA6;--faint:#54546A;--success:#34D399;--warning:#FBBF24;--danger:#F87171;--info:#60A5FA;--cardShadow:none;--cardBorder:1px solid var(--border);--heroText:#06251F;}
+:root[data-theme="light"]{--bg:#F4F5F8;--surface:#FFFFFF;--surface2:#FBFBFD;--border:#E6E7EE;--text:#16161D;--muted:#6B6F7E;--faint:#A2A6B4;--success:#0F9D6A;--warning:#D98A00;--danger:#E5484D;--info:#2563EB;--cardShadow:0 6px 18px rgba(20,22,40,.08);--cardBorder:1px solid transparent;--heroText:#FFFFFF;}
+:root{--accent:#5FE3C0;--accent-soft:#8ff0d8;--onacc:#06251F;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;line-height:1.5;transition:background-color .45s ease,color .45s ease;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum";}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit}
+/* top bar */
+.topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);transition:background-color .45s,border-color .45s}
+.topbar .row{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.5px;font-size:18px}
+.logoTile{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-soft));display:flex;align-items:center;justify-content:center;color:var(--onacc);font-weight:800;font-size:20px;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 40%,transparent);position:relative;overflow:hidden}
+.logoTile svg{position:absolute;right:4px;top:5px;opacity:.9}
+.controls{display:flex;align-items:center;gap:14px}
+.dots{display:flex;gap:7px}
+.dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s}
+.dot:hover{transform:scale(1.12)}
+.dot[aria-current="true"]{border-color:var(--text)}
+.tgl{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:12px;color:var(--muted)}
+/* hero */
+.hero{padding:72px 0 40px;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+@media(max-width:860px){.hero{grid-template-columns:1fr;padding:48px 0 24px}}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}
+.h1{font-size:52px;line-height:1.05;font-weight:800;letter-spacing:-1.5px;margin:14px 0 16px}
+@media(max-width:860px){.h1{font-size:38px}}
+.lead{font-size:18px;color:var(--muted);max-width:520px}
+.pills{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}
+.pill{display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:700}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.btn{font-family:inherit;border:none;cursor:pointer;border-radius:14px;font-weight:800;font-size:15px;padding:14px 22px;transition:transform .14s ease,filter .2s,background .3s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-soft));color:var(--onacc);box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 35%,transparent)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:9px 14px;font-size:13px;border-radius:12px}
+/* device mock */
+.device{justify-self:center;width:300px;height:610px;border-radius:46px;background:var(--surface);border:1px solid var(--border);box-shadow:0 40px 80px rgba(0,0,0,.45),0 10px 30px rgba(0,0,0,.25);padding:12px;position:relative;transition:background .45s,border-color .45s}
+.notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:var(--bg);border-radius:0 0 16px 16px;z-index:5}
+.screen{width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--bg);position:relative}
+.dhero{padding:30px 18px 20px;background:linear-gradient(160deg,var(--accent),color-mix(in srgb,var(--accent) 30%,var(--bg)));color:var(--heroText)}
+.dhero .lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.8}
+.dhero .amt{font-size:34px;font-weight:800;letter-spacing:-1px;margin-top:4px}
+.dhero .sub{display:flex;gap:14px;margin-top:10px;font-size:11px;opacity:.92}
+.dbody{padding:14px}
+.drow{display:flex;align-items:center;gap:10px;background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:14px;padding:10px 12px;margin-bottom:9px}
+.tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.drow .nm{font-weight:700;font-size:13px}
+.drow .mt{color:var(--muted);font-size:10px}
+.drow .rt{margin-left:auto;font-weight:800;font-size:13px}
+.dnav{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:18px;background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:999px;padding:10px 18px}
+.dnav span{color:var(--faint)}.dnav span.on{color:var(--accent)}
+/* sections */
+section{padding:46px 0;border-top:1px solid var(--border)}
+.sec-h{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.sec-t{font-size:30px;font-weight:800;letter-spacing:-1px;margin:8px 0 6px}
+.sec-d{color:var(--muted);max-width:640px;margin-bottom:26px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g6{grid-template-columns:repeat(6,1fr)}
+@media(max-width:760px){.g3,.g4,.g6{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:16px;padding:18px;transition:background .45s,border-color .45s,box-shadow .45s}
+/* swatches */
+.sw{border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+.sw .chip{height:74px}
+.sw .meta{padding:9px 11px;background:var(--surface);font-size:11px}
+.sw .meta b{display:block;font-size:12.5px}
+.sw .meta code{color:var(--muted);font-size:11px}
+/* type scale */
+.tline{display:flex;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px dashed var(--border)}
+.tline .k{width:90px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;flex-shrink:0}
+/* tokens chips */
+.tk{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px}
+.tk .box{background:color-mix(in srgb,var(--accent) 18%,transparent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+/* components */
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:700}
+.b-acc{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.b-su{background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)}
+.b-wa{background:color-mix(in srgb,var(--warning) 16%,transparent);color:var(--warning)}
+.b-da{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+.b-in{background:color-mix(in srgb,var(--info) 16%,transparent);color:var(--info)}
+.input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:15px;outline:none}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.switch{width:46px;height:27px;border-radius:999px;background:var(--accent);position:relative;cursor:pointer;border:none}
+.switch.off{background:var(--border)}
+.switch i{position:absolute;top:3px;left:22px;width:21px;height:21px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch.off i{left:3px}
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:4px;gap:4px}
+.seg button{border:none;background:transparent;color:var(--muted);font-family:inherit;font-weight:700;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer;transition:all .2s}
+.seg button.on{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.progress{height:8px;border-radius:999px;background:var(--border);overflow:hidden}
+.progress i{display:block;height:100%;border-radius:999px;background:var(--accent);width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.segp{display:flex;gap:3px;height:8px}
+.segp i{flex:1;border-radius:3px}
+.spark{display:flex;align-items:flex-end;gap:5px;height:54px}
+.spark i{flex:1;border-radius:4px;background:color-mix(in srgb,var(--accent) 40%,transparent);height:6px;transition:height .7s cubic-bezier(.2,.8,.2,1)}
+.spark i.last{background:var(--accent)}
+.icogrid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+@media(max-width:760px){.icogrid{grid-template-columns:repeat(5,1fr)}}
+.ico{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text)}
+.ring-wrap{display:flex;align-items:center;gap:18px}
+.ring{position:relative;width:120px;height:120px;flex-shrink:0}
+.ring .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .v b{font-size:26px;font-weight:800}
+.ring .v small{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-size:22px;font-weight:800;letter-spacing:-.5px}
+.kpi span{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.foot{padding:46px 0 70px;text-align:center;color:var(--muted);border-top:1px solid var(--border)}
+/* reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.2,.8,.2,1),transform .6s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.reveal{opacity:1;transform:none}*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap row">
+  <div class="brand"><span class="logoTile">S<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Saver</div>
+  <div class="controls">
+    <div class="dots" id="dots"></div>
+    <button class="tgl" id="themeBtn">◐ Theme</button>
+  </div>
+</div></div>
+
+<header class="wrap hero">
+  <div class="reveal in">
+    <div class="eyebrow">Saver · Design System v2.3</div>
+    <div class="h1">Money that's<br>clear, calm<br>& private.</div>
+    <p class="lead">A fully offline money tracker — beautiful in light and dark, friendly enough that anyone gets it in seconds. This is our visual identity & component system.</p>
+    <div class="pills">
+      <span class="pill">● 100% Offline</span>
+      <span class="pill">● No tracking</span>
+      <span class="pill">● Your color, your theme</span>
+    </div>
+    <div class="cta">
+      <button class="btn btn-primary">Get the app</button>
+      <button class="btn btn-ghost">View on GitHub</button>
+    </div>
+  </div>
+  <div class="reveal in">
+    <div class="device">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="dhero">
+          <div class="lbl">Total balance</div>
+          <div class="amt tnum">£<span data-count="2554">0</span></div>
+          <div class="sub"><span>Income £1,000</span><span>· Saved +£880</span></div>
+        </div>
+        <div class="dbody">
+          <div class="drow"><span class="tile" style="background:#fb923c"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg></span><div><div class="nm">Food &amp; Dining</div><div class="mt">Main · today</div></div><div class="rt" style="color:var(--danger)">−£100</div></div>
+          <div class="drow"><span class="tile" style="background:#34d399"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span><div><div class="nm">Salary</div><div class="mt">Main · Wed</div></div><div class="rt" style="color:var(--success)">+£1,000</div></div>
+          <div class="drow"><span class="tile" style="background:#60a5fa"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span><div><div class="nm">Utilities</div><div class="mt">Bill · paid</div></div><div class="rt" style="color:var(--danger)">−£10</div></div>
+        </div>
+        <div class="dnav"><span class="on">◆</span><span>≡</span><span>▤</span><span>◎</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="reveal"><div class="sec-h">Foundations · 01</div><div class="sec-t">Color</div>
+<p class="sec-d">Themes are <b>tuned, not inverted</b>. Neutrals carry the UI; functional colors signal status; one user-chosen accent adds identity. Try the swatches in the top bar — everything updates live.</p>
+<div class="sec-h" style="margin:6px 0 10px">Neutrals</div>
+<div class="grid g6" id="sw-neutral"></div>
+<div class="sec-h" style="margin:22px 0 10px">Functional</div>
+<div class="grid g4" id="sw-func"></div>
+<div class="sec-h" style="margin:22px 0 10px">Accent (current)</div>
+<div class="grid g4" id="sw-accent"></div>
+</section>
+
+<section class="reveal"><div class="sec-h">Foundations · 02</div><div class="sec-t">Typography</div>
+<p class="sec-d">DM Sans, one modular scale. Hierarchy = size + weight + color. Money uses tabular figures.</p>
+<div id="typescale"></div>
+</section>
+
+<section class="reveal"><div class="sec-h">Foundations · 03</div><div class="sec-t">Spacing, Radius & Motion</div>
+<p class="sec-d">A 4/8 grid for rhythm, a small radius scale, and consistent motion timings.</p>
+<div class="grid g3">
+  <div class="card"><div class="sec-h">Spacing (4/8)</div><div id="spaceRow" style="display:flex;align-items:flex-end;gap:8px;margin-top:14px;height:60px"></div></div>
+  <div class="card"><div class="sec-h">Radius</div><div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+    <div class="tk"><span class="box" style="width:34px;height:34px;border-radius:10px"></span>sm 10</div>
+    <div class="tk"><span class="box" style="width:34px;height:34px;border-radius:14px"></span>md 14</div>
+    <div class="tk"><span class="box" style="width:34px;height:34px;border-radius:16px"></span>lg 16</div>
+    <div class="tk"><span class="box" style="width:34px;height:34px;border-radius:20px"></span>xl 20</div>
+  </div></div>
+  <div class="card"><div class="sec-h">Motion</div><div style="margin-top:14px;font-size:13px;color:var(--muted);line-height:2">
+    micro 140 · base 220 · enter 300 · emphasis 460<br>ease <code>cubic-bezier(.2,.8,.2,1)</code></div></div>
+</div>
+</section>
+
+<section class="reveal"><div class="sec-h">Foundations · 04</div><div class="sec-t">Iconography</div>
+<p class="sec-d">One hand-drawn stroke set (24-grid, stroke 2, round caps). Never emoji in UI chrome.</p>
+<div class="icogrid" id="icogrid"></div>
+</section>
+
+<section class="reveal"><div class="sec-h">Components · 05</div><div class="sec-t">Buttons &amp; Pills</div>
+<div class="card">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
+    <button class="btn btn-primary">Primary</button>
+    <button class="btn btn-sec">Secondary</button>
+    <button class="btn btn-ghost">Ghost</button>
+    <button class="btn btn-danger">Delete</button>
+    <button class="btn btn-primary btn-sm">Small</button>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <span class="badge b-acc">Accent</span><span class="badge b-su">Paid</span>
+    <span class="badge b-wa">Due soon</span><span class="badge b-da">Over</span><span class="badge b-in">Transfer</span>
+  </div>
+</div>
+</section>
+
+<section class="reveal"><div class="sec-h">Components · 06</div><div class="sec-t">Inputs &amp; Controls</div>
+<div class="grid g2">
+  <div class="card"><div class="sec-h" style="margin-bottom:10px">Input · Toggle</div>
+    <input class="input" placeholder="Budget name…" style="margin-bottom:12px"/>
+    <div style="display:flex;align-items:center;justify-content:space-between"><div><b style="font-size:14px">Repeat every month</b><div style="color:var(--muted);font-size:12px">Active every month</div></div><button class="switch" onclick="this.classList.toggle('off')"><i></i></button></div>
+  </div>
+  <div class="card"><div class="sec-h" style="margin-bottom:10px">Segmented tabs</div>
+    <div class="seg"><button class="on">Overview</button><button>Trends</button><button>Details</button></div>
+    <div class="sec-h" style="margin:18px 0 10px">List row</div>
+    <div class="drow" style="margin:0"><span class="tile" style="background:var(--accent);color:var(--onacc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><div><div class="nm">Travel goal</div><div class="mt">40% · £2,000 / £5,000</div></div><div class="rt">›</div></div>
+  </div>
+</div>
+</section>
+
+<section class="reveal"><div class="sec-h">Components · 07</div><div class="sec-t">Data &amp; Charts</div>
+<div class="grid g3">
+  <div class="card"><div class="sec-h" style="margin-bottom:14px">Usage ring</div>
+    <div class="ring-wrap"><div class="ring"><svg width="120" height="120" style="transform:rotate(-90deg)"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12"/><circle id="ringC" cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)"/></svg><div class="v"><b class="tnum"><span data-count="64">0</span>%</b><small>used</small></div></div>
+    <div><div class="kpi"><b class="tnum">£120</b><span>spent</span></div></div></div>
+  </div>
+  <div class="card"><div class="sec-h" style="margin-bottom:14px">6-month trend</div>
+    <div class="spark" id="spark"></div>
+    <div style="display:flex;gap:5px;margin-top:6px;color:var(--faint);font-size:9px;font-weight:700">
+      <span style="flex:1;text-align:center">Jan</span><span style="flex:1;text-align:center">Feb</span><span style="flex:1;text-align:center">Mar</span><span style="flex:1;text-align:center">Apr</span><span style="flex:1;text-align:center">May</span><span style="flex:1;text-align:center">Jun</span></div>
+  </div>
+  <div class="card"><div class="sec-h" style="margin-bottom:14px">Progress &amp; status</div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:6px">Budget · 60%</div>
+    <div class="progress" data-w="60"><i></i></div>
+    <div style="color:var(--muted);font-size:12px;margin:16px 0 6px">Bills · 3/4 paid</div>
+    <div class="segp"><i style="background:var(--success)"></i><i style="background:var(--success)"></i><i style="background:var(--success)"></i><i style="background:var(--faint)"></i></div>
+    <div style="margin-top:16px;display:flex;gap:20px">
+      <div class="kpi"><b class="tnum" style="color:var(--success)">+£880</b><span>saved</span></div>
+      <div class="kpi"><b class="tnum">11%</b><span>budget used</span></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="reveal"><div class="sec-h">Components · 08</div><div class="sec-t">Gradient hero &amp; card</div>
+<div class="grid g2">
+  <div style="border-radius:20px;overflow:hidden;border:var(--cardBorder);box-shadow:var(--cardShadow)">
+    <div class="dhero" style="padding:24px"><div class="lbl">Monthly spending</div><div class="amt tnum">£240</div>
+      <div class="seg" style="margin-top:14px;background:rgba(255,255,255,.18);border:none"><button class="on" style="color:var(--heroText)">Subscriptions</button><button style="color:var(--heroText);opacity:.7">Installments</button></div></div>
+  </div>
+  <div class="card" style="border-left:4px solid var(--accent)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="tile" style="background:var(--info)">N</span><b>Netflix</b><span class="badge b-su" style="margin-left:auto">Paid</span></div>
+    <div style="color:var(--muted);font-size:13px">Monthly · next Jul 5</div>
+    <div style="font-size:22px;font-weight:800;margin-top:8px" class="tnum">£10</div>
+  </div>
+</div>
+</section>
+
+</main>
+
+<footer class="foot"><div class="wrap">
+  <div class="brand" style="justify-content:center;margin-bottom:10px"><span class="logoTile">S</span>Saver One V2.3</div>
+  <div style="font-size:13px">Calm · Clear · Private · Offline — built on one source of truth.</div>
+  <div style="font-size:11px;opacity:.7;margin-top:6px">Powered by Mahmoud © 2026</div>
+</div></footer>
+
+<script>
+const ACCENTS={mint:{dark:"#5FE3C0",light:"#0D9488",onDark:"#06251F",onLight:"#FFFFFF"},emerald:{dark:"#34D399",light:"#059669",onDark:"#04231A",onLight:"#FFFFFF"},blue:{dark:"#60A5FA",light:"#2563EB",onDark:"#04183A",onLight:"#FFFFFF"},violet:{dark:"#A78BFA",light:"#7C3AED",onDark:"#1A1040",onLight:"#FFFFFF"},coral:{dark:"#FB7185",light:"#E11D57",onDark:"#3A0512",onLight:"#FFFFFF"},amber:{dark:"#FBBF24",light:"#D97706",onDark:"#2A1A00",onLight:"#FFFFFF"}};
+let accent="mint";
+const root=document.documentElement;
+function lighten(hex,p){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;r=Math.round(r+(255-r)*p);g=Math.round(g+(255-g)*p);b=Math.round(b+(255-b)*p);return"#"+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+function applyAccent(){const t=root.getAttribute("data-theme");const a=ACCENTS[accent];const c=a[t];root.style.setProperty("--accent",c);root.style.setProperty("--accent-soft",lighten(c,.18));root.style.setProperty("--onacc",t==="dark"?a.onDark:a.onLight);root.style.setProperty("--heroText",t==="dark"?a.onDark:"#FFFFFF");}
+// theme
+document.getElementById("themeBtn").onclick=()=>{root.setAttribute("data-theme",root.getAttribute("data-theme")==="dark"?"light":"dark");applyAccent();};
+// accent dots
+const dots=document.getElementById("dots");Object.keys(ACCENTS).forEach(k=>{const d=document.createElement("button");d.className="dot";d.style.background=ACCENTS[k].dark;d.setAttribute("aria-current",k===accent);d.title=k;d.onclick=()=>{accent=k;applyAccent();[...dots.children].forEach(x=>x.setAttribute("aria-current",x.title===k));};dots.appendChild(d);});
+applyAccent();
+// swatches
+const N=[["bg","#0F0F13","#F4F5F8"],["surface","#16161E","#FFFFFF"],["surface2","#1E1E28","#FBFBFD"],["border","#2A2A38","#E6E7EE"],["text","#E8E8F0","#16161D"],["muted","#8A8AA6","#6B6F7E"]];
+const F=[["success","#34D399","#0F9D6A"],["warning","#FBBF24","#D98A00"],["danger","#F87171","#E5484D"],["info","#60A5FA","#2563EB"]];
+function swHTML(name){return `<div class="sw"><div class="chip" style="background:var(--${name})"></div><div class="meta"><b>${name}</b><code>var(--${name})</code></div></div>`;}
+document.getElementById("sw-neutral").innerHTML=N.map(x=>swHTML(x[0])).join("");
+document.getElementById("sw-func").innerHTML=F.map(x=>swHTML(x[0])).join("");
+document.getElementById("sw-accent").innerHTML=`
+<div class="sw"><div class="chip" style="background:var(--accent)"></div><div class="meta"><b>accent</b><code>user-selectable</code></div></div>
+<div class="sw"><div class="chip" style="background:linear-gradient(135deg,var(--accent),var(--accent-soft))"></div><div class="meta"><b>hero gradient</b><code>accent → soft</code></div></div>
+<div class="sw"><div class="chip" style="background:color-mix(in srgb,var(--accent) 16%,transparent)"></div><div class="meta"><b>accent-dim</b><code>tints</code></div></div>
+<div class="sw"><div class="chip" style="background:var(--accent-soft)"></div><div class="meta"><b>accent-soft</b><code>gradient end</code></div></div>`;
+// type scale
+const TS=[["display",34,800],["title-1",28,800],["title-2",22,800],["title-3",18,700],["body",15,500],["caption",12,500],["overline",11,700]];
+document.getElementById("typescale").innerHTML=TS.map(([k,s,w])=>`<div class="tline"><span class="k">${k}</span><span style="font-size:${s}px;font-weight:${w};letter-spacing:${s>20?-0.5:0}px;${k==='overline'?'text-transform:uppercase;letter-spacing:1px;color:var(--muted)':''}">Saver — clear money £1,234</span></div>`).join("");
+// spacing
+document.getElementById("spaceRow").innerHTML=[4,8,12,16,24,32].map(v=>`<div style="width:${v}px;height:${v}px;background:var(--accent);border-radius:3px" title="${v}"></div>`).join("");
+// icons
+const ICONS=['<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>','<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>','<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>','<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6"/>','<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>','<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>','<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>','<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>','<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>','<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>','<path d="M5 12h14"/><path d="M12 5v14"/>','<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>','<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>','<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>','<path d="M20 6 9 17l-5-5"/>','<polygon points="6 3 20 12 6 21 6 3"/>'];
+document.getElementById("icogrid").innerHTML=ICONS.map(p=>`<div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg></div>`).join("");
+// sparkbars
+const SP=[30,45,38,60,52,80];document.getElementById("spark").innerHTML=SP.map((v,i)=>`<i class="${i===SP.length-1?'last':''}" data-h="${v}"></i>`).join("");
+// reveal + animations
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function runAnims(){
+  const ring=document.getElementById("ringC");if(ring)ring.style.strokeDashoffset=(326.7*(1-0.64)).toFixed(1);
+  document.querySelectorAll(".spark i").forEach(i=>{i.style.height=Math.max(6,i.dataset.h*0.6)+"px";});
+  document.querySelectorAll(".progress").forEach(p=>{p.querySelector("i").style.width=p.dataset.w+"%";});
+  document.querySelectorAll("[data-count]").forEach(el=>{const t=+el.dataset.count;if(reduce){el.textContent=t.toLocaleString();return;}let s=null;const d=900;function step(ts){if(!s)s=ts;const k=Math.min(1,(ts-s)/d);el.textContent=Math.round(t*k).toLocaleString();if(k<1)requestAnimationFrame(step);}requestAnimationFrame(step);});
+}
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add("in");});},{threshold:.12});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+setTimeout(runAnims,400);
+</script>
+</body>
+</html>
