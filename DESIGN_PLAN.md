@@ -43,9 +43,9 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
   GitHub Pages project / identity page.
 
 ## 3) Parts (split for multi-session continuity)
-- [~] **Part 1 — Foundations** (DRAFTED in DESIGN.md — awaiting logo + accent + font decisions): Philosophy · Brand (logo/name/app-icon directions + options) ·
+- [x] **Part 1 — Foundations** (logo A · accent Mint · DM Sans; Arabic font pick pending) (DRAFTED in DESIGN.md — awaiting logo + accent + font decisions): Philosophy · Brand (logo/name/app-icon directions + options) ·
       Color system (Light/Dark neutrals + functional + gradients + user accent) · Typography.
-- [ ] **Part 2 — Structure**: Spacing & Layout (4/8 grid, safe areas) · Shape & Elevation
+- [~] **Part 2 — Structure** (DRAFTED in DESIGN.md §5–8): Spacing & Layout (4/8 grid, safe areas) · Shape & Elevation
       (radius, shadows/borders) · Iconography spec · Motion (durations/easings).
 - [ ] **Part 3 — Components**: full library — Button, Card, Pill/Badge, Input, Picker/Select,
       Toggle, SegmentedTabs, ListRow, SectionHeader, Modal/Sheet, EmptyState, Toast,
@@ -60,6 +60,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
 
 ## 4) Status log
 - **2026-06-09** — Plan created; layout fully open, only calc+concept+data preserved.
+- **2026-06-09** — Decisions: logo **A (Growth S)**, accent **Mint**, primary **DM Sans**; Arabic = 3 options to pick. Part 2 (§5–8 Spacing/Shape/Icon/Motion) written.
 - **2026-06-09** — DESIGN.md created with **Part 1** (Philosophy, Brand/logo directions, Color
   system Light/Dark + user accent, Typography). Awaiting user decisions: logo A/B/C, default
   accent (Mint), primary font (DM Sans) + Arabic font. Then start Part 2.

@@ -1,7 +1,7 @@
 # Saver — Design System (`DESIGN.md`)
 
 The single source of truth for Saver's visual identity, rules and components.
-Built in parts (see `DESIGN_PLAN.md`). Status: **Part 1 drafted — awaiting logo + accent decision.**
+Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–2 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
 
 > Arabic note (ملاحظة): الوثيقة دي هي الدستور. كل شاشة/مكوّن لازم يتبع القواعد دي. القرارات اللي محتاجة
 > اختيارك مكتوبة في آخر كل قسم تحت **"Decision needed"**.
@@ -74,8 +74,7 @@ work as a 1-color app icon, and scale to 16px):
 App icon: mark centered on a brand-color tile (accent) with a subtle top-down gradient; rounded
 iOS squircle. Clear-space = 12% of icon size. Provide light-tile and dark-tile variants.
 
-> **Decision needed (2.2):** pick logo direction **A / B / C** (or mix). I'll then produce the
-> final SVG mark + app-icon in the styleguide.
+> ✅ **LOCKED (2.2): Direction A — "Growth S".** Final SVG mark + app icon produced in the styleguide (Part 7).
 
 ## 2.3 Personality & voice (summary; full guide in Part 4)
 Warm, plain-spoken, encouraging, never preachy. Short sentences. Egyptian-friendly clarity in
@@ -153,8 +152,7 @@ Derived states (computed, not hand-picked):
 - ❌ Don't put two saturated accents side by side. ❌ Don't use pure black `#000` or pure white text
   on colored fills without checking contrast.
 
-> **Decision needed (3.3):** confirm **default accent = Mint** (or pick another), and confirm the
-> 6 presets list (add/remove any).
+> ✅ **LOCKED (3.3): default accent = Mint.** 6 presets confirmed (user-selectable).
 
 ---
 
@@ -165,8 +163,8 @@ Derived states (computed, not hand-picked):
   / 700 / 800.
 - **Numerals:** enable **tabular figures** for all money/amounts so columns align and digits don't
   jitter when values change.
-- **Arabic (future):** plan to pair with **IBM Plex Sans Arabic** *or* **Tajawal** (both sit well
-  next to DM Sans). Font family becomes a per-locale token; Latin stays DM Sans.
+- **Arabic (future):** font family becomes a per-locale token; Latin stays DM Sans. Choose one of
+  the 3 options below.
 
 ## 4.2 Type scale
 One modular scale. Hierarchy = **size + weight + color** (never size alone).
@@ -189,11 +187,96 @@ One modular scale. Hierarchy = **size + weight + color** (never size alone).
 - Long text wraps; single-line labels truncate with ellipsis. Plan for **+30% length** (DE/FR) and
   **RTL** mirroring (Arabic) — handled via logical CSS in Part 5.
 
-> **Decision needed (4.1):** keep **DM Sans** as primary? And pre-pick the Arabic font
-> (**IBM Plex Sans Arabic** vs **Tajawal**) for later.
+> ✅ **LOCKED (4.1): primary = DM Sans** with tabular numerals.
+>
+> **Arabic font — pick one of these 3 later (هتختار بينهم):**
+>
+> | Option | Character | Pairs with DM Sans |
+> |---|---|---|
+> | **A. Tajawal** | geometric, clean, modern | excellent (similar geometry) |
+> | **B. IBM Plex Sans Arabic** | humanist, professional, very legible | very good |
+> | **C. Cairo** | geometric, friendly, widely used | good |
 
 ---
 
+# 5. Spacing & Layout
+
+**Base unit = 4px. Rhythm = 8px.** All padding / margin / gap come from this scale.
+
+| Token | px | Typical use |
+|---|---|---|
+| `space-1` | 4 | icon↔text gap, hairline spacing |
+| `space-2` | 8 | chip padding, small gaps |
+| `space-3` | 12 | grid gap, list-row gap |
+| `space-4` | 16 | card padding, screen side padding |
+| `space-5` | 20 | comfortable card padding |
+| `space-6` | 24 | between sections |
+| `space-8` | 32 | large section breaks |
+| `space-10` | 40 | empty-state spacing |
+| `space-12` | 48 | hero spacing |
+
+**Layout rules**
+- **Screen side padding:** 16. **Content max-width:** 520, centered (phone-first, scales on tablet).
+- **Section rhythm:** 24 between major sections; 10–12 between a section eyebrow (overline) and its content.
+- **Grids:** account cards = 2 columns, gap 12. Lists: 8–10 between rows.
+- **Safe areas:** respect `env(safe-area-inset-top/bottom)` — required for native (notch + home bar).
+- **Touch targets:** min 44×44; primary actions in the thumb zone (bottom third).
+- **One screen = one job** for step flows (full-screen Add, etc.).
+
+# 6. Shape & Elevation
+
+**Radius scale**
+
+| Token | px | Use |
+|---|---|---|
+| `radius-sm` | 10 | chips, small controls, icon tiles |
+| `radius-md` | 14 | buttons, inputs, list rows |
+| `radius-lg` | 16 | cards |
+| `radius-xl` | 20 | modals, sheets, hero |
+| `radius-pill` | 999 | pills, toggles, FAB |
+
+**Elevation — theme-specific (key rule):**
+- **Light:** depth via **soft shadows**, not borders.
+  - `e1` = `0 1 2 rgba(20,22,40,.06)` — resting cards
+  - `e2` = `0 6 18 rgba(20,22,40,.08)` — raised cards / hero
+  - `e3` = `0 14 34 rgba(20,22,40,.14)` — modals / sheets / popovers
+- **Dark:** depth via **1px `border` + surface step**; shadows only for overlays.
+  - cards = `surface` + `1px border`, no shadow
+  - overlays = `0 10 30 rgba(0,0,0,.5)`
+- Never mix: a light card = shadow + no border; a dark card = border + no shadow.
+
+# 7. Iconography
+
+- **Style:** one outline/stroke set on a 24×24 grid, **stroke 2** (2.2 for ≤14px), round caps & joins,
+  `currentColor`. (Implemented as `Ico` + `MARKS` / `CAT_GLYPHS`.)
+- **Sizes:** 14 inline · 16 default · 18–20 list/tile · 24 headers · 28+ hero.
+- **Category & brand marks:** `CatIcon` = glyph on a rounded-square tile (radius ≈ 28% of size,
+  colored tile + contrast stroke). `BankIcon` = brand monogram on brand color, else glyph.
+  `ServiceLogo` = bundled brand glyph/monogram (offline).
+- **Allowed exceptions:** currency **flags** (data) and the balance-privacy **monkey** (mascot).
+- **Don'ts:** emoji as UI chrome · mixed fill/outline · inconsistent stroke widths · raster icons.
+
+# 8. Motion
+
+**Durations**
+
+| Token | ms | Use |
+|---|---|---|
+| `motion-micro` | 140 | taps, toggles, press |
+| `motion-base` | 220 | most transitions |
+| `motion-enter` | 300 | modals, page-in |
+| `motion-emphasis` | 460 | hero, number / ring count-up |
+
+**Easing**
+- standard / enter: `cubic-bezier(.2,.8,.2,1)`
+- exit: `cubic-bezier(.4,0,1,1)`
+- playful pop (toasts, FAB): `cubic-bezier(.175,.885,.32,1.275)`
+
+**Patterns:** page = slide-X + fade · modal / sheet = scale + fade · press = `scale(.97)` ·
+list reorder = move · progress bar / ring / sparkbars = animate to value.
+
+**Accessibility:** honor `prefers-reduced-motion` → drop transforms, keep opacity only.
+
 ## Next
-**Part 2** — Spacing & Layout · Shape & Elevation · Iconography · Motion.
-(Continue per `DESIGN_PLAN.md`.)
+**Part 3** — Components library (Button, Card, Pill, Input, Picker, Toggle, SegmentedTabs, ListRow,
+SectionHeader, Modal/Sheet, EmptyState, Toast, ProgressBar, Ring, Sparkbars, BottomNav, Gradient-Hero).
