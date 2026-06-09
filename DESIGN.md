@@ -1,7 +1,7 @@
 # Saver — Design System (`DESIGN.md`)
 
 The single source of truth for Saver's visual identity, rules and components.
-Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–4 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
+Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–5 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
 
 > Arabic note (ملاحظة): الوثيقة دي هي الدستور. كل شاشة/مكوّن لازم يتبع القواعد دي. القرارات اللي محتاجة
 > اختيارك مكتوبة في آخر كل قسم تحت **"Decision needed"**.
@@ -453,5 +453,55 @@ Dates short & relative (§10.3).
 ### 11.5 Errors & confirmations
 State **cause + fix**: "Not enough balance — Available: £20." Confirmations name the effect.
 
+# 12. Internationalization (i18n) & RTL
+
+- **Strings as keys.** All UI text lives in a dictionary (`en` now; `ar` / `fr` / `de` later) via a
+  `t("key")` lookup — **no hardcoded strings** in components.
+- **Locale formatting** for numbers, currency and dates via `Intl` with the active locale.
+- **RTL (Arabic):** set `dir` from the locale; build with **CSS logical properties**
+  (`margin-inline`, `padding-inline`, `inset-inline`, `text-align:start`) instead of left/right.
+  **Mirror** directional icons (chevrons, arrows) — **don't** mirror logos, brand marks or charts.
+- **Fonts per locale token:** Latin = DM Sans; Arabic = the chosen option (Tajawal / IBM Plex Sans
+  Arabic / Cairo) with slightly larger line-height.
+- **Text expansion:** design for **+30%** (DE/FR) — no fixed widths; allow wrap / graceful truncate.
+- Architect this **now** even though English ships first — it makes adding a language a content task,
+  not a rebuild.
+
+# 13. Accessibility (A11y)
+
+- **Contrast:** AA — body ≥ 4.5:1, large text & icons ≥ 3:1, verified in **both** themes.
+- **Dynamic Type:** respect OS text scaling; layouts flex (no clipping / overlap).
+- **Touch targets ≥ 44×44** with spacing that prevents mis-taps.
+- **Labels:** every icon-only control has an `aria-label`; decorative icons are hidden from AT.
+- **Focus:** visible focus states for keyboard/switch control (web).
+- **Reduced motion:** honor `prefers-reduced-motion` (opacity only).
+- **Never color-only:** pair color with icon/text (e.g. over-budget = `danger` color **and** "over").
+- Privacy (hide-balance) state is fully usable.
+
+# 14. Platform & Native (App Store readiness)
+
+- **Architecture:** PWA core → wrapped with **Capacitor** for iOS / Android. Storage stays behind the
+  existing `load`/`save` abstraction (can map to a native store later). **Zero network** keeps the
+  privacy story and App Store labels clean ("Data Not Collected").
+- **Safe areas:** `env(safe-area-inset-*)` for header, bottom nav and FAB.
+- **Status bar:** themed per light/dark. **Splash + app icon** from the brand mark (light & dark tiles).
+- **Haptics:** native feedback on key actions (already abstracted as `HAPTICS`).
+- **Gestures:** swipe / long-press must not conflict with the native back-swipe.
+- **Performance:** fast cold start, 60fps interactions, lightweight bundle.
+- **Offline guarantee:** fully functional with no connection.
+- **Store assets:** icon set + screenshots (6.7" / 6.5" / 5.5" / iPad) — produced via Demo-Data mode.
+
+# 15. Theming & Customization
+
+- **Two tuned token sets** (Light / Dark) + a **System (auto)** option.
+- **Switching** is instant and persisted; every component reads tokens, so nothing is missed.
+- **User accent:** chosen from the presets (§3.3) → updates `primary` + derived states + gradients
+  **live**, and persists.
+- *(Optional, later)* **AMOLED** pure-black dark variant.
+- **Single source of truth:** one `tokens` object per theme + the accent overlay feeds **the app, the
+  styleguide, and the website** — change once, propagate everywhere.
+- **Demo-Data mode:** a toggle that loads realistic fake data for clean marketing / store screenshots,
+  with **no effect** on the user's real data.
+
 ## Next
-**Part 5** — Internationalization & RTL · Accessibility · Platform & Native · Theming & Customization.
+**Part 6** — Brand Kit & Marketing · Tokens master reference (JSON) · Roadmap & Story.

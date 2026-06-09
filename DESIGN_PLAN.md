@@ -52,13 +52,14 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
       ProgressBar, Ring, Sparkbars, BottomNav, Gradient-Hero (anatomy/variants/states/tokens).
 - [~] **Part 4 — Patterns + Content/Voice** (DRAFTED in DESIGN.md §10–11): full-screen flows, empty states, confirmations,
       forms, money/date display, status indicators, onboarding/Help/What's New + microcopy guide.
-- [ ] **Part 5 — i18n/RTL + Accessibility + Native/Platform + Theming/Customization.**
+- [~] **Part 5 — i18n/RTL + Accessibility + Native/Platform + Theming/Customization.** (DRAFTED §12–15)
 - [ ] **Part 6 — Brand Kit/Marketing + master Tokens reference (JSON) + Roadmap/Story.**
 - [ ] **Part 7 — Build `saver-styleguide.html`** from the approved tokens.
 - [ ] **Part 8 (later phase) — Apply the system to the app**, screen-by-screen
       (Dashboard → Add → Bills → Budgets → Savings → History → Settings → Welcome/Help).
 
 ## 4) Status log
+- **2026-06-09** — Part 5 (§12 i18n/RTL, §13 A11y, §14 Native, §15 Theming) written.
 - **2026-06-09** — Part 4 (§10 Patterns, §11 Content & Voice) written.
 - **2026-06-09** — Part 3 (§9 Components library, 22 components) written.
 - **2026-06-09** — Plan created; layout fully open, only calc+concept+data preserved.
