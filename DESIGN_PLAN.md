@@ -50,7 +50,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
 - [~] **Part 3 — Components** (DRAFTED in DESIGN.md §9): full library — Button, Card, Pill/Badge, Input, Picker/Select,
       Toggle, SegmentedTabs, ListRow, SectionHeader, Modal/Sheet, EmptyState, Toast,
       ProgressBar, Ring, Sparkbars, BottomNav, Gradient-Hero (anatomy/variants/states/tokens).
-- [ ] **Part 4 — Patterns + Content/Voice**: full-screen flows, empty states, confirmations,
+- [~] **Part 4 — Patterns + Content/Voice** (DRAFTED in DESIGN.md §10–11): full-screen flows, empty states, confirmations,
       forms, money/date display, status indicators, onboarding/Help/What's New + microcopy guide.
 - [ ] **Part 5 — i18n/RTL + Accessibility + Native/Platform + Theming/Customization.**
 - [ ] **Part 6 — Brand Kit/Marketing + master Tokens reference (JSON) + Roadmap/Story.**
@@ -59,6 +59,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
       (Dashboard → Add → Bills → Budgets → Savings → History → Settings → Welcome/Help).
 
 ## 4) Status log
+- **2026-06-09** — Part 4 (§10 Patterns, §11 Content & Voice) written.
 - **2026-06-09** — Part 3 (§9 Components library, 22 components) written.
 - **2026-06-09** — Plan created; layout fully open, only calc+concept+data preserved.
 - **2026-06-09** — Decisions: logo **A (Growth S)**, accent **Mint**, primary **DM Sans**; Arabic = 3 options to pick. Part 2 (§5–8 Spacing/Shape/Icon/Motion) written.

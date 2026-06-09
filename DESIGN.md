@@ -1,7 +1,7 @@
 # Saver — Design System (`DESIGN.md`)
 
 The single source of truth for Saver's visual identity, rules and components.
-Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–3 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
+Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–4 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
 
 > Arabic note (ملاحظة): الوثيقة دي هي الدستور. كل شاشة/مكوّن لازم يتبع القواعد دي. القرارات اللي محتاجة
 > اختيارك مكتوبة في آخر كل قسم تحت **"Decision needed"**.
@@ -370,5 +370,88 @@ Top header panel: **hero gradient** (accent, or context-tinted), rounded bottom 
 ### 9.22 Stat / KPI
 Label (`overline`/`caption` muted) + value (`title-2`/`display`, tabular) + optional **delta** (`success`/`danger` + up/down arrow + "vs last month"). Used in Overview & Budget Report.
 
+# 10. Patterns
+
+Reusable solutions composed from the components in §9. Patterns guarantee that the *same situation*
+looks and behaves the same everywhere.
+
+### 10.1 Full-screen step flows
+For focused tasks (Add transaction, add Bill/Installment, detail/ledger). **One screen = one job.**
+Anatomy: sticky header (title + close **X**) · scrollable body · sticky **primary** action at the
+bottom (thumb zone). Enter = slide-X + fade; dismiss via X or system back.
+
+### 10.2 Money display
+- Always **tabular figures** + `Intl` currency (locale-aware; symbol only, values never converted).
+- Color: income/positive = `success`; expense = `text` (or `danger` when it's a loss/over); over-limit / overdrawn = `danger`.
+- Privacy: the balance **monkey** toggles all amounts to `••••`.
+- Sign: expenses may show `−`, income `+`. Hero amounts use `display`/`title` weights.
+
+### 10.3 Dates & time
+Relative when it aids action ("Due today / Tomorrow / In 3 days / Overdue 2d"), else short absolute
+("Jun 7"). Month names from a single source. Locale formatting added in §12.
+
+### 10.4 Status indicators (defined once, reused everywhere)
+| Status | Icon | Color |
+|---|---|---|
+| Low balance | down arrow | `warning` |
+| Overdrawn | dot | `danger` |
+| Frozen (goal) | lock | `warning` |
+| Paid / on-track / income | check | `success` |
+| Overdue / over budget | bell / segment | `danger` |
+| Due soon | clock | `warning` |
+
+### 10.5 Empty & first-run
+Every list has an **EmptyState** (glyph + friendly line + CTA) — never a blank screen. First launch:
+Welcome → optional Tour / Getting-started checklist.
+
+### 10.6 Confirmation & destructive actions
+Destructive = **ConfirmModal** with a `danger` button that **states the consequence**
+("Removes the budget tracking — your transactions are kept"). Non-destructive edits **save immediately**.
+
+### 10.7 Selection
+Entities (bank / category / goal) → **PickerField** (icon list). Months → **MonthSelect**.
+2–3 modes → **SegmentedTabs**.
+
+### 10.8 Onboarding & help (all skippable / dismissible)
+Welcome (first run) · **60-second Story tour** · live **Coach-marks** · **Getting-started checklist**
+(dismissible, off forever) · **Help hub** (searchable FAQ) · **What's New** (once per version).
+
+### 10.9 Feedback & celebration
+Milestones → **Toast** (encouraging, drawn icon). Reminders → top **Banner** (dismiss + snooze).
+Errors → **AlertModal** (cause + fix). Haptics on key actions (add, pay, reorder, success).
+
+### 10.10 Lists & reorder
+Long-press **drag-reorder** where order has meaning (accounts, budgets, dashboard sections).
+Swipe-left row → Edit / Delete. Tap → open.
+
+### 10.11 Charts & reports
+**Ring** = usage/share · **Sparkbars** = trend · **ProgressBar** = limit · **SegmentedProgress** =
+paid/unpaid. One insight per card; summarize many stats with a **single smart insight banner**.
+
+# 11. Content & Voice
+
+### 11.1 Voice
+Warm, plain, encouraging, concise — a helpful friend, not a bank. Active voice, no jargon.
+
+### 11.2 Microcopy rules
+- Labels = plain nouns/verbs ("Add", "Save Budget", "All bills paid").
+- **Numbers first**, words support.
+- Buttons = verbs · titles = nouns · empty states = the next step.
+- Never blame ("You overspent" → "£X over budget").
+- **Sentence case** everywhere, except OVERLINE eyebrows (UPPERCASE) and currency codes.
+- Keep short; truncate gracefully; design for **+30% length** (DE/FR) and **RTL** (AR).
+
+### 11.3 Canonical terminology (don't synonym-swap)
+"Available" (safe-to-spend) · "Frozen" (money inside goals) · "Net / Saved this month" ·
+"Budget" (limit optional) · "Bill" (recurring) · "Installment" (plan) · "Goal" (savings) ·
+"Account" (bank/cash/wallet).
+
+### 11.4 Numbers, currency, dates
+Currency via `Intl` + user currency (symbol only). Tabular figures. Percentages = whole numbers.
+Dates short & relative (§10.3).
+
+### 11.5 Errors & confirmations
+State **cause + fix**: "Not enough balance — Available: £20." Confirmations name the effect.
+
 ## Next
-**Part 4** — Patterns (full-screen flows, empty states, money/date, status, onboarding) + Content & Voice (microcopy guide).
+**Part 5** — Internationalization & RTL · Accessibility · Platform & Native · Theming & Customization.
