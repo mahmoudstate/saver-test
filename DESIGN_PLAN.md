@@ -43,7 +43,7 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
   GitHub Pages project / identity page.
 
 ## 3) Parts (split for multi-session continuity)
-- [ ] **Part 1 — Foundations**: Philosophy · Brand (logo/name/app-icon directions + options) ·
+- [~] **Part 1 — Foundations** (DRAFTED in DESIGN.md — awaiting logo + accent + font decisions): Philosophy · Brand (logo/name/app-icon directions + options) ·
       Color system (Light/Dark neutrals + functional + gradients + user accent) · Typography.
 - [ ] **Part 2 — Structure**: Spacing & Layout (4/8 grid, safe areas) · Shape & Elevation
       (radius, shadows/borders) · Iconography spec · Motion (durations/easings).
@@ -59,8 +59,10 @@ Repo: `mahmoudstate/saver-test` · Branch: `claude/severt-test-code-changes-9URW
       (Dashboard → Add → Bills → Budgets → Savings → History → Settings → Welcome/Help).
 
 ## 4) Status log
-- **2026-06-09** — Plan created. Confirmed: layout/placement fully open to redesign; only
-  calculations + concept + data model are preserved. Awaiting go to start **Part 1**.
+- **2026-06-09** — Plan created; layout fully open, only calc+concept+data preserved.
+- **2026-06-09** — DESIGN.md created with **Part 1** (Philosophy, Brand/logo directions, Color
+  system Light/Dark + user accent, Typography). Awaiting user decisions: logo A/B/C, default
+  accent (Mint), primary font (DM Sans) + Arabic font. Then start Part 2.
 
 ## 5) Open questions to resolve inside Part 1
 - Logo direction (keep "Saver One" wordmark + refine, or explore a new mark?) — propose options.
