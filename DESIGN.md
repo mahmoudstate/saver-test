@@ -1,7 +1,7 @@
 # Saver — Design System (`DESIGN.md`)
 
 The single source of truth for Saver's visual identity, rules and components.
-Built in parts (see `DESIGN_PLAN.md`). Status: **Parts 1–5 drafted.** Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
+Built in parts (see `DESIGN_PLAN.md`). Status: **Constitution complete (Parts 1–6).** Next: build styleguide.html + tokens.js (Part 7). Locked: logo A, accent Mint, DM Sans. Pending: Arabic font pick.
 
 > Arabic note (ملاحظة): الوثيقة دي هي الدستور. كل شاشة/مكوّن لازم يتبع القواعد دي. القرارات اللي محتاجة
 > اختيارك مكتوبة في آخر كل قسم تحت **"Decision needed"**.
@@ -503,5 +503,108 @@ State **cause + fix**: "Not enough balance — Available: £20." Confirmations n
 - **Demo-Data mode:** a toggle that loads realistic fake data for clean marketing / store screenshots,
   with **no effect** on the user's real data.
 
-## Next
-**Part 6** — Brand Kit & Marketing · Tokens master reference (JSON) · Roadmap & Story.
+# 16. Brand Kit & Marketing
+
+One identity feeds the **app, the styleguide and the website**.
+
+- **Logo:** the "Growth S" mark as SVG — full-color, mono-light, mono-dark; the **wordmark** "Saver"
+  (DM Sans 800); horizontal & stacked lockups; clear space = one icon-height; min size 16px; misuse list.
+- **App icon:** mark centered on an accent tile with a subtle top-down gradient; iOS squircle;
+  light & dark tiles.
+- **Palette:** brand **Mint** + neutrals + functional — swatches pulled from §17 tokens.
+- **Type:** DM Sans (+ chosen Arabic face).
+- **Imagery:** iPhone device mockups with in-app screenshots; consistent frame, angle and shadow.
+- **Screenshots:** generated via **Demo-Data mode** in **both themes** with clean realistic numbers —
+  cover Home, Budget Report, Bills, Add. Reused for store + site + portfolio.
+- **App Store listing:** icon set, screenshots (6.7"/6.5"/5.5"/iPad), subtitle, keywords, privacy
+  labels = **"Data Not Collected"**, "What's New" text (from changelog).
+- **Landing page:** same tokens → exact identity match. Sections: hero (mark + tagline + device),
+  features, privacy/offline, **the journey/story timeline**, screenshots, CTA (install / PWA), footer.
+  The standalone styleguide HTML doubles as the living identity reference.
+- **Tagline options:** "Your money, clear." · "Simple money. Fully private." · "Track. Save. Relax."
+
+# 17. Tokens — master reference (source of truth)
+
+> This block is the **single source of truth**. It will live as `tokens.js` and be consumed by the
+> app, the styleguide, and the website. Values below are final and match Parts 1–5.
+
+```json
+{
+  "defaultAccent": "mint",
+  "dimAlpha": { "dark": 0.16, "light": 0.12 },
+  "color": {
+    "dark": {
+      "bg": "#0F0F13", "surface": "#16161E", "surface2": "#1E1E28", "border": "#2A2A38",
+      "text": "#E8E8F0", "muted": "#8A8AA6", "faint": "#54546A",
+      "success": "#34D399", "warning": "#FBBF24", "danger": "#F87171", "info": "#60A5FA"
+    },
+    "light": {
+      "bg": "#F4F5F8", "surface": "#FFFFFF", "surface2": "#FBFBFD", "border": "#E6E7EE",
+      "text": "#16161D", "muted": "#6B6F7E", "faint": "#A2A6B4",
+      "success": "#0F9D6A", "warning": "#D98A00", "danger": "#E5484D", "info": "#2563EB"
+    }
+  },
+  "accentPresets": {
+    "mint":    { "dark": "#5FE3C0", "light": "#0D9488", "onDark": "#06251F", "onLight": "#FFFFFF" },
+    "emerald": { "dark": "#34D399", "light": "#059669", "onDark": "#04231A", "onLight": "#FFFFFF" },
+    "blue":    { "dark": "#60A5FA", "light": "#2563EB", "onDark": "#04183A", "onLight": "#FFFFFF" },
+    "violet":  { "dark": "#A78BFA", "light": "#7C3AED", "onDark": "#1A1040", "onLight": "#FFFFFF" },
+    "coral":   { "dark": "#FB7185", "light": "#E11D57", "onDark": "#3A0512", "onLight": "#FFFFFF" },
+    "amber":   { "dark": "#FBBF24", "light": "#D97706", "onDark": "#2A1A00", "onLight": "#FFFFFF" }
+  },
+  "space": { "1": 4, "2": 8, "3": 12, "4": 16, "5": 20, "6": 24, "8": 32, "10": 40, "12": 48 },
+  "radius": { "sm": 10, "md": 14, "lg": 16, "xl": 20, "pill": 999 },
+  "elevation": {
+    "light": {
+      "e1": "0 1px 2px rgba(20,22,40,.06)",
+      "e2": "0 6px 18px rgba(20,22,40,.08)",
+      "e3": "0 14px 34px rgba(20,22,40,.14)"
+    },
+    "dark": {
+      "card": "1px solid border (no shadow)",
+      "overlay": "0 10px 30px rgba(0,0,0,.5)"
+    }
+  },
+  "font": {
+    "latin": "DM Sans",
+    "arabic": "TBD (Tajawal | IBM Plex Sans Arabic | Cairo)",
+    "numerals": "tabular"
+  },
+  "type": {
+    "display":   { "size": 34, "line": 40, "weight": 800, "track": -1 },
+    "title1":    { "size": 28, "line": 34, "weight": 800, "track": -0.5 },
+    "title2":    { "size": 22, "line": 28, "weight": 800, "track": -0.5 },
+    "title3":    { "size": 18, "line": 24, "weight": 700, "track": -0.3 },
+    "bodyStrong":{ "size": 15, "line": 22, "weight": 700, "track": 0 },
+    "body":      { "size": 15, "line": 22, "weight": 500, "track": 0 },
+    "label":     { "size": 13, "line": 18, "weight": 600, "track": 0 },
+    "caption":   { "size": 12, "line": 16, "weight": 500, "track": 0 },
+    "overline":  { "size": 11, "line": 14, "weight": 700, "track": 1, "case": "upper" }
+  },
+  "motion": {
+    "micro": 140, "base": 220, "enter": 300, "emphasis": 460,
+    "easeStd": "cubic-bezier(.2,.8,.2,1)",
+    "easeExit": "cubic-bezier(.4,0,1,1)",
+    "easePop": "cubic-bezier(.175,.885,.32,1.275)"
+  }
+}
+```
+
+**Derived (computed, not stored):** `primary` = `accentPresets[accent][theme]`; `*Dim` = role color
+at `dimAlpha[theme]`; `primaryPressed` = `primary` darkened 8%; hero gradient per §3.4.
+
+# 18. Roadmap & Story (portfolio / site)
+
+The journey, told teli-story style with screenshots + realistic demo numbers:
+- **v1** — a simple, fully-offline tracker (accounts, expenses, balances).
+- **v2.x** — smarter home, bank logos, a hand-drawn icon identity, and a full Help system.
+- **v2.3 — the foundation** (this design system): tokens, components, premium light mode, user accent.
+- **Next** — native (App Store), multi-language (AR/FR/DE), and customer-requested features.
+
+The spine of the story = the **What's New / changelog** entries. Each milestone gets a card with a
+device mockup and one-line outcome ("clearer in one glance", "your identity, your color", …).
+
+---
+
+*End of written constitution (Parts 1–6). Next: build the living **styleguide.html** (Part 7) and a
+`tokens.js` from §17, then begin applying the system to the app (Part 8).*
