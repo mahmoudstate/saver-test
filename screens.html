@@ -1,0 +1,169 @@
+<!doctype html><html lang="en" data-theme="dark"><head><title>Saver — Screens</title>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+:root[data-theme="dark"]{--bg:#0F0F13;--surface:#16161E;--surface2:#1E1E28;--border:#2A2A38;--text:#E8E8F0;--muted:#8A8AA6;--faint:#54546A;--success:#34D399;--warning:#FBBF24;--danger:#F87171;--info:#60A5FA;--cardShadow:none;--cardBorder:1px solid var(--border);}
+:root[data-theme="light"]{--bg:#F4F5F8;--surface:#FFFFFF;--surface2:#FBFBFD;--border:#E6E7EE;--text:#16161D;--muted:#6B6F7E;--faint:#A2A6B4;--success:#0F9D6A;--warning:#D98A00;--danger:#E5484D;--info:#2563EB;--cardShadow:0 6px 18px rgba(20,22,40,.08);--cardBorder:1px solid transparent;}
+:root{--ac:#5FE3C0;--ac-soft:#8ff0d8;--onacc:#06251F;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;transition:background .4s,color .4s;font-feature-settings:"tnum"}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+.tnum{font-variant-numeric:tabular-nums}
+.topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.topbar .row{display:flex;align-items:center;justify-content:space-between;height:62px;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.5px;font-size:17px}
+.hubnav{display:flex;gap:6px;flex-wrap:wrap}
+.hubnav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;border:1px solid transparent}
+.hubnav a:hover{color:var(--text)}
+.hubnav a.on{color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent)}
+.ctrl{display:flex;align-items:center;gap:12px}
+.dots{display:flex;gap:6px}.dot{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}.dot[aria-current=true]{border-color:var(--text)}
+.tgl{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:12px;color:var(--muted)}
+.lt{width:32px;height:32px;border-radius:9px;background:#22232b;position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.sec-t{font-size:30px;font-weight:800;letter-spacing:-1px;margin:6px 0}
+.sec-d{color:var(--muted);max-width:680px;margin-bottom:22px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ac)}
+/* phone */
+.phgrid{display:flex;flex-wrap:wrap;gap:30px;justify-content:center}
+.phwrap{width:300px}
+.phcap{text-align:center;font-weight:700;margin:14px 0 4px}
+.phsub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:10px}
+.phone{width:300px;height:620px;border-radius:42px;background:var(--surface);border:1px solid var(--border);box-shadow:0 30px 60px rgba(0,0,0,.4);padding:10px;position:relative}
+.scr{width:100%;height:100%;border-radius:33px;overflow:hidden;background:var(--bg);position:relative;display:flex;flex-direction:column}
+.scr .body{flex:1;overflow:hidden;padding:14px}
+.hero{padding:26px 18px 18px;background:linear-gradient(160deg,var(--ac),color-mix(in srgb,var(--ac) 32%,var(--bg)));color:var(--onacc)}
+.hero .lbl{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.85}
+.hero .big{font-size:32px;font-weight:800;letter-spacing:-1px;margin-top:3px}
+.ov{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:4px 2px 8px}
+.cardm{background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:15px;padding:13px;margin-bottom:10px;position:relative;overflow:hidden}
+.rowm{display:flex;align-items:center;gap:10px}
+.tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;font-weight:800;font-size:12px}
+.nm{font-weight:700;font-size:13px}.mt{color:var(--muted);font-size:10px}
+.rt{margin-left:auto;font-weight:800;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:10px;font-weight:700}
+.b-su{background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)}
+.b-ac{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
+.b-fa{background:color-mix(in srgb,var(--faint) 26%,transparent);color:var(--muted)}
+.navm{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:999px;padding:9px 16px}
+.navm i{color:var(--faint);font-style:normal;font-size:16px}.navm i.on{color:var(--ac)}
+.fab{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac-soft));color:var(--onacc);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;margin-top:-22px;box-shadow:0 8px 18px color-mix(in srgb,var(--ac) 40%,transparent)}
+.pbar{height:7px;border-radius:999px;background:var(--border);overflow:hidden}.pbar i{display:block;height:100%;background:var(--ac);border-radius:999px}
+.segp{display:flex;gap:3px;height:7px;margin-top:8px}.segp i{flex:1;border-radius:3px}
+.spark{display:flex;align-items:flex-end;gap:4px;height:46px}.spark i{flex:1;border-radius:3px;background:color-mix(in srgb,var(--ac) 40%,transparent)}.spark i.last{background:var(--ac)}
+.ring{position:relative;width:96px;height:96px;flex-shrink:0}.ring .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ring .v b{font-size:21px;font-weight:800}.ring .v small{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.seg2{display:flex;background:rgba(255,255,255,.18);border-radius:999px;padding:3px;gap:3px;margin-top:12px}.seg2 b{flex:1;text-align:center;font-size:12px;font-weight:700;padding:7px 0;border-radius:999px;color:var(--onacc);opacity:.7}.seg2 b.on{background:rgba(255,255,255,.9);color:#16161D;opacity:1}
+.field{display:flex;align-items:center;gap:10px;background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:13px;padding:11px 12px;margin-bottom:9px}
+.kpi b{display:block;font-size:18px;font-weight:800}.kpi span{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.hidden-num.hide{filter:none}
+.foot{padding:40px 0 64px;text-align:center;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<div class="topbar"><div class="wrap row">
+  <div class="brand"><span data-logo="30"></span>Saver</div>
+  <div class="hubnav"><a href="index.html">Showcase</a><a href="brand.html">Brand</a><a href="screens.html" class="on">Screens</a><a href="index.html">Docs</a></div>
+  <div class="ctrl" id="ctrl"></div>
+</div></div>
+<header class="wrap" style="padding:48px 20px 6px">
+  <div class="eyebrow">Proposed UI · v2.3</div>
+  <div class="sec-t">App screens</div>
+  <p class="sec-d">High-fidelity mockups of the new design applied to Saver — built on our tokens. Toggle theme & accent (top right). This is the pilot: Home + 4 main screens. Once approved, we roll the same language to every screen.</p>
+</header>
+<main class="wrap" style="padding-bottom:30px"><div class="phgrid">
+
+  <div class="phwrap">
+    <div class="phone"><div class="scr">
+      <div class="hero"><div class="lbl">Total balance</div><div class="big tnum">£2,554</div>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:11px;opacity:.92"><span>Income £1,000</span><span>· Saved +£880</span></div></div>
+      <div class="body">
+        <div class="ov">Accounts</div>
+        <div style="display:flex;gap:10px">
+          <div class="cardm" style="flex:1;margin:0;border-bottom:3px solid #f87171"><div class="rowm" style="margin-bottom:7px"><span class="tile" style="background:#7a1f2b;font-size:9px">HSBC</span></div><div class="mt">Available</div><div style="font-weight:800;font-size:15px" class="tnum">£1,930</div></div>
+          <div class="cardm" style="flex:1;margin:0;border-bottom:3px solid #fb923c"><div class="rowm" style="margin-bottom:7px"><span class="tile" style="background:#fb923c">K</span></div><div class="mt">Available</div><div style="font-weight:800;font-size:15px" class="tnum">£624</div></div>
+        </div>
+        <div class="ov" style="margin-top:12px">Monthly bills</div>
+        <div class="cardm" style="margin:0"><div class="rowm"><span class="tile" style="background:#3aa76d">⚡</span><div><div class="nm">Bills</div><div class="mt">3 of 4 paid · next: Vodafone</div></div><span class="badge b-su" style="margin-left:auto">£12 · Jul 7</span></div>
+          <div class="segp"><i style="background:var(--success)"></i><i style="background:var(--success)"></i><i style="background:var(--success)"></i><i style="background:var(--faint)"></i></div></div>
+      </div>
+      <div class="navm"><i class="on">◆</i><i>≡</i><span class="fab">+</span><i>▤</i><i>⚙</i></div>
+    </div></div>
+    <div class="phcap">Home</div><div class="phsub">Balance · accounts · bills</div>
+  </div>
+
+  <div class="phwrap">
+    <div class="phone"><div class="scr">
+      <div style="padding:20px 16px 6px;display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">New Transaction</b><span style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted)">✕</span></div>
+      <div class="body">
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <span style="flex:1;text-align:center;padding:9px 0;border-radius:11px;border:1px solid var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac);font-weight:700;font-size:12px">Expense</span>
+          <span style="flex:1;text-align:center;padding:9px 0;border-radius:11px;border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:12px">Income</span>
+          <span style="flex:1;text-align:center;padding:9px 0;border-radius:11px;border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:12px">Saving</span></div>
+        <div style="text-align:center;padding:22px 0 26px"><div class="ov" style="text-align:center">Amount (GBP)</div><div style="font-size:46px;font-weight:800;color:var(--ac)">−£100</div></div>
+        <div class="field"><span class="tile" style="background:#7a1f2b;font-size:9px">HSBC</span><span class="nm">HSBC</span><span style="margin-left:auto;color:var(--muted)">›</span></div>
+        <div class="field"><span class="tile" style="background:#fb923c">🍽</span><span class="nm">Food &amp; Dining</span><span style="margin-left:auto;color:var(--muted)">›</span></div>
+        <div class="field"><span style="color:var(--muted);font-size:13px">Add a note…</span></div>
+      </div>
+      <div style="padding:0 14px 16px"><div style="height:50px;border-radius:14px;background:linear-gradient(135deg,var(--ac),var(--ac-soft));color:var(--onacc);display:flex;align-items:center;justify-content:center;font-weight:800">Save Transaction</div></div>
+    </div></div>
+    <div class="phcap">Add</div><div class="phsub">One screen, one job</div>
+  </div>
+
+  <div class="phwrap">
+    <div class="phone"><div class="scr">
+      <div class="hero"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">Bills</b><span style="opacity:.8">＋</span></div>
+        <div class="lbl" style="margin-top:12px">Monthly spending</div><div class="big tnum">£60</div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;opacity:.92"><span><b>4</b> active</span><span><b>1</b> due</span><span><b>0</b> overdue</span></div>
+        <div class="seg2"><b class="on">Subscriptions</b><b>Installments</b></div></div>
+      <div class="body">
+        <div class="cardm" style="border-left:3px solid #e50914"><div class="rowm"><span class="tile" style="background:#e50914">N</span><div><div class="nm">Netflix</div><div class="mt">Monthly</div></div><div style="margin-left:auto;text-align:right"><div class="rt">£10</div><div class="mt">Jul 5</div></div></div></div>
+        <div class="cardm" style="border-left:3px solid #e60000"><div class="rowm"><span class="tile" style="background:#e60000">V</span><div><div class="nm">Vodafone</div><div class="mt">Monthly</div></div><div style="margin-left:auto;text-align:right"><div class="rt">£12</div><div class="mt">Jul 7</div></div></div></div>
+      </div>
+      <div class="navm"><i>◆</i><i class="on">≡</i><span class="fab">+</span><i>▤</i><i>⚙</i></div>
+    </div></div>
+    <div class="phcap">Bills</div><div class="phsub">Gradient hero · brand logos</div>
+  </div>
+
+  <div class="phwrap">
+    <div class="phone"><div class="scr">
+      <div style="padding:20px 16px 6px;display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Budget Report</b><span class="badge b-fa">Jun 2026</span></div>
+      <div class="body">
+        <div class="cardm" style="display:flex;align-items:center;gap:14px"><div class="ring"><svg width="96" height="96" style="transform:rotate(-90deg)"><circle cx="48" cy="48" r="40" fill="none" stroke="var(--border)" stroke-width="10"/><circle cx="48" cy="48" r="40" fill="none" stroke="var(--ac)" stroke-width="10" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="90"/></svg><div class="v"><b class="tnum">64%</b><small>used</small></div></div>
+          <div style="display:flex;flex-direction:column;gap:9px"><div class="kpi"><b class="tnum">£120</b><span>spent</span></div><div class="kpi"><b class="tnum">£500</b><span>budget</span></div><div class="kpi"><b style="color:var(--ac)">3/4</b><span>on track</span></div></div></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success);font-size:12px;font-weight:700;margin-bottom:10px">✓ All budgets on track</div>
+        <div class="cardm" style="margin:0"><div class="ov" style="margin:0 0 8px">Spending · last 6 months</div><div class="spark"><i style="height:40%"></i><i style="height:55%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:60%"></i><i class="last" style="height:90%"></i></div></div>
+      </div>
+      <div class="navm"><i>◆</i><i>≡</i><span class="fab">+</span><i class="on">▤</i><i>⚙</i></div>
+    </div></div>
+    <div class="phcap">Budget Report</div><div class="phsub">Ring · trend · insight</div>
+  </div>
+
+  <div class="phwrap">
+    <div class="phone"><div class="scr">
+      <div style="padding:20px 16px 6px;display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Saving Goals</b><span class="badge b-ac">+ New</span></div>
+      <div class="body">
+        <div class="cardm"><div class="rowm" style="margin-bottom:8px"><span class="tile" style="background:#fbbf24"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span class="nm">Travel</span><span class="badge b-fa" style="margin-left:auto">40%</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px"><b class="tnum" style="color:#fbbf24">£2,000</b><span class="mt">£3,000 left</span></div>
+          <div class="pbar"><i style="width:40%;background:#fbbf24"></i></div></div>
+        <div class="cardm"><div class="rowm" style="margin-bottom:8px"><span class="tile" style="background:#a855f7"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span><span class="nm">New phone</span><span class="badge b-fa" style="margin-left:auto">75%</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px"><b class="tnum" style="color:#a855f7">£600</b><span class="mt">£200 left</span></div>
+          <div class="pbar"><i style="width:75%;background:#a855f7"></i></div></div>
+      </div>
+      <div class="navm"><i>◆</i><i>≡</i><span class="fab">+</span><i>▤</i><i>⚙</i></div>
+    </div></div>
+    <div class="phcap">Saving Goals</div><div class="phsub">Frozen funds · progress</div>
+  </div>
+
+</div></main>
+<footer class="foot"><div class="wrap">Pilot screens · same identity, light & dark, any accent. Powered by Mahmoud © 2026</div></footer>
+<script src="data:text/javascript,"></script>
+<script>
+const ACCENTS={mint:{dark:"#5FE3C0",light:"#0D9488",onDark:"#06251F",onLight:"#FFFFFF"},emerald:{dark:"#34D399",light:"#059669",onDark:"#04231A",onLight:"#FFFFFF"},blue:{dark:"#60A5FA",light:"#2563EB",onDark:"#04183A",onLight:"#FFFFFF"},violet:{dark:"#A78BFA",light:"#7C3AED",onDark:"#1A1040",onLight:"#FFFFFF"},coral:{dark:"#FB7185",light:"#E11D57",onDark:"#3A0512",onLight:"#FFFFFF"},amber:{dark:"#FBBF24",light:"#D97706",onDark:"#2A1A00",onLight:"#FFFFFF"}};
+let accent="mint";const root=document.documentElement;
+function lighten(h,p){const n=parseInt(h.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;r=Math.round(r+(255-r)*p);g=Math.round(g+(255-g)*p);b=Math.round(b+(255-b)*p);return"#"+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+function applyAccent(){const t=root.getAttribute("data-theme");const a=ACCENTS[accent];const c=a[t];root.style.setProperty("--ac",c);root.style.setProperty("--ac-soft",lighten(c,.18));root.style.setProperty("--onacc",t==="dark"?a.onDark:a.onLight);}
+function mountControls(){const tb=document.getElementById("ctrl");const dots=document.createElement("div");dots.className="dots";Object.keys(ACCENTS).forEach(k=>{const d=document.createElement("button");d.className="dot";d.style.background=ACCENTS[k].dark;d.setAttribute("aria-current",k===accent);d.title=k;d.onclick=()=>{accent=k;applyAccent();[...dots.children].forEach(x=>x.setAttribute("aria-current",x.title===k));};dots.appendChild(d);});const tg=document.createElement("button");tg.className="tgl";tg.textContent="◐ Theme";tg.onclick=()=>{root.setAttribute("data-theme",root.getAttribute("data-theme")==="dark"?"light":"dark");applyAccent();};tb.appendChild(dots);tb.appendChild(tg);applyAccent();}
+function logo(size){return `<span class="lt" style="width:${size}px;height:${size}px;border-radius:${size*0.28}px"><svg width="${size}" height="${size}" viewBox="0 0 100 100"><text x="42" y="54" text-anchor="middle" dominant-baseline="central" font-family="DM Sans,sans-serif" font-weight="800" font-size="66" fill="#fff">S</text><g stroke="#2fae6b" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M50 66 73 41"/><path d="M59 39 75 39 75 55"/></g></svg></span>`;}
+document.addEventListener("DOMContentLoaded",()=>{document.querySelectorAll('[data-logo]').forEach(e=>e.innerHTML=logo(+e.dataset.logo||32));mountControls();});
+</script>
+</body></html>

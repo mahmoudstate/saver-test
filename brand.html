@@ -1,0 +1,67 @@
+<!doctype html><html lang="en" data-theme="dark"><head><title>Saver — Brand</title>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+:root[data-theme="dark"]{--bg:#0F0F13;--surface:#16161E;--surface2:#1E1E28;--border:#2A2A38;--text:#E8E8F0;--muted:#8A8AA6;--faint:#54546A;--success:#34D399;--danger:#F87171;--cardShadow:none;--cardBorder:1px solid var(--border);}
+:root[data-theme="light"]{--bg:#F4F5F8;--surface:#FFFFFF;--surface2:#FBFBFD;--border:#E6E7EE;--text:#16161D;--muted:#6B6F7E;--faint:#A2A6B4;--success:#0F9D6A;--danger:#E5484D;--cardShadow:0 6px 18px rgba(20,22,40,.08);--cardBorder:1px solid transparent;}
+:root{--ac:#5FE3C0;--ac-soft:#8ff0d8;--onacc:#06251F;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;transition:background .4s,color .4s}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+.topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.topbar .row{display:flex;align-items:center;justify-content:space-between;height:62px;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.5px;font-size:17px}
+.hubnav{display:flex;gap:6px;flex-wrap:wrap}
+.hubnav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px}
+.hubnav a.on{color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent)}
+.ctrl{display:flex;align-items:center;gap:12px}
+.dots{display:flex;gap:6px}.dot{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}.dot[aria-current=true]{border-color:var(--text)}
+.tgl{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:12px;color:var(--muted)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ac)}
+.sec-t{font-size:30px;font-weight:800;letter-spacing:-1px;margin:6px 0}
+.sec-d{color:var(--muted);max-width:680px;margin-bottom:22px}
+.ov{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:8px 2px}
+.lt{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:#22232b;border-radius:9px;width:32px;height:32px}
+.lgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}@media(max-width:760px){.lgrid{grid-template-columns:repeat(2,1fr)}}
+.lcard{background:var(--surface);border:var(--cardBorder);box-shadow:var(--cardShadow);border-radius:16px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.lcard .nm{font-size:12px;color:var(--muted);font-weight:700}
+.do{border-left:3px solid var(--success)}.dont{border-left:3px solid var(--danger)}
+.foot{padding:40px 0 64px;text-align:center;color:var(--muted)}
+</style></head><body>
+<div class="topbar"><div class="wrap row">
+  <div class="brand"><span data-logo="30"></span>Saver</div>
+  <div class="hubnav"><a href="index.html">Showcase</a><a href="brand.html" class="on">Brand</a><a href="screens.html">Screens</a><a href="index.html">Docs</a></div>
+  <div class="ctrl" id="ctrl"></div>
+</div></div>
+<header class="wrap" style="padding:48px 20px 6px"><div class="eyebrow">Brand · Logo</div><div class="sec-t">The "Growth S" mark</div>
+<p class="sec-d">Our existing mark — a bold S with a rising arrow — kept exactly, offered in color variants for different contexts. The arrow can match the active accent.</p></header>
+<main class="wrap" style="padding-bottom:40px">
+  <div class="ov">Color variants</div>
+  <div class="lgrid" id="variants" style="margin-bottom:30px"></div>
+  <div class="ov">App icon &amp; usage</div>
+  <div class="lgrid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="lcard"><div id="appicon"></div><div class="nm">App icon (iOS squircle)</div></div>
+    <div class="lcard do" id="docard"><div class="nm">DO — keep clear space, original colors</div></div>
+    <div class="lcard dont" id="dontcard"><div class="nm">DON'T — distort or recolor the S</div></div>
+  </div>
+</main>
+<footer class="foot"><div class="wrap">One mark, every context. Powered by Mahmoud © 2026</div></footer>
+<script>
+const ACCENTS={mint:{dark:"#5FE3C0",light:"#0D9488",onDark:"#06251F",onLight:"#FFFFFF"},emerald:{dark:"#34D399",light:"#059669",onDark:"#04231A",onLight:"#FFFFFF"},blue:{dark:"#60A5FA",light:"#2563EB",onDark:"#04183A",onLight:"#FFFFFF"},violet:{dark:"#A78BFA",light:"#7C3AED",onDark:"#1A1040",onLight:"#FFFFFF"},coral:{dark:"#FB7185",light:"#E11D57",onDark:"#3A0512",onLight:"#FFFFFF"},amber:{dark:"#FBBF24",light:"#D97706",onDark:"#2A1A00",onLight:"#FFFFFF"}};
+let accent="mint";const root=document.documentElement;
+function lighten(h,p){const n=parseInt(h.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;r=Math.round(r+(255-r)*p);g=Math.round(g+(255-g)*p);b=Math.round(b+(255-b)*p);return"#"+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+function applyAccent(){const t=root.getAttribute("data-theme"),a=ACCENTS[accent],c=a[t];root.style.setProperty("--ac",c);root.style.setProperty("--ac-soft",lighten(c,.18));root.style.setProperty("--onacc",t==="dark"?a.onDark:a.onLight);}
+function mark(tile,s,arrow,size){size=size||72;const r=size*0.28;return '<span style="display:inline-flex;align-items:center;justify-content:center;width:'+size+'px;height:'+size+'px;border-radius:'+r+'px;background:'+tile+'"><svg width="'+size+'" height="'+size+'" viewBox="0 0 100 100"><text x="42" y="54" text-anchor="middle" dominant-baseline="central" font-family="DM Sans,sans-serif" font-weight="800" font-size="66" fill="'+s+'">S</text><g stroke="'+arrow+'" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M50 66 73 41"/><path d="M59 39 75 39 75 55"/></g></svg></span>';}
+function mountControls(){const tb=document.getElementById("ctrl");const dots=document.createElement("div");dots.className="dots";Object.keys(ACCENTS).forEach(k=>{const d=document.createElement("button");d.className="dot";d.style.background=ACCENTS[k].dark;d.setAttribute("aria-current",k===accent);d.title=k;d.onclick=()=>{accent=k;applyAccent();[...dots.children].forEach(x=>x.setAttribute("aria-current",x.title===k));};dots.appendChild(d);});const tg=document.createElement("button");tg.className="tgl";tg.textContent="◐ Theme";tg.onclick=()=>{root.setAttribute("data-theme",root.getAttribute("data-theme")==="dark"?"light":"dark");applyAccent();};tb.appendChild(dots);tb.appendChild(tg);applyAccent();}
+const V=[["Primary","#22232b","#fff","#2fae6b"],["Mint","#22232b","#fff","#5FE3C0"],["Blue","#22232b","#fff","#60A5FA"],["Violet","#22232b","#fff","#A78BFA"],["Coral","#22232b","#fff","#FB7185"],["Amber","#22232b","#fff","#FBBF24"],["Light tile","#EDEFF3","#16161D","#0D9488"],["Mono white","#22232b","#E8E8F0","#E8E8F0"]];
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll('[data-logo]').forEach(e=>{e.innerHTML=mark("#22232b","#fff","#2fae6b",+e.dataset.logo||32);e.style.background="transparent";});
+  document.getElementById("variants").innerHTML=V.map(v=>'<div class="lcard">'+mark(v[1],v[2],v[3],72)+'<div class="nm">'+v[0]+'</div></div>').join("");
+  document.getElementById("appicon").innerHTML=mark("#22232b","#fff","#2fae6b",84);
+  document.getElementById("docard").insertAdjacentHTML("afterbegin",mark("#22232b","#fff","#2fae6b",56));
+  document.getElementById("dontcard").insertAdjacentHTML("afterbegin",'<span style="display:inline-block;transform:skewX(-14deg) scaleY(.8);opacity:.7">'+mark("#22232b","#f87171","#f87171",56)+'</span>');
+  mountControls();
+});
+</script>
+</body></html>
