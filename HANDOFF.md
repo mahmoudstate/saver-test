@@ -13,7 +13,8 @@ Then `npm run build` to confirm a clean build before/after edits.
 
 ## Current focus
 Applying the user's notes / fixes / tweaks to the **existing app** (`src/App.jsx`). Keep calculations
-& data model intact. Build after each change; commit + push to the branch above. (The design-system
+& data model intact. **Edit target = `src/App.jsx` only.** The `DESIGN*.md`, `tokens.js`, and the
+`*.html` styleguide/site files are **reference context — do NOT modify them** during app fixes. Build after each change; commit + push to the branch above. (The design-system
 rebuild — Part 8 — is paused; resume later from `DESIGN_PLAN.md`.)
 
 ## What Saver is
