@@ -2,6 +2,20 @@
 
 > Quick context for any new session. **Read this, then `DESIGN_PLAN.md`, then `DESIGN.md`.**
 
+## ⚠️ Sync first (important)
+The local working tree can reset to an older commit between turns. The **remote branch is the
+source of truth**. At the start, always run:
+```
+git fetch origin claude/severt-test-code-changes-9URWE
+git reset --hard origin/claude/severt-test-code-changes-9URWE
+```
+Then `npm run build` to confirm a clean build before/after edits.
+
+## Current focus
+Applying the user's notes / fixes / tweaks to the **existing app** (`src/App.jsx`). Keep calculations
+& data model intact. Build after each change; commit + push to the branch above. (The design-system
+rebuild — Part 8 — is paused; resume later from `DESIGN_PLAN.md`.)
+
 ## What Saver is
 A **personal finance tracker** that is **100% offline & private** (no account, no network, data in
 local storage). It's a React PWA; **almost all app code lives in one file: `src/App.jsx`** (in the
